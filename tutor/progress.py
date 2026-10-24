@@ -14,7 +14,7 @@ def load() -> dict:
     for piece in PIECES:
         progress["pieces"].setdefault(piece, {
             "status": "not_started", "draft": None, "last_results": None,
-            "check": {"attempts": 0, "best_score": None, "done": False},
+            "check": {"attempts": 0, "best_score": None, "done": False, "explanations": []},
         })
     return progress
 

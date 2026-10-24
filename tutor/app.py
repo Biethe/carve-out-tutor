@@ -135,11 +135,14 @@ def explain(explanation: str = Body(embed=True)):
     check = piece["check"]
     if check["done"]:
         return {"error": "You've already finished the check for this piece."}
-    result = llm.grade(current, explanation, piece["draft"])
+    earlier = check.setdefault("explanations", [])
+    result = llm.grade(current, explanation, piece["draft"], earlier)
     if result is None:
         return {"error": llm.BUSY}
+    earlier.append(explanation)
     check["attempts"] += 1
-    check["best_score"] = max(check["best_score"] or 0, result["score"])
+    # Explanations build on each other, so the score never goes down.
+    result["score"] = check["best_score"] = max(check["best_score"] or 0, result["score"])
     if result["score"] < PASS_SCORE and check["attempts"] <= MAX_HINTS:
         # Only the hint: the full feedback would hand over the explanation before they retry.
         response = {"score": result["score"], "done": False,

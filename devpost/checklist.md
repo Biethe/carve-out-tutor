@@ -69,6 +69,10 @@ Build mode: fast
 - [ ] Make the tutor pages more visually attractive. They're smooth but too plain (from the early checkpoint).
 - [ ] A fuller projects/home page, with a richer description of the project. Clarify what "a whole page for the projects" means first.
 - [ ] Home intro also mentions "bring your own idea" (coming soon), not only "start with a project that already works".
+- [ ] Floating tutor: a small draggable button that opens its own scrollable window, replacing the fixed tutor panel. Clicking **Hint** opens it right away.
+- [ ] Show only the latest hint, with no log. In the explanation stage, show only the explanation exchange.
+- [ ] Grading takes earlier explanations into account, and adding detail never lowers the score (the learner got 6/10, then 3/10 after adding more).
+- [ ] Passing criteria listed under each function in the task, marked ✓/✗ after Submit.
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map

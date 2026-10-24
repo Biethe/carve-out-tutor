@@ -48,8 +48,25 @@ a.card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(60,40,2
 .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(340px, 5fr) 7fr; gap: 20px; padding: 20px 24px; }
 .left, .right { min-height: 0; display: flex; flex-direction: column; gap: 14px; }
 #task { flex: 1; min-height: 0; overflow-y: auto; }
-.tutor { max-height: 45%; overflow-y: auto; flex-shrink: 0; }
-.tutor h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+#task .criteria-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
+#task .criteria { list-style: none; padding: 0; margin: 0 0 16px; }
+#task .criteria li { display: flex; gap: 8px; font-size: 14px; margin: 3px 0; }
+.criteria .mark { width: 14px; flex-shrink: 0; color: var(--muted); font-weight: 700; }
+.criteria li.pass .mark { color: var(--pass); }
+.criteria li.fail .mark { color: var(--fail); }
+#task .criteria li.fail { color: var(--fail); }
+/* Floating tutor */
+.tutor-fab { position: fixed; right: 28px; bottom: 28px; z-index: 20; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: grab; box-shadow: 0 8px 24px rgba(200,97,29,.35); touch-action: none; user-select: none; transition: background .15s, box-shadow .15s; }
+.tutor-fab:hover { background: var(--accent-dark); }
+.tutor-fab:active { cursor: grabbing; }
+.tutor-win { position: fixed; z-index: 19; width: min(400px, calc(100vw - 16px)); max-height: min(520px, calc(100vh - 100px)); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 48px rgba(60,40,20,.18); animation: pop .15s ease-out; }
+@keyframes pop { from { opacity: 0; transform: scale(.97); } }
+.tutor-win header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.tutor-mode { font-size: 12px; font-weight: 600; color: var(--accent-dark); background: #fdf0e6; padding: 2px 10px; border-radius: 20px; }
+.close { margin-left: auto; background: none; border: 0; font-size: 22px; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 4px; }
+.close:hover { color: var(--ink); }
+.tutor-win .messages { flex: 1; min-height: 60px; overflow-y: auto; padding: 14px 16px; }
+.tutor-win .chat { margin: 0; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
 .messages { display: flex; flex-direction: column; gap: 10px; }
 .msg { margin: 0; padding: 10px 14px; border-radius: 10px; font-size: 15px; line-height: 1.55; }
 .tutor-msg { background: #fdf4ec; border-left: 3px solid var(--accent); }
@@ -94,7 +111,7 @@ details pre { margin: 0; padding: 12px; background: #fbf9f6; border-top: 1px sol
   .workspace-body { height: auto; }
   .workspace { grid-template-columns: 1fr; }
   .editor-wrap { height: 360px; flex: none; }
-  .results, .tutor { max-height: none; }
+  .results { max-height: none; }
   #task { overflow: visible; }
   .ownership .bar { width: 80px; }
 }

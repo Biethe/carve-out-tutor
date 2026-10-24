@@ -40,7 +40,7 @@ def _chat(system: str, user: str, json_mode: bool = False) -> str:
 
 def _task_text(piece: str) -> str:
     p = PIECES[piece]
-    functions = "\n".join(f"- {sig}: {desc}" for sig, desc in p["functions"])
+    functions = "\n".join(f"- {sig}: {desc}" for sig, desc, _ in p["functions"])
     calls = "\n".join(f"- {c}" for c in p["call_sites"])
     return f"Piece: {p['title']} ({p['file']})\n{p['summary']}\n\nFunctions to write:\n{functions}\n\nWhere it's used:\n{calls}"
 
@@ -78,6 +78,8 @@ def hint(piece: str, code: str, results: list[dict] | None = None) -> str:
 
 GRADE_RULES = """You grade a beginner's explanation of code they just wrote (their tests already pass).
 Compare it with the reference explanation. Plain words are fine; don't demand jargon.
+If they explained before, judge ALL their explanations together: the new one adds to what they already said,
+so a point made earlier still counts, and adding detail can never lower the score.
 Reply with JSON only, with these keys:
 "score": integer 0-10 (7 or more means they clearly understand the main ideas),
 "missing": 1-2 sentences to the learner on what was missing or imprecise ("" if nothing),
@@ -85,10 +87,11 @@ Reply with JSON only, with these keys:
 "hint": if score < 7, one sentence like "You're missing something about X. Think about it." that names the topic without giving the answer; otherwise ""."""
 
 
-def grade(piece: str, explanation: str, code: str) -> dict | None:
-    """Score an explanation: {score, missing, extra, hint}. None if the AI is unavailable."""
+def grade(piece: str, explanation: str, code: str, earlier: list[str]) -> dict | None:
+    """Score an explanation together with earlier attempts: {score, missing, extra, hint}. None if the AI is unavailable."""
+    previous = "".join(f"\n\nTheir earlier explanation {i}:\n{e}" for i, e in enumerate(earlier, 1))
     user = (f"{_task_text(piece)}\n\nReference explanation:\n{PIECES[piece]['model_explanation']}"
-            f"\n\nThe learner's code:\n{code}\n\nThe learner's explanation:\n{explanation}")
+            f"\n\nThe learner's code:\n{code}{previous}\n\n{'Their newest explanation' if earlier else 'Their explanation'}:\n{explanation}")
     for _ in range(2):  # one retry if the reply isn't valid JSON
         try:
             data = json.loads(_chat(GRADE_RULES, user, json_mode=True))
