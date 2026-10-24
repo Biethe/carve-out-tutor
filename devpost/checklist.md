@@ -49,7 +49,7 @@ Build mode: fast
   Learner check: After your tests pass, explain your login code in your own words. Try once badly on purpose to see the hint, and ask the tutor one question. Does the feedback feel fair and useful?
   Commit: `Add understanding check and Ask`
 
-- [ ] **5. You can do round 2 on the cart, and close and reopen the app without losing anything**
+- [x] **5. You can do round 2 on the cart, and close and reopen the app without losing anything**
   Becomes usable: **Next piece** carves cart behavior while your auth stays yours. The full loop repeats, the % rises again, and the store runs with both of your pieces. Closing mid-round and reopening restores the round, your draft, results and %. The project page says **Continue learning** when a round is open. README explains how to run and demo it.
   Why now: Round 2 is the proof that the loop repeats and ownership grows. By now it's mostly a new `PIECES` entry, so it comes last.
   PRD ref: `prd.md > The Core Journey` (step 10), `prd.md > Saved Progress`, `prd.md > Ownership Percentage`, `prd.md > States and Boundaries` (after round 2, closing and coming back)
