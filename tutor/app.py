@@ -51,6 +51,7 @@ def state():
         piece = prog["pieces"][current]
         result.update(
             round=list(PIECES).index(current) + 1,
+            total_rounds=len(PIECES),
             task=task(current),
             code=piece["draft"] if piece["draft"] is not None else PIECES[current]["stub"],
             status=piece["status"],
@@ -103,7 +104,8 @@ def submit(code: str = Body(embed=True)):
         (learner_dir / PIECES[current]["file"]).write_text(code)
         piece["status"] = "passed"
     progress.save(prog)
-    return {"results": results, "passed": all_passed, "ownership": progress.ownership(prog)}
+    return {"results": results, "passed": all_passed, "ownership": progress.ownership(prog),
+            "all_done": len(progress.passed(prog)) == len(PIECES)}
 
 
 @app.post("/api/hint")

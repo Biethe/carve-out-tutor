@@ -47,6 +47,48 @@ def is_logged_in(session: dict) -> bool:
         "references": [("app.py", "login"), ("app.py", "render"), ("app.py", "checkout"), ("db.py", "get_users"), ("db.py", "init")],
         "model_explanation": "hash_password turns the password into a fixed SHA-256 fingerprint (hex string), so the store keeps a hash instead of the real password, and the same input always gives the same hash. check_login rejects empty input, looks the username up in the users dict (unknown user means False), hashes the typed password and compares it with the stored hash using hmac.compare_digest, which takes the same time whether or not the hashes match, so an attacker can't learn the hash from timing. is_logged_in checks whether the session data holds a username; the login route puts it there after a successful check_login, and routes like checkout and profile use is_logged_in to block visitors who aren't logged in.",
     },
+    "cart": {
+        "title": "Cart behavior",
+        "file": "cart.py",
+        "test": "tests/test_cart.py",
+        "summary": "The shopping cart's logic: adding an asset, removing one, and adding up the total. The cart is a list of asset IDs kept in the visitor's session.",
+        "stub": '''"""Cart piece: the cart is a list of asset IDs kept in the session."""
+
+
+def add_item(cart: list[int], asset_id: int) -> list[int]:
+    """Return a new cart with asset_id added. A digital asset is bought once, so duplicates are ignored."""
+    # Your code here
+    raise NotImplementedError
+
+
+def remove_item(cart: list[int], asset_id: int) -> list[int]:
+    """Return a new cart without asset_id. Removing a missing ID changes nothing."""
+    # Your code here
+    raise NotImplementedError
+
+
+def cart_total(cart: list[int], prices: dict[int, float]) -> float:
+    """Sum of the prices of the items in the cart, rounded to 2 decimals."""
+    # Your code here
+    raise NotImplementedError
+''',
+        "functions": [
+            ("add_item(cart: list[int], asset_id: int) -> list[int]",
+             "Returns a NEW list with asset_id added at the end. If it's already in the cart, return the same items unchanged (you only buy a digital asset once). Don't modify the list you were given."),
+            ("remove_item(cart: list[int], asset_id: int) -> list[int]",
+             "Returns a NEW list without asset_id. If it isn't in the cart, nothing changes. Don't modify the list you were given."),
+            ("cart_total(cart: list[int], prices: dict[int, float]) -> float",
+             "prices maps each asset ID to its price. Return the sum of the prices of the items in the cart, rounded to 2 decimals. An empty cart totals 0.0."),
+        ],
+        "call_sites": [
+            "POST /cart/add/{id} and POST /cart/remove/{id} (store/app.py, cart_add and cart_remove) read the cart from the session, call add_item or remove_item, and save the returned list back into the session.",
+            "GET /cart (store/app.py, cart_page) builds a prices dict from the database and calls cart_total to show the total.",
+            "POST /checkout (store/app.py, checkout) buys every asset ID in the cart, then empties it.",
+        ],
+        "breaks": "If add_item allows duplicates, the learner buys the same asset twice. If remove_item fails, items can't be taken out of the cart. If cart_total is off, the cart shows the wrong price at checkout.",
+        "references": [("app.py", "cart_add"), ("app.py", "cart_remove"), ("app.py", "cart_page"), ("app.py", "checkout")],
+        "model_explanation": "The cart is just a list of asset IDs saved in the session, so each function takes the current list and returns a new one, which the route stores back in the session. add_item returns a copy of the list with the ID appended, or an unchanged copy if the ID is already there, because a digital asset is bought once. remove_item builds a new list that keeps every ID except the one being removed, so removing a missing ID changes nothing. Returning new lists instead of changing the original avoids surprising side effects on data someone else still holds. cart_total looks up each ID's price in the prices dict, adds them up and rounds to 2 decimals, because floating-point sums like 0.1 + 0.2 aren't exact and money should display cleanly; an empty cart sums to 0.0.",
+    },
 }
 
 

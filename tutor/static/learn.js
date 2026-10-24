@@ -53,6 +53,22 @@ async function getHint(afterSubmit) {
 }
 
 // The understanding check: shown once the tests pass. Ask stays available after it's done.
+let allDone = false;
+
+function showNext() {
+  if (allDone) {
+    addMessage("That's every piece. The login and the cart are both your code now. Click <strong>Run project</strong> to see your store working end to end.");
+  } else {
+    $("next").hidden = false;
+  }
+}
+
+$("next").onclick = async () => {
+  $("next").disabled = true;
+  await api("POST", "/api/round/start");
+  location.reload();
+};
+
 function openCheck(check) {
   $("chat").hidden = false;
   if (check.done) {
@@ -62,6 +78,7 @@ function openCheck(check) {
   } else {
     addMessage("Nice work, all tests pass! Now tell me in your own words: what does your code do, and why does it work that way?");
   }
+  showNext();
 }
 
 $("explain").onclick = async () => {
@@ -101,8 +118,8 @@ function setOwnership(pct) {
   $("own-fill").style.width = pct + "%";
 }
 
-function showTask(task, round) {
-  $("round").textContent = `Round ${round} · ${task.title}`;
+function showTask(task, round, totalRounds) {
+  $("round").textContent = `Round ${round} of ${totalRounds} · ${task.title}`;
   $("task-title").textContent = task.title;
   $("task-summary").textContent = task.summary;
   $("task-file").textContent = task.file;
@@ -156,6 +173,7 @@ $("submit").onclick = async () => {
   showResults(res.results, res.passed);
   setOwnership(res.ownership);
   if (res.passed) {
+    allDone = res.all_done;
     lockIfPassed("passed");
     openCheck({ done: false, best_score: null });
   } else getHint(true);
@@ -168,11 +186,12 @@ $("run").onclick = () => runProject($("run-status"));
 (async () => {
   const s = await api("GET", "/api/state");
   if (!s.current) { location.href = "/project"; return; }
-  showTask(s.task, s.round);
+  showTask(s.task, s.round, s.total_rounds);
   editor.setValue(s.code);
   loaded = true;
   setOwnership(s.ownership);
   showResults(s.last_results, s.status === "passed");
   lockIfPassed(s.status);
+  allDone = s.all_done;
   if (s.status === "passed") openCheck(s.check);
 })();

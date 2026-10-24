@@ -39,7 +39,7 @@ Build mode: fast
   Learner check: In round 1 (reset `data/` first if you already passed it), write a partial attempt, click **Hint**, then submit something that fails one test. Do the hints help without giving the answer away?
   Commit: `Add AI hints with failing-test focus`
 
-- [ ] **4. After passing, the tutor checks that you understood what you built**
+- [x] **4. After passing, the tutor checks that you understood what you built**
   Becomes usable: Once tests pass, the tutor asks you to explain your code, scores it 0-10 with feedback and extra tips, gives up to two targeted hints and retries on a weak answer, and then the full explanation. **Ask** lets you question the tutor. A low score never removes your code or lowers the %.
   Why now: Completes one full round as the PRD describes, before repeating it for round 2.
   PRD ref: `prd.md > The Core Journey` (step 8), `prd.md > Understanding Check`
@@ -91,3 +91,4 @@ Activity mode:
 - Hint rules made stricter (one function, next step only, no calls with arguments) and `reasoning_effort="low"` added. Live testing with `openai/gpt-oss-120b` showed the first prompt handed over nearly the whole solution (`hashlib.sha256(...).hexdigest()` plus all three functions), and the free tier's 8K tokens/minute needs short replies.
 - The tutor also reads the API key from a git-ignored `.env` file, not only an exported variable, so the key survives new terminals.
 - On a weak explanation that still has hints left, the tutor shows only the score and the hint, not the "what's missing" feedback. Live testing showed that feedback already spelled out the whole explanation, so the retry would be pointless. Feedback, extra tips and (if needed) the full explanation come once the check is done.
+- **Next piece** appears as soon as the tests pass, with the explanation check offered alongside it rather than required first. If the AI were down, a required check would block round 2, and the PRD counts a round once the tests pass.

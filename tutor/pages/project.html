@@ -27,6 +27,9 @@
   <script src="/static/run.js"></script>
   <script>
     document.getElementById("run").onclick = () => runProject(document.getElementById("run-status"));
+    fetch("/api/state").then(r => r.json()).then(s => {
+      if (s.current) document.getElementById("learn").textContent = s.all_done ? "See your work" : "Continue learning";
+    });
     document.getElementById("learn").onclick = async () => {
       await fetch("/api/round/start", { method: "POST" });
       location.href = "/learn";
