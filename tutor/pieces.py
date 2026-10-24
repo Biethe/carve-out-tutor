@@ -26,11 +26,12 @@ PIECES = {
                     ("test_hash_is_stable_and_differs_per_password", "Same password gives the same hash; different passwords give different hashes"),
                 ],
                 "call_sites": [
+                    "POST /signup (store/app.py, signup) calls it to save a new account's password hash.",
                     "On first start, store/db.py (init) calls it to save the demo user's password hash.",
                     "Your next function, check_login, will use it to hash the password someone types.",
                 ],
                 "breaks": "If it returns anything other than the SHA-256 hex string, a typed password never matches the stored hash, and nobody can log in.",
-                "references": [("db.py", "init")],
+                "references": [("app.py", "signup"), ("db.py", "init")],
                 "question": "Why does the store keep a hash of the password instead of the password itself?",
                 "answer": "So the real password is never stored: anyone who reads the database only sees hashes, and a hash can't be turned back into the password. Logging in still works because the same password always gives the same hash, so the store hashes what you type and compares the two hashes.",
             },

@@ -60,14 +60,17 @@ Source: `scope.md > The POC Boundary`.
   - [ ] After each completed round, the store still works, and the learner's piece is the one running.
 
 ### The 3D Asset Store
-The practice project the learner rebuilds piece by piece. It is a showcase with one user, the learner.
-- **Log in:** With the one existing account. Wrong credentials show an error.
+The practice project the learner rebuilds piece by piece. It comes with a demo account (`learner`), and anyone can create more.
+- **Sign up:** Create an account with a username and password (with a confirmation). Taken usernames, short passwords and mismatched confirmations show an error. After signing up, the new user logs in like anyone else.
+- **Log in:** With any existing account. Wrong credentials show an error.
 - **Browse assets:** Pictures standing in for 3D models, animations and worlds, stored in the store's database.
 - **Cart:** Add items, remove items, and see the cart's contents and total.
 - **Checkout:** Fake. No real payment happens.
 - **Download link:** After checkout, the page shows a download link.
-- **Profile:** Lists the assets bought so far, each with its download link.
+- **Profile:** Lists the assets *this user* bought, each with its download link. Users can't see or download each other's purchases.
   - [ ] A visitor who isn't logged in can't check out. Logging in with the right credentials works, and wrong credentials show an error.
+  - [ ] A new user can sign up and then log in. Invalid or taken usernames, short passwords and mismatched confirmations are refused with a message.
+  - [ ] Each user's profile shows only their own purchases.
   - [ ] Adding and removing items updates the cart's contents and total correctly.
   - [ ] After a fake checkout, a download link appears and the purchase is listed on the profile.
 
@@ -133,7 +136,7 @@ Source: `scope.md > The POC Boundary`.
 - **One project:** The 3D asset store. Focus the effort on one great carve loop.
 - **Two rounds, authentication then cart:** Both visibly change the store. These may still change.
 - **A 3D asset store as the practice project:** A real kind of business, so it's a real-world product to understand from the inside.
-- **One user, you:** It's a showcase, so there are no sign-ups or other users.
+- **Sign-up in the store:** Added during the final review so the learner can create users and check they can log in. New passwords are hashed by the learner's `hash_password`, and logins go through their `check_login`. The tutor itself still has no accounts.
 - **Fake payment:** No real money moves.
 - **Pictures instead of real 3D files:** The idea is shown without handling real assets.
 - **Download link on the page, not by email:** This avoids connecting to an outside mail service.
@@ -155,7 +158,6 @@ Source: `scope.md > The POC Boundary`.
 ## Deferred From the POC
 - **Sending download links by email:** Needs a mail service and credentials. The on-page link proves the flow.
 - **Real payments:** Need a payment provider. They don't help prove the learning loop.
-- **Sign-ups and multiple users:** It's a one-user showcase.
 - **Real 3D files and viewers:** Pictures are enough to make the store believable.
 - **A working "Bring your own idea":** Needs live generation of a project. It's shown, but disabled.
 

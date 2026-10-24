@@ -49,4 +49,5 @@ input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 .note, .muted { color: var(--muted); font-size: 13px; }
 .sub { font-size: 16px; color: var(--muted); font-weight: 600; }
 .empty { color: var(--muted); }
+.switch { margin: 0; font-size: 14px; color: var(--muted); text-align: center; }
 @media (max-width: 600px) { .top, main { padding-left: 16px; padding-right: 16px; } .rows li { flex-wrap: wrap; } }

@@ -7,6 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
+import re
+
 import db
 from pieces import auth, cart
 
@@ -55,6 +57,28 @@ def login(request: Request, username: str = Form(""), password: str = Form("")):
     return render(request, "login.html", error="Wrong username or password.")
 
 
+@app.get("/signup")
+def signup_page(request: Request):
+    return render(request, "signup.html", error=None, username="")
+
+
+@app.post("/signup")
+def signup(request: Request, username: str = Form(""), password: str = Form(""), confirm: str = Form("")):
+    username = username.strip()
+    if not re.fullmatch(r"[A-Za-z0-9_]{3,30}", username):
+        error = "Usernames are 3 to 30 letters, numbers or underscores."
+    elif len(password) < 6:
+        error = "Use a password of at least 6 characters."
+    elif password != confirm:
+        error = "The two passwords don't match."
+    elif not db.add_user(username, auth.hash_password(password)):
+        error = "That username is taken. Try another one."
+    else:
+        # Send them to log in, so the new account goes through check_login like any other.
+        return redirect(request, "/login", f"Account created. Log in as {username}.")
+    return render(request, "signup.html", error=error, username=username)
+
+
 @app.post("/logout")
 def logout(request: Request):
     request.session.pop("username", None)
@@ -90,7 +114,7 @@ def checkout(request: Request):
     items = request.session.get("cart", [])
     if not items:
         return redirect(request, "/cart", "Your cart is empty.")
-    db.add_purchases(items)
+    db.add_purchases(request.session["username"], items)
     request.session["cart"] = []
     return redirect(request, "/profile", "Purchase complete (no real payment). Your download links are below.")
 
@@ -99,14 +123,15 @@ def checkout(request: Request):
 def profile(request: Request):
     if not auth.is_logged_in(request.session):
         return redirect(request, "/login", "Log in to see your profile.")
-    return render(request, "profile.html", username=request.session["username"], purchases=db.get_purchases())
+    username = request.session["username"]
+    return render(request, "profile.html", username=username, purchases=db.get_purchases(username))
 
 
 @app.get("/download/{purchase_id}")
 def download(request: Request, purchase_id: int):
     if not auth.is_logged_in(request.session):
         return redirect(request, "/login", "Log in to download.")
-    purchase = db.get_purchase(purchase_id)
+    purchase = db.get_purchase(purchase_id, request.session["username"])
     if purchase is None:
         raise HTTPException(404)
     return FileResponse(HERE / "static" / "assets" / purchase["image"], filename=purchase["image"])

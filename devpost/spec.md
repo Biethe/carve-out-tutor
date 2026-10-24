@@ -87,7 +87,7 @@ Carried from `prd.md > Look and Feel` and `scope.md > Inspiration & Identity`.
 
 ### Store App
 The practice project: FastAPI routes and Jinja2 templates. It calls `pieces.auth` and `pieces.cart` and never implements their logic itself.
-Routes: `GET /` browse grid, `GET|POST /login`, `POST /logout`, `POST /cart/add/{id}`, `POST /cart/remove/{id}`, `GET /cart`, `POST /checkout` (logged in and cart not empty, otherwise redirect with a message), `GET /download/{purchase_id}`, `GET /profile`.
+Routes: `GET /` browse grid, `GET|POST /signup` (username 3–30 letters/numbers/underscores, password ≥ 6, confirmation must match, taken names refused; on success, redirect to log in), `GET|POST /login`, `POST /logout`, `POST /cart/add/{id}`, `POST /cart/remove/{id}`, `GET /cart`, `POST /checkout` (logged in and cart not empty, otherwise redirect with a message), `GET /download/{purchase_id}`, `GET /profile`.
 The database path comes from the `STORE_DB` environment variable, so purchases survive store restarts and rebuilds.
 PRD ref: `prd.md > The 3D Asset Store`, `prd.md > States and Boundaries` (wrong login, empty cart).
 
@@ -166,7 +166,8 @@ PRD ref: `prd.md > Project Catalog`, `prd.md > Screens and Layout`.
 |---|---|---|---|
 | Store user (1 row: `learner`, password hash) | `data/store.db` → `users` | `seed` on first start | Unchanged |
 | Assets (~8 rows: id, name, kind, price, image file) | `data/store.db` → `assets` | `seed` | Unchanged |
-| Purchases (id, asset_id, bought_at) | `data/store.db` → `purchases` | `POST /checkout` | Still on the profile |
+| Users who signed up | `data/store.db` → `users` | `POST /signup` | Kept |
+| Purchases (id, asset_id, bought_at, username) | `data/store.db` → `purchases` | `POST /checkout` | Still on that user's profile. Older databases get the column added, with existing purchases given to `learner`. |
 | Logged-in user, cart | Store session cookie | Login/logout, cart routes | Survives tab reloads. Cleared on logout or browser close (fine for a demo). |
 | Tutor progress | `data/progress.json` | Tutor API | Restored exactly |
 | Passed learner functions, assembled into their piece's file | `data/learner/auth.py`, `cart.py` | `POST /api/submit` on pass | Kept permanently and used by every Run |

@@ -1,4 +1,4 @@
-"""SQLite helpers for the store, plus seed data (one user, eight assets)."""
+"""SQLite helpers for the store, plus seed data (a demo user, eight assets)."""
 import os
 import sqlite3
 from datetime import datetime
@@ -33,8 +33,12 @@ def init():
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password_hash TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, name TEXT, kind TEXT, price REAL, image TEXT);
-            CREATE TABLE IF NOT EXISTS purchases (id INTEGER PRIMARY KEY, asset_id INTEGER, bought_at TEXT);
+            CREATE TABLE IF NOT EXISTS purchases (id INTEGER PRIMARY KEY, asset_id INTEGER, bought_at TEXT, username TEXT);
         """)
+        # Databases from before sign-up existed have no buyer column; their purchases belong to the demo user.
+        if "username" not in [c["name"] for c in conn.execute("PRAGMA table_info(purchases)")]:
+            conn.execute("ALTER TABLE purchases ADD COLUMN username TEXT")
+            conn.execute("UPDATE purchases SET username = 'learner'")
         if not conn.execute("SELECT 1 FROM users").fetchone():
             conn.execute("INSERT INTO users VALUES (?, ?)", ("learner", hash_password("carve123")))
             conn.executemany("INSERT INTO assets (name, kind, price, image) VALUES (?, ?, ?, ?)", ASSETS)
@@ -45,30 +49,43 @@ def get_users() -> dict[str, str]:
         return {r["username"]: r["password_hash"] for r in conn.execute("SELECT * FROM users")}
 
 
+def add_user(username: str, password_hash: str) -> bool:
+    """Create an account. False if the username is taken."""
+    with connect() as conn:
+        try:
+            conn.execute("INSERT INTO users VALUES (?, ?)", (username, password_hash))
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+
 def get_assets() -> list[sqlite3.Row]:
     with connect() as conn:
         return conn.execute("SELECT * FROM assets ORDER BY id").fetchall()
 
 
-def add_purchases(asset_ids: list[int]):
+def add_purchases(username: str, asset_ids: list[int]):
     now = datetime.now().isoformat(timespec="seconds")
     with connect() as conn:
-        conn.executemany("INSERT INTO purchases (asset_id, bought_at) VALUES (?, ?)", [(a, now) for a in asset_ids])
+        conn.executemany("INSERT INTO purchases (asset_id, bought_at, username) VALUES (?, ?, ?)",
+                         [(a, now, username) for a in asset_ids])
 
 
-def get_purchases() -> list[sqlite3.Row]:
+def get_purchases(username: str) -> list[sqlite3.Row]:
     with connect() as conn:
         return conn.execute("""
             SELECT purchases.id, purchases.bought_at, assets.name, assets.kind, assets.image
             FROM purchases JOIN assets ON assets.id = purchases.asset_id
+            WHERE purchases.username = ?
             ORDER BY purchases.id DESC
-        """).fetchall()
+        """, (username,)).fetchall()
 
 
-def get_purchase(purchase_id: int) -> sqlite3.Row | None:
+def get_purchase(purchase_id: int, username: str) -> sqlite3.Row | None:
+    """One purchase, only if it belongs to this user."""
     with connect() as conn:
         return conn.execute("""
             SELECT purchases.id, assets.name, assets.image
             FROM purchases JOIN assets ON assets.id = purchases.asset_id
-            WHERE purchases.id = ?
-        """, (purchase_id,)).fetchone()
+            WHERE purchases.id = ? AND purchases.username = ?
+        """, (purchase_id, username)).fetchone()
