@@ -4,34 +4,128 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Carve-Out Tutor</title>
+  <meta name="description" content="Learn to code by rebuilding small pieces of apps that already work.">
+  <script src="/static/theme.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="top"><a class="brand" href="/">Carve-Out Tutor</a></header>
-  <main class="page">
-    <section class="intro">
-      <h1>Learn by rebuilding real projects</h1>
-      <p>Start with a project that already works. The tutor cuts out one small piece, you rebuild it with hints (never the answer), and your code goes straight back into the running app. Each round, more of the project is yours.</p>
-    </section>
-    <h2 class="section-title">Pick a project</h2>
-    <div class="cards">
-      <a class="card" href="/project">
-        <img src="/static/store-preview.svg" alt="">
-        <div class="card-body">
-          <h3>Polyvault: a 3D asset store</h3>
-          <p>A Python web store for 3D models, animations and worlds, with login, a cart, checkout and downloads.</p>
-          <span class="tag">Python · FastAPI</span>
+  <header class="top">
+    <a class="brand" href="/"><span class="brand-word">Carve-Out</span><span class="brand-hand">tutor</span></a>
+    <span class="top-spacer"></span>
+    <div class="theme-switch" role="radiogroup" aria-label="Theme">
+      <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
+      <button role="radio" data-theme-choice="night" title="Night" aria-label="Night theme"><i class="ph-bold ph-moon-stars" aria-hidden="true"></i></button>
+      <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
+    </div>
+  </header>
+
+  <main class="home">
+    <section class="hero">
+      <div>
+        <p class="hero-note rise-in">made for people who learn by doing</p>
+        <h1 class="rise-in" style="--i:1">Learn to code inside apps that <span class="hl">already work</span>.</h1>
+        <p class="lead rise-in" style="--i:2">Pick a project, or <em>soon</em> your own idea. We cut out one small piece. You write it back in.</p>
+        <a class="btn rise-in" style="--i:3" href="#projects">Pick a project <i class="ph-bold ph-arrow-down" aria-hidden="true"></i></a>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <figure class="card art-store" style="--i:0; margin:0">
+          <figcaption><i class="ph-bold ph-circle"></i>Polyvault, running</figcaption>
+          <img src="/store-assets/neon-city.svg" alt="">
+        </figure>
+        <div class="card art-code" style="--i:1">
+          <span class="tab">store/pieces/auth.py</span>
+<pre><span class="k">def</span> <span class="d">hash_password</span>(password):
+    <span class="s">"""Return the SHA-256 hex digest."""</span>
+    <span class="you"># your code goes here</span></pre>
         </div>
-      </a>
-      <div class="card disabled" aria-disabled="true">
-        <div class="card-placeholder">+</div>
-        <div class="card-body">
-          <h3>Bring your own idea</h3>
-          <p>Describe what you want to make. The tutor builds it, then carves it into pieces for you.</p>
-          <span class="tag soon">Coming soon</span>
+        <span class="art-scribble" style="--i:2"><i class="ph-bold ph-arrow-bend-left-up"></i> you write this bit</span>
+        <div class="card art-pass" style="--i:3"><i class="ph-bold ph-check-circle"></i> All tests pass</div>
+      </div>
+    </section>
+
+    <section class="moves" aria-labelledby="moves-title">
+      <h2 id="moves-title">Three moves, <span class="squiggle">on repeat</span>.</h2>
+      <div class="move-row">
+        <div class="move">
+          <h3><i class="ph-bold ph-play-circle" aria-hidden="true"></i>Run it.</h3>
+          <p>Open the finished app and click around. Nothing is broken, nothing is missing.</p>
+        </div>
+        <div class="move">
+          <h3><i class="ph-bold ph-scissors" aria-hidden="true"></i>Rebuild one piece.</h3>
+          <p>We blank out a single function. You get its job, what it must pass, and only the code worth reading.</p>
+        </div>
+        <div class="move">
+          <h3><i class="ph-bold ph-sparkle" aria-hidden="true"></i>Watch it still work.</h3>
+          <p>Your function goes straight back in. Same app, except now <em>part of it is yours</em>.</p>
         </div>
       </div>
-    </div>
+    </section>
+
+    <section class="projects" id="projects" aria-labelledby="projects-title">
+      <h2 id="projects-title">Projects you can learn from.</h2>
+      <p class="lead">Each one is a complete app that runs from day one. Polyvault is ready now; the others are on their way.</p>
+      <div class="bento">
+        <a class="card p-main" href="/project">
+          <div class="mosaic">
+            <img src="/store-assets/neon-city.svg" alt="Neon city world preview" width="400" height="300">
+            <img src="/store-assets/fox.svg" alt="Low-poly fox model preview" width="400" height="300">
+            <img src="/store-assets/dragon-flight.svg" alt="Dragon flight animation preview" width="400" height="300">
+          </div>
+          <h3>Polyvault</h3>
+          <p>A 3D asset store in Python. Log in, browse models and worlds, fill a cart, check out and download what you bought.</p>
+          <div class="chips"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">SQLite</span><span class="chip">6 functions to rebuild</span></div>
+          <div class="go">
+            <span class="btn small">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
+            <span class="mine" id="mine" hidden></span>
+          </div>
+        </a>
+        <div class="card p-recipe" aria-disabled="true">
+          <span class="chip soon">Coming soon</span>
+          <i class="ph-bold ph-cooking-pot icon" aria-hidden="true"></i>
+          <h3>Recipe Box</h3>
+          <p>Save recipes, search them, and scale servings up or down.</p>
+          <div class="chips"><span class="chip">Python</span></div>
+        </div>
+        <div class="card p-habit" aria-disabled="true">
+          <span class="chip soon">Coming soon</span>
+          <i class="ph-bold ph-check-square-offset icon" aria-hidden="true"></i>
+          <h3>Habit Tracker</h3>
+          <p>Tick off daily habits and keep your streaks alive.</p>
+          <div class="chips"><span class="chip">JavaScript</span></div>
+        </div>
+        <div class="card p-pong" aria-disabled="true">
+          <span class="chip soon">Coming soon</span>
+          <i class="ph-bold ph-game-controller icon" aria-hidden="true"></i>
+          <h3>Pixel Pong</h3>
+          <p>A tiny two-player game that runs in the browser.</p>
+          <div class="chips"><span class="chip">JavaScript</span><span class="chip">Canvas</span></div>
+        </div>
+        <div class="card p-idea" aria-disabled="true">
+          <span class="chip soon">Coming soon</span>
+          <i class="ph-bold ph-lightbulb icon" aria-hidden="true"></i>
+          <h3>Your own idea</h3>
+          <p>Describe what you want to build. The tutor makes it, then carves it up for you.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>Carve-Out Tutor, built for <em>Build With AI: Basics</em> on Devpost.</span>
+      <span class="hand" style="font-size:20px">keep the quick wins, still learn the craft</span>
+    </footer>
   </main>
+
+  <script>
+    // If they've started, say how much of Polyvault is already theirs.
+    fetch("/api/state").then(r => r.json()).then(s => {
+      if (s.ownership > 0) {
+        const el = document.getElementById("mine");
+        el.textContent = `${s.ownership}% of it is yours`;
+        el.hidden = false;
+      }
+    }).catch(() => {});
+  </script>
 </body>
 </html>

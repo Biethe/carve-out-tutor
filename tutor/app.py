@@ -22,6 +22,8 @@ async def lifespan(app):
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+# The store's asset pictures, so the catalog can show the real project.
+app.mount("/store-assets", StaticFiles(directory=Path(__file__).parent.parent / "store" / "static" / "assets"), name="store-assets")
 
 
 @app.get("/")

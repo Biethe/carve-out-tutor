@@ -1,11 +1,12 @@
 """Saves tutor progress in data/progress.json and computes the ownership percentage."""
 import json
+import os
 from pathlib import Path
 
 from tutor.pieces import PIECES, assemble
 
 ROOT = Path(__file__).parent.parent
-DATA = ROOT / "data"
+DATA = Path(os.environ.get("TUTOR_DATA", ROOT / "data"))  # override to keep test runs out of your real progress
 PATH = DATA / "progress.json"
 
 

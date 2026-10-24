@@ -11,9 +11,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from tutor.pieces import PIECES
+from tutor.progress import DATA
 
 ROOT = Path(__file__).parent.parent
-DATA = ROOT / "data"
 RUN_DIR = ROOT / ".run" / "store"
 STORE_PORT = 8001
 STORE_URL = f"http://localhost:{STORE_PORT}"

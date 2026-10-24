@@ -35,7 +35,9 @@ def _chat(system: str, user: str, json_mode: bool = False) -> str:
         reasoning_effort="low",  # keeps replies quick and inside the free tier's token budget
         **({"response_format": {"type": "json_object"}} if json_mode else {}),
     )
-    return reply.choices[0].message.content or ""
+    text = reply.choices[0].message.content or ""
+    # House style: no em or en dashes in anything the learner reads.
+    return text.replace(" — ", ", ").replace("—", ", ").replace(" – ", " - ").replace("–", "-")
 
 
 def _task_text(piece: str, name: str) -> str:

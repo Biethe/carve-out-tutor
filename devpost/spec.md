@@ -76,12 +76,17 @@ PRD ref: `prd.md > The Core Journey`.
 - **Submission:** a short demo video recorded locally, plus a public GitHub repo. No deployment. It's optional, and we can revisit it in `6-ship`.
 
 ## Look and Feel
-Carried from `prd.md > Look and Feel` and `scope.md > Inspiration & Identity`.
+Carried from `prd.md > Look and Feel`, then reworked in the final review at the learner's request ("fun, original, human-like writing, different fonts, italics, bold, sizes, dark and light mode").
 
-- **Tutor app:** calm and learning-focused, like GeeksforGeeks. Light warm-neutral background, white panels, one accent color (a warm orange) for primary buttons and the ownership bar, and a green for passed tests. System sans-serif font for the interface and monospace in the editor. Generous spacing and only one main idea per screen. Small, quiet transitions (button hover, the % bar filling) and nothing flashy.
-- **Workspace:** a two-column layout like Programiz. On the **left** are the task (inputs/outputs, call sites, what breaks), collapsible reference snippets and the tutor area (hints, feedback, explanation chat). On the **right** are the editor on top and test results/output below. A top bar shows the round, the piece name and the **ownership %** as a bar with a number, always visible. On narrow screens the columns stack.
-- **Store:** like Sketchfab, a clean, image-led showcase. A grid of large picture cards with the asset name, type (model / animation / world) and price, plus a simple header with Cart, Profile and Log in/out. Light theme.
-- **Interface copy:** short, encouraging and plain. For example: "Your code is running the login now."
+- **Idea:** a notebook you learn in. A mentor writes handwritten notes in the margin, you highlight what matters, and every surface feels like paper you can press.
+- **Type:** *Bricolage Grotesque* for headlines, *Figtree* for body text (with real italics), *Caveat* handwriting for the tutor's voice and small notes, *JetBrains Mono* for code. Loaded from Google Fonts.
+- **Color and shape:** cobalt accent plus a yellow highlighter on dot-grid paper. Cards and panels have 2px ink borders and a hard offset shadow; buttons are pills that press down when clicked. Icons come from Phosphor (CDN).
+- **Themes:** **Paper** (light), **Night** (dark) and **Chalkboard** (green board, headings in chalk-style handwriting). The switch is in the header. The tutor follows the system setting until a theme is picked, and remembers the choice in the browser.
+- **Motion:** headlines rise in, the highlighter draws itself, criteria tick green, the ownership number bumps, confetti bursts from Submit when a function passes. All of it is off under reduced motion.
+- **Home:** hero, "three moves" (run it, rebuild one piece, watch it still work), and a catalog: Polyvault plus *coming soon* cards (Recipe Box, Habit Tracker, Pixel Pong, Your own idea).
+- **Workspace:** two columns like Programiz. Left: *Your task* and *Read first* tabs. Right: editor, toolbar, results. A draggable **Tutor** button opens the tutor window.
+- **Store:** Polyvault keeps its own look (a clean, image-led showcase like Sketchfab), in Manrope, with a dark mode that follows the system.
+- **Copy:** short, warm and plain. No em dashes anywhere, including AI replies (the server swaps them out).
 
 ## Components
 

@@ -43,7 +43,7 @@ function setMode(newMode) {
   $("chat-input").placeholder = newMode === "check"
     ? "Answer in your own words…"
     : "Ask about a library, a method, or a concept…";
-  if (newMode === "check") addMessage(`All tests pass. One question: <strong>${escapeHtml(check.question)}</strong>`);
+  if (newMode === "check") addMessage(`Nice, it works! One quick question: <strong>${escapeHtml(check.question)}</strong>`);
 }
 
 function addMessage(html, cls = "tutor-msg") {
@@ -229,8 +229,8 @@ function showResults(results, passed) {
   const failing = mine.length ? mine : all;
   $("results").innerHTML =
     `<p class="summary ${passed ? "pass" : "fail"}">${passed
-      ? "All tests pass. Your function is running in the store now."
-      : "Not yet. What failed:"}</p>` +
+      ? `<i class="ph-bold ph-confetti" aria-hidden="true"></i> It works! Your function is running inside the store now.`
+      : `<i class="ph-bold ph-wrench" aria-hidden="true"></i> Not quite yet. Here's what to look at:`}</p>` +
     `<ul class="tests">${failing.map(r => `<li class="fail">
         <span class="mark">✗</span><span>${escapeHtml(criteriaText[r.name] || r.name.replace(/^test_/, "").replaceAll("_", " "))}</span>
         ${r.message ? `<pre>${escapeHtml(r.message)}</pre>` : ""}</li>`).join("")}</ul>`;
@@ -280,6 +280,7 @@ $("submit").onclick = async () => {
   setOwnership(res.ownership);
   if (res.passed) {
     allDone = res.all_done;
+    celebrate();
     afterPass();
     setMode("check");
     openTutor();
@@ -290,9 +291,31 @@ $("hint").onclick = () => getHint(false);
 
 $("run").onclick = () => runProject($("run-status"));
 
+let shownPct = null;
+
 function setOwnership(pct) {
-  $("own-pct").textContent = pct + "%";
+  const el = $("own-pct");
+  el.textContent = pct + "%";
   $("own-fill").style.width = pct + "%";
+  if (shownPct !== null && pct > shownPct) {  // a little bump when more of the project becomes theirs
+    el.classList.remove("bump");
+    void el.offsetWidth;
+    el.classList.add("bump");
+  }
+  shownPct = pct;
+}
+
+// Confetti from the Submit button when a function passes, in the current theme's colors.
+function celebrate() {
+  if (!window.confetti) return;
+  const css = getComputedStyle(document.documentElement);
+  const colors = ["--accent", "--marker", "--pass"].map(v => css.getPropertyValue(v).trim());
+  const r = $("submit").getBoundingClientRect();
+  confetti({
+    particleCount: 90, spread: 75, startVelocity: 38, ticks: 160, scalar: .9, colors,
+    origin: { x: (r.left + r.width / 2) / innerWidth, y: r.top / innerHeight },
+    disableForReducedMotion: true,
+  });
 }
 
 (async () => {

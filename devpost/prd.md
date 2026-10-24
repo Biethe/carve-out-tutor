@@ -41,15 +41,16 @@ The proof is complete when two pieces are the learner's, the store still works e
 Keep it to one main idea per screen so the learner never gets lost.
 
 ## Look and Feel
-- **Overall:** Light colors and generous spacing. Simple, very smooth and easy to navigate, with not too many things on a page at once. A few subtle effects, but not many.
-- **Tutor app:** Calm, clear and learning-focused, like GeeksforGeeks.
-- **Editor:** Like Programiz's online Python editor, with code on one side and output on the other. *(Assumption: "programs" meant Programiz. Confirm.)*
+- **Overall:** Fun to use, original and eye-catching, but still simple: one main idea per screen. Writing feels human, with mixed fonts, italics, bold and different sizes (reworked in the final review; see `spec.md > Look and Feel`).
+- **Themes:** Light, dark and an extra Chalkboard mode.
+- **Tutor app:** A notebook you learn in, with the tutor writing in handwriting.
+- **Editor:** Like Programiz's online Python editor, with code on one side and output on the other.
 - **3D asset store:** Like Sketchfab: clean, image-led asset browsing in a showcase style.
 
 ## Features and Behavior
 
 ### Project Catalog
-- The catalog shows the 3D asset store as the one available project, and "Bring your own idea" as a visible feature that is clearly marked coming soon and can't be clicked.
+- The catalog says what it is ("Projects you can learn from") and shows the 3D asset store as the one available project. Upcoming projects (Recipe Box, Habit Tracker, Pixel Pong) and "Your own idea" are visible but clearly marked coming soon and can't be opened.
   - [ ] The catalog shows one project card that can be opened and one "coming soon" card.
   - [ ] Opening the project card shows its description, **Run project** and **Start learning**.
 

@@ -3,18 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Workspace — Carve-Out Tutor</title>
+  <title>Workspace | Carve-Out Tutor</title>
+  <script src="/static/theme.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="workspace-body">
   <header class="top">
-    <a class="brand" href="/">Carve-Out Tutor</a>
+    <a class="brand" href="/"><span class="brand-word">Carve-Out</span><span class="brand-hand">tutor</span></a>
     <span class="round" id="round"></span>
+    <span class="top-spacer"></span>
     <div class="ownership" title="Share of the project's lines of code you wrote">
-      <span>Your code</span>
+      <span class="label">your code</span>
       <div class="bar"><div class="fill" id="own-fill"></div></div>
       <strong id="own-pct">0%</strong>
+    </div>
+    <div class="theme-switch" role="radiogroup" aria-label="Theme">
+      <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
+      <button role="radio" data-theme-choice="night" title="Night" aria-label="Night theme"><i class="ph-bold ph-moon-stars" aria-hidden="true"></i></button>
+      <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
     </div>
   </header>
   <main class="workspace">
@@ -28,14 +36,14 @@
           <p class="step-label" id="step-label"></p>
           <h1><code id="fn-signature"></code></h1>
           <p id="fn-description"></p>
-          <h2>To pass, it must</h2>
+          <h2>To pass, it must...</h2>
           <ul class="criteria" id="criteria"></ul>
-          <p class="muted small">Write just this function in the editor. Imports go right above it.</p>
+          <p class="muted small">Write <em>just this function</em> in the editor. Imports go right above it.</p>
         </div>
         <div id="tab-read" role="tabpanel" hidden>
           <h2>Where it's used</h2>
           <ul id="task-calls"></ul>
-          <h2>What breaks if it's wrong</h2>
+          <h2>If it's wrong...</h2>
           <p id="task-breaks"></p>
           <h2>Code to read</h2>
           <div id="task-refs"></div>
@@ -45,27 +53,27 @@
     <section class="right">
       <div class="editor-wrap"><textarea id="editor" spellcheck="false"></textarea></div>
       <div class="toolbar">
-        <button class="btn" id="submit">Submit</button>
-        <button class="btn secondary" id="hint">Hint</button>
-        <button class="btn secondary" id="run">Run project</button>
+        <button class="btn" id="submit"><i class="ph-bold ph-check-fat" aria-hidden="true"></i> Submit</button>
+        <button class="btn secondary" id="hint"><i class="ph-bold ph-lightbulb" aria-hidden="true"></i> Hint</button>
+        <button class="btn secondary" id="run"><i class="ph-bold ph-play" aria-hidden="true"></i> Run project</button>
         <button class="btn" id="next" hidden>Next function →</button>
         <span class="save-state" id="save-state"></span>
       </div>
       <p class="status" id="run-status"></p>
       <div class="panel results" id="results">
-        <p class="muted">Write your code, then click <strong>Submit</strong> to run the tests.</p>
+        <p class="empty">Write your function, then hit <strong>Submit</strong>. Each check on the left turns green as you pass it.</p>
       </div>
     </section>
   </main>
   <button class="tutor-fab" id="tutor-fab" title="Drag me anywhere. Click to open the tutor." aria-expanded="false" aria-controls="tutor-win">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+    <i class="ph-bold ph-chat-teardrop-dots" aria-hidden="true"></i>
     <span>Tutor</span>
   </button>
   <section class="tutor-win" id="tutor-win" hidden aria-label="Tutor">
     <header>
       <strong>Tutor</strong>
       <span class="tutor-mode" id="tutor-mode">Hints</span>
-      <button class="close" id="tutor-close" aria-label="Close tutor">×</button>
+      <button class="close" id="tutor-close" aria-label="Close tutor"><i class="ph-bold ph-x" aria-hidden="true"></i></button>
     </header>
     <div class="messages" id="messages"></div>
     <form class="chat" id="chat">
@@ -78,6 +86,7 @@
   </section>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
   <script src="/static/run.js"></script>
   <script src="/static/learn.js"></script>
 </body>

@@ -66,9 +66,9 @@ Build mode: fast
 
 ## Final Review
 
-- [ ] Make the tutor pages more visually attractive. They're smooth but too plain (from the early checkpoint).
-- [ ] A fuller projects/home page, with a richer description of the project. Clarify what "a whole page for the projects" means first.
-- [ ] Home intro also mentions "bring your own idea" (coming soon), not only "start with a project that already works".
+- [ ] Make the tutor pages more visually attractive. They're smooth but too plain (from the early checkpoint). (Redesigned: notebook style, mixed fonts, Paper/Night/Chalkboard themes, motion; waiting for the learner to try it.)
+- [ ] A fuller projects/home page, with a richer description of the project. The learner clarified: a catalog of several projects. (Built with coming-soon cards; waiting for the learner to try it.)
+- [ ] Home intro also mentions "bring your own idea" (coming soon), not only "start with a project that already works". (Built; waiting for the learner to try it.)
 - [ ] Floating tutor: a small draggable button that opens its own scrollable window, replacing the fixed tutor panel. Clicking **Hint** opens it right away. (Built and verified in the browser; waiting for the learner to retry.)
 - [ ] Show only the latest hint, with no log. In the explanation stage, show only the explanation exchange. (Built; waiting for the learner to retry.)
 - [ ] Grading takes earlier explanations into account, and adding detail never lowers the score (the learner got 6/10, then 3/10 after adding more). (Built; waiting for the learner to retry.)
@@ -78,7 +78,7 @@ Build mode: fast
 - [ ] Task panel split into **Your task** and **Read first** tabs.
 - [ ] Ask the tutor about libraries, methods and concepts at any time. The window clears when closed.
 - [ ] Store sign-up so the learner can create users and check they can log in. Each user sees only their own purchases. (Built; waiting for the learner to retry.)
-- [ ] Decide on the catalog of coming-soon projects and the locked "download at 60%" button (cost explained; learner hasn't answered yet).
+- [ ] Decide on the locked "download at 60%" button (cost explained; learner hasn't answered yet). The catalog part is built as coming-soon cards.
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
@@ -106,3 +106,5 @@ Activity mode:
 - Results and after-submit hints focus on the current function's own tests. The build found that a stubbed function also makes the AI's later functions fail (`check_login` calls `hash_password`), which showed confusing failures from other functions.
 - The tutor button defaults to the bottom-left, and its window is anchored on the button's side. In the browser check, the bottom-right default covered the **Hint** and **Next** buttons, and the window grew over the button as replies arrived.
 - The store gained sign-up and per-user purchases, at the learner's request in the final review. This reverses the PRD's one-user decision. The build found that purchases were global, so with several accounts every user would see everyone's purchases and download links. The `purchases` table got a `username` column, with a small upgrade for existing databases.
+- Visual redesign at the learner's request (fun, original, human-like writing, mixed fonts, dark and light mode, no em dashes): notebook style with Bricolage Grotesque, Figtree, Caveat and JetBrains Mono, Phosphor icons, Paper/Night/Chalkboard themes, and motion that respects reduced-motion settings. The home page gained a "three moves" section and a catalog with coming-soon projects. The store got Manrope and a system dark mode. The tutor serves the store's asset pictures at `/store-assets`. PRD and spec Look and Feel were updated. Screenshot checks found that the project card's pictures overflowed their grid (rows sized to the images), the hero illustration overlapped itself, and light text on the highlighter was unreadable in dark themes; all three were fixed.
+- `TUTOR_DATA` can point the tutor at another data folder. While the learner's own tutor was running, test runs that write progress kept clashing with their real `data/` (and twice deleted it). Tests now run in a scratch folder.

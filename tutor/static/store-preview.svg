@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d2a5a"/><stop offset="1" stop-color="#0f0c29"/></linearGradient></defs>
-<rect width="400" height="300" fill="url(#g)"/>
-<rect x="110" y="120" width="40" height="100" fill="#ff4fd8" opacity=".8"/><rect x="160" y="80" width="45" height="140" fill="#4fd8ff" opacity=".8"/><rect x="215" y="105" width="35" height="115" fill="#b04fff" opacity=".8"/><rect x="258" y="140" width="35" height="80" fill="#4fffb0" opacity=".8"/>
-<text x="20" y="276" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#fff" opacity=".85" letter-spacing="2">WORLD · PLACEHOLDER PREVIEW</text>
-</svg>

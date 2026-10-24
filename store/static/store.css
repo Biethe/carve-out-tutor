@@ -1,6 +1,24 @@
-:root { --bg: #f6f7f9; --panel: #fff; --ink: #1c2230; --muted: #6b7385; --line: #e3e6ec; --accent: #1caad9; --accent-dark: #1590b9; }
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&display=swap");
+
+/* Polyvault has its own look (a clean, image-led showcase), separate from the tutor. Light and dark follow the system. */
+:root {
+  --bg: #f4f6f8; --panel: #fdfdfe; --ink: #1c2230; --muted: #5f6779; --line: #e1e5eb; --accent: #1595c4; --accent-dark: #107aa3; --on-accent: #fdfdfe;
+  --soft: #eceff4; --info: #e4f4fb; --error-bg: #fdecec; --error: #b42323;
+  --model-bg: #e1f3fa; --model: #107aa3; --anim-bg: #f1e9fc; --anim: #7444c2; --world-bg: #e5f5ea; --world: #23794a;
+  --shadow: rgba(28, 34, 48, .08);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1218; --panel: #171b23; --ink: #e8ebf1; --muted: #9aa2b3; --line: #262c37; --accent: #3bb7e4; --accent-dark: #5fc6ec; --on-accent: #0b1016;
+    --soft: #20252f; --info: #12303d; --error-bg: #3a1919; --error: #ff9a9a;
+    --model-bg: #12303d; --model: #6fd0f2; --anim-bg: #2a1f42; --anim: #c4a6ff; --world-bg: #163020; --world: #7fe0a6;
+    --shadow: rgba(0, 0, 0, .4);
+    color-scheme: dark;
+  }
+}
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif; }
 a { color: var(--accent-dark); }
 .top { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1; }
 .brand { font-weight: 800; font-size: 20px; color: var(--ink); text-decoration: none; letter-spacing: -0.02em; }
@@ -8,37 +26,38 @@ nav { display: flex; align-items: center; gap: 20px; }
 nav a { color: var(--ink); text-decoration: none; }
 nav a:hover { color: var(--accent-dark); }
 nav form { margin: 0; }
-.badge { background: var(--accent); color: #fff; border-radius: 10px; padding: 0 7px; font-size: 12px; }
+.badge { background: var(--accent); color: var(--on-accent); border-radius: 10px; padding: 0 7px; font-size: 12px; }
 main { max-width: 1200px; margin: 0 auto; padding: 24px 32px 64px; }
-.hero h1 { font-size: 32px; margin: 12px 0 4px; letter-spacing: -0.02em; }
+.hero h1 { font-size: clamp(30px, 4vw, 44px); font-weight: 800; margin: 16px 0 6px; letter-spacing: -0.03em; }
 .hero p { color: var(--muted); margin: 0 0 24px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
-.card { background: var(--panel); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.06); transition: transform .15s, box-shadow .15s; }
-.card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.card { background: var(--panel); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px var(--shadow); transition: transform .2s, box-shadow .2s; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px var(--shadow); }
 .card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
 .card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
 .card h2 { font-size: 16px; margin: 0 0 4px; }
 .buy { display: flex; align-items: center; justify-content: space-between; }
 .buy form { margin: 0; }
 .price { font-weight: 700; }
-.kind { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 4px; background: #eef1f5; color: var(--muted); }
-.kind-model { background: #e6f6fc; color: #1590b9; }
-.kind-animation { background: #f3ecfd; color: #7b4bc9; }
-.kind-world { background: #e9f7ee; color: #2c8a4f; }
-.btn { display: inline-block; background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; transition: background .15s; }
+.kind { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 4px; background: var(--soft); color: var(--muted); }
+.kind-model { background: var(--model-bg); color: var(--model); }
+.kind-animation { background: var(--anim-bg); color: var(--anim); }
+.kind-world { background: var(--world-bg); color: var(--world); }
+.btn { display: inline-block; background: var(--accent); color: var(--on-accent); border: 0; border-radius: 6px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; transition: background .15s; }
 .btn:hover { background: var(--accent-dark); }
+.btn:active { transform: scale(.97); }
 .btn.small { padding: 6px 12px; font-size: 14px; }
 .btn.ghost { background: transparent; color: var(--accent-dark); border: 1px solid var(--accent); }
 .link { background: none; border: 0; color: var(--muted); font: inherit; cursor: pointer; padding: 0; }
 .link:hover { color: var(--ink); text-decoration: underline; }
-.panel { background: var(--panel); border-radius: 10px; padding: 28px 32px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.panel { background: var(--panel); border-radius: 12px; padding: 28px 32px; box-shadow: 0 1px 2px var(--shadow); }
 .panel h1 { margin-top: 0; }
 .narrow { max-width: 380px; margin: 40px auto; display: flex; flex-direction: column; gap: 14px; }
 label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 14px; }
-input { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; }
+input { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
 input:focus { outline: 2px solid var(--accent); border-color: transparent; }
-.message { background: #e6f6fc; border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 4px; }
-.error { background: #fdecec; color: #b42323; padding: 10px 14px; border-radius: 4px; margin: 0; }
+.message { background: var(--info); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 4px; }
+.error { background: var(--error-bg); color: var(--error); padding: 10px 14px; border-radius: 4px; margin: 0; }
 .rows { list-style: none; padding: 0; margin: 0; }
 .rows li { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .rows img { width: 72px; height: 54px; object-fit: cover; border-radius: 6px; }
