@@ -6,7 +6,7 @@ from fastapi import Body, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from tutor import progress, runner
+from tutor import llm, progress, runner
 from tutor.pieces import PIECES, task
 
 PAGES = Path(__file__).parent / "pages"
@@ -104,6 +104,17 @@ def submit(code: str = Body(embed=True)):
         piece["status"] = "passed"
     progress.save(prog)
     return {"results": results, "passed": all_passed, "ownership": progress.ownership(prog)}
+
+
+@app.post("/api/hint")
+def get_hint(code: str = Body(), after_submit: bool = Body(False)):
+    """A hint for the current code. After a failed submit it targets the failing tests."""
+    prog = progress.load()
+    current = prog["current"]
+    if not current:
+        return {"hint": "Start a round first."}
+    results = prog["pieces"][current]["last_results"] if after_submit else None
+    return {"hint": llm.hint(current, code, results)}
 
 
 @app.post("/api/run")

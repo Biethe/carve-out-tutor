@@ -31,11 +31,18 @@
         <h2>Code you'll need to read</h2>
         <div id="task-refs"></div>
       </div>
+      <div class="panel tutor" id="tutor">
+        <h2>Tutor</h2>
+        <div class="messages" id="messages">
+          <p class="msg tutor-msg">Read the task, then give it a go. Stuck? Click <strong>Hint</strong> and I'll nudge you, but I won't give you the answer.</p>
+        </div>
+      </div>
     </section>
     <section class="right">
       <div class="editor-wrap"><textarea id="editor" spellcheck="false"></textarea></div>
       <div class="toolbar">
         <button class="btn" id="submit">Submit</button>
+        <button class="btn secondary" id="hint">Hint</button>
         <button class="btn secondary" id="run">Run project</button>
         <span class="save-state" id="save-state"></span>
       </div>

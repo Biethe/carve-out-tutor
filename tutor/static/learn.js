@@ -20,6 +20,38 @@ if (window.CodeMirror) {
   editor = { getValue: () => ta.value, setValue: v => (ta.value = v), on: (_, fn) => ta.addEventListener("input", fn), setOption() {} };
 }
 
+// Light formatting for tutor replies: `code`, **bold**, line breaks. Everything else is escaped.
+function formatReply(text) {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>");
+}
+
+function addMessage(html, cls = "tutor-msg") {
+  const el = document.createElement("p");
+  el.className = "msg " + cls;
+  el.innerHTML = html;
+  $("messages").appendChild(el);
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  return el;
+}
+
+// Shows "thinking…" while the tutor answers, then replaces it with the reply.
+async function askTutor(url, body) {
+  const pending = addMessage("Thinking…", "tutor-msg thinking");
+  const res = await api("POST", url, body);
+  pending.classList.remove("thinking");
+  return { el: pending, res };
+}
+
+async function getHint(afterSubmit) {
+  $("hint").disabled = true;
+  const { el, res } = await askTutor("/api/hint", { code: editor.getValue(), after_submit: afterSubmit });
+  el.innerHTML = formatReply(res.hint);
+  $("hint").disabled = false;
+}
+
 function setOwnership(pct) {
   $("own-pct").textContent = pct + "%";
   $("own-fill").style.width = pct + "%";
@@ -53,6 +85,7 @@ function showResults(results, passed) {
 function lockIfPassed(status) {
   const locked = status === "passed";
   $("submit").disabled = locked;
+  $("hint").disabled = locked;
   editor.setOption("readOnly", locked);
   if (locked) $("save-state").textContent = "This piece is yours now.";
 }
@@ -79,7 +112,10 @@ $("submit").onclick = async () => {
   showResults(res.results, res.passed);
   setOwnership(res.ownership);
   if (res.passed) lockIfPassed("passed");
+  else getHint(true);
 };
+
+$("hint").onclick = () => getHint(false);
 
 $("run").onclick = () => runProject($("run-status"));
 

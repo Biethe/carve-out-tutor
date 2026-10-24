@@ -19,7 +19,7 @@ Build mode: fast
   Learner check: Open http://localhost:8000, click the store card, click **Run project**. In the new tab, try a wrong password, then log in as `learner` / `carve123`, add two assets, remove one, check out, and open your profile. Say whether the store looks and feels like the showcase you pictured.
   Commit: `Add 3D asset store and launch it from the tutor`
 
-- [ ] **2. You can do round 1: rebuild authentication, pass the tests, and see your code running the store**
+- [x] **2. You can do round 1: rebuild authentication, pass the tests, and see your code running the store**
   Becomes usable: **Start learning** opens the workspace: the task (inputs/outputs, call sites, what breaks, live reference code), a CodeMirror editor with the `auth` stub, autosave, **Submit** with per-test ✓/✗, and on pass your code becomes the store's login and the ownership % goes up. **Run project** now runs your `auth.py`. No AI yet.
   Why now: This is the unique kernel: carve, focused task, test, swap in, still working. It comes before the AI so the core loop is proven on its own, and the AI later only adds coaching on top.
   PRD ref: `prd.md > The Core Journey` (steps 4-7, 9), `prd.md > Carving a Piece`, `prd.md > Focused Task`, `prd.md > Tests and Swap-In`, `prd.md > Ownership Percentage`, `prd.md > Saved Progress`, `prd.md > States and Boundaries`
@@ -61,11 +61,14 @@ Build mode: fast
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 2: you rebuild authentication yourself and run the store with your code, so feedback on the workspace can shape the AI slices
+- [x] Early usable behavior explored — after slice 2: you rebuild authentication yourself and run the store with your code, so feedback on the workspace can shape the AI slices. Feedback: smooth and comfortable, but the design is too basic; no hints yet was expected (slices 3-4). Design items moved to Final Review at the learner's request.
 - [ ] Final kick-the-tires exploration and feedback completed
 
 ## Final Review
 
+- [ ] Make the tutor pages more visually attractive. They're smooth but too plain (from the early checkpoint).
+- [ ] A fuller projects/home page, with a richer description of the project. Clarify what "a whole page for the projects" means first.
+- [ ] Home intro also mentions "bring your own idea" (coming soon), not only "start with a project that already works".
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
@@ -81,3 +84,9 @@ Reflection:
 Activity mode:
 
 ## Revisions
+
+- Store database is created and seeded by the store itself on startup (`store/db.py > init`), not by the tutor — the store needs its tables whenever it starts, so this is simpler with the same result.
+- The tutor stops the store in its FastAPI shutdown hook, not with `atexit` — the build found uvicorn re-raises the stop signal, which skips `atexit` and left the store running after the tutor quit.
+- The practice store got a display name, "Polyvault" — the PRD only called it "the 3D asset store"; easy to rename.
+- Hint rules made stricter (one function, next step only, no calls with arguments) and `reasoning_effort="low"` added. Live testing with `openai/gpt-oss-120b` showed the first prompt handed over nearly the whole solution (`hashlib.sha256(...).hexdigest()` plus all three functions), and the free tier's 8K tokens/minute needs short replies.
+- The tutor also reads the API key from a git-ignored `.env` file, not only an exported variable, so the key survives new terminals.
