@@ -9,7 +9,7 @@ Build mode: fast
 
 ## Slices
 
-- [ ] **1. You can open the tutor, pick the 3D asset store, and run the finished store in a new tab**
+- [x] **1. You can open the tutor, pick the 3D asset store, and run the finished store in a new tab**
   Becomes usable: `localhost:8000` shows the catalog (store card + disabled "Bring your own idea — coming soon"), the project page, and **Run project**, which opens the complete store on `localhost:8001`: log in, browse, cart, fake checkout, download link, profile.
   Why now: Everything else carves pieces out of this store, so it has to exist and work first. It also proves the riskiest plumbing early: the tutor copying the store into `.run/` and starting/stopping a second server.
   PRD ref: `prd.md > The Core Journey` (steps 1-3), `prd.md > Project Catalog`, `prd.md > Running the Project`, `prd.md > The 3D Asset Store`, `prd.md > States and Boundaries` (wrong login, empty cart)

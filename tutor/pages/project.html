@@ -20,13 +20,17 @@
     <p class="hint-text">Try the finished store first. It opens in a new tab.</p>
     <div class="actions">
       <button class="btn secondary" id="run">Run project</button>
-      <a class="btn" id="learn" href="/learn">Start learning</a>
+      <button class="btn" id="learn">Start learning</button>
     </div>
     <p class="status" id="run-status"></p>
   </main>
   <script src="/static/run.js"></script>
   <script>
     document.getElementById("run").onclick = () => runProject(document.getElementById("run-status"));
+    document.getElementById("learn").onclick = async () => {
+      await fetch("/api/round/start", { method: "POST" });
+      location.href = "/learn";
+    };
   </script>
 </body>
 </html>

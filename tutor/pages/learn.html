@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workspace — Carve-Out Tutor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="workspace-body">
+  <header class="top">
+    <a class="brand" href="/">Carve-Out Tutor</a>
+    <span class="round" id="round"></span>
+    <div class="ownership" title="Share of the project's lines of code you wrote">
+      <span>Your code</span>
+      <div class="bar"><div class="fill" id="own-fill"></div></div>
+      <strong id="own-pct">0%</strong>
+    </div>
+  </header>
+  <main class="workspace">
+    <section class="left">
+      <div class="panel" id="task">
+        <h1 id="task-title"></h1>
+        <p class="muted" id="task-summary"></p>
+        <h2>What to write <span class="file" id="task-file"></span></h2>
+        <ul class="functions" id="task-functions"></ul>
+        <h2>Where it's used</h2>
+        <ul id="task-calls"></ul>
+        <h2>What breaks if it's wrong</h2>
+        <p id="task-breaks"></p>
+        <h2>Code you'll need to read</h2>
+        <div id="task-refs"></div>
+      </div>
+    </section>
+    <section class="right">
+      <div class="editor-wrap"><textarea id="editor" spellcheck="false"></textarea></div>
+      <div class="toolbar">
+        <button class="btn" id="submit">Submit</button>
+        <button class="btn secondary" id="run">Run project</button>
+        <span class="save-state" id="save-state"></span>
+      </div>
+      <p class="status" id="run-status"></p>
+      <div class="panel results" id="results">
+        <p class="muted">Write your code, then click <strong>Submit</strong> to run the tests.</p>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="/static/run.js"></script>
+  <script src="/static/learn.js"></script>
+</body>
+</html>

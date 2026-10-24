@@ -1,12 +1,16 @@
-"""Assembles and (re)starts the store as a second server."""
+"""Runs a piece's tests on the learner's code, and assembles and (re)starts the store."""
 import os
 import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
+import xml.etree.ElementTree as ET
 from pathlib import Path
+
+from tutor.pieces import PIECES
 
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
@@ -15,6 +19,41 @@ STORE_PORT = 8001
 STORE_URL = f"http://localhost:{STORE_PORT}"
 
 _store_proc: subprocess.Popen | None = None
+TEST_TIMEOUT = 15
+
+
+def run_tests(piece: str, code: str) -> list[dict]:
+    """Run the piece's tests against the learner's code in a separate process. Returns [{name, passed, message}]."""
+    p = PIECES[piece]
+    with tempfile.TemporaryDirectory() as tmp:
+        Path(tmp, p["file"]).write_text(code)
+        report = Path(tmp, "report.xml")
+        cmd = [sys.executable, "-m", "pytest", str(ROOT / p["test"]), f"--junitxml={report}", "-q", "-p", "no:cacheprovider"]
+        try:
+            # The temp folder comes first on PYTHONPATH, so the tests import the learner's file.
+            out = subprocess.run(cmd, cwd=tmp, env={**os.environ, "PYTHONPATH": tmp},
+                                 capture_output=True, text=True, timeout=TEST_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            return [{"name": "time limit", "passed": False,
+                     "message": f"Your code ran for more than {TEST_TIMEOUT} seconds. Is there a loop that never ends?"}]
+        cases = ET.parse(report).getroot().iter("testcase") if report.exists() else []
+        results = []
+        for case in cases:
+            failure, error = case.find("failure"), case.find("error")
+            if failure is not None:
+                message = _short(failure.get("message") or "")
+            elif error is not None:
+                # Errors like a SyntaxError or bad import: the useful part is the end of the traceback.
+                message = _short((error.text or error.get("message") or "").replace(tmp + "/", ""), lines=5, last=True)
+            else:
+                message = None
+            results.append({"name": case.get("name"), "passed": message is None, "message": message})
+        return results or [{"name": "running the tests", "passed": False, "message": _short(out.stdout + out.stderr)}]
+
+
+def _short(text: str, lines: int = 12, last: bool = False) -> str:
+    text_lines = text.strip().splitlines() or ["(no message)"]
+    return "\n".join(text_lines[-lines:] if last else text_lines[:lines])
 
 
 def _port_in_use(port: int) -> bool:

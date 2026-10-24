@@ -2,11 +2,12 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from tutor import runner
+from tutor import progress, runner
+from tutor.pieces import PIECES, task
 
 PAGES = Path(__file__).parent / "pages"
 
@@ -31,6 +32,80 @@ def project():
     return FileResponse(PAGES / "project.html")
 
 
+@app.get("/learn")
+def learn():
+    return FileResponse(PAGES / "learn.html")
+
+
+@app.get("/api/state")
+def state():
+    prog = progress.load()
+    current = prog["current"]
+    result = {
+        "current": current,
+        "ownership": progress.ownership(prog),
+        "passed": progress.passed(prog),
+        "all_done": len(progress.passed(prog)) == len(PIECES),
+    }
+    if current:
+        piece = prog["pieces"][current]
+        result.update(
+            round=list(PIECES).index(current) + 1,
+            task=task(current),
+            code=piece["draft"] if piece["draft"] is not None else PIECES[current]["stub"],
+            status=piece["status"],
+            last_results=piece["last_results"],
+            check=piece["check"],
+        )
+    return result
+
+
+@app.post("/api/round/start")
+def round_start():
+    """Open the next piece that hasn't passed. Ignored if a round is already open."""
+    prog = progress.load()
+    current = prog["current"]
+    if current and prog["pieces"][current]["status"] != "passed":
+        return state()
+    remaining = [p for p in PIECES if prog["pieces"][p]["status"] != "passed"]
+    if remaining:
+        prog["current"] = remaining[0]
+        prog["pieces"][remaining[0]]["status"] = "in_progress"
+        progress.save(prog)
+    return state()
+
+
+@app.put("/api/code")
+def save_code(code: str = Body(embed=True)):
+    prog = progress.load()
+    piece = prog["pieces"].get(prog["current"])
+    if piece and piece["status"] == "in_progress":
+        piece["draft"] = code
+        progress.save(prog)
+    return {"saved": True}
+
+
+@app.post("/api/submit")
+def submit(code: str = Body(embed=True)):
+    prog = progress.load()
+    current = prog["current"]
+    piece = prog["pieces"].get(current)
+    if not piece or piece["status"] != "in_progress":
+        return {"error": "No open round to submit to."}
+    piece["draft"] = code
+    results = runner.run_tests(current, code)
+    piece["last_results"] = results
+    all_passed = all(r["passed"] for r in results)
+    if all_passed:
+        # Once a piece passes it is the learner's for good: Run project uses this file from now on.
+        learner_dir = progress.DATA / "learner"
+        learner_dir.mkdir(parents=True, exist_ok=True)
+        (learner_dir / PIECES[current]["file"]).write_text(code)
+        piece["status"] = "passed"
+    progress.save(prog)
+    return {"results": results, "passed": all_passed, "ownership": progress.ownership(prog)}
+
+
 @app.post("/api/run")
 def run():
-    return runner.run_store(passed=[])
+    return runner.run_store(passed=progress.passed(progress.load()))
