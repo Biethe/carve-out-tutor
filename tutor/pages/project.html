@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Polyvault — Carve-Out Tutor</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top"><a class="brand" href="/">Carve-Out Tutor</a></header>
+  <main class="page narrow">
+    <a class="back" href="/">← All projects</a>
+    <h1>Polyvault: a 3D asset store</h1>
+    <p class="lead">A small but complete online store, written in Python with FastAPI. Browse 3D models, animations and worlds, add them to a cart, check out (pretend payment) and download what you bought from your profile.</p>
+    <ul class="facts">
+      <li><strong>Inside:</strong> web routes, page templates, a SQLite database, login and a shopping cart.</li>
+      <li><strong>You'll rebuild:</strong> the login logic first, then the cart.</li>
+      <li><strong>Demo login:</strong> <code>learner</code> / <code>carve123</code></li>
+    </ul>
+    <p class="hint-text">Try the finished store first. It opens in a new tab.</p>
+    <div class="actions">
+      <button class="btn secondary" id="run">Run project</button>
+      <a class="btn" id="learn" href="/learn">Start learning</a>
+    </div>
+    <p class="status" id="run-status"></p>
+  </main>
+  <script src="/static/run.js"></script>
+  <script>
+    document.getElementById("run").onclick = () => runProject(document.getElementById("run-status"));
+  </script>
+</body>
+</html>

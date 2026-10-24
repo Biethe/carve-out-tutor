@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carve-Out Tutor PRD</title>
+<style>
+:root{
+  --bg:#f7f5f0;--surface:#ffffff;--ink:#1f2328;--muted:#5d6470;--line:#d9d4c7;
+  --accent:#c2562b;--accent-soft:#f6e3d9;--ok:#2f7d4f;--ok-soft:#dcefe3;--warn:#9a6b00;--warn-soft:#fbf0d2;--bad:#b3261e;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16181c;--surface:#1f2228;--ink:#e8e6e1;--muted:#a0a6b0;--line:#363a42;
+    --accent:#ee8a5d;--accent-soft:#3a2a22;--ok:#6fcf97;--ok-soft:#1f3328;--warn:#e5bb55;--warn-soft:#3a3220;--bad:#f28b82;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16181c;--surface:#1f2228;--ink:#e8e6e1;--muted:#a0a6b0;--line:#363a42;
+  --accent:#ee8a5d;--accent-soft:#3a2a22;--ok:#6fcf97;--ok-soft:#1f3328;--warn:#e5bb55;--warn-soft:#3a3220;--bad:#f28b82;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:32px 16px 64px}
+.badge{display:inline-block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 10px;border-radius:99px;background:var(--warn-soft);color:var(--warn);font-weight:600}
+h1{font-size:2rem;margin:.4em 0 .2em;line-height:1.2}
+.lede{font-size:1.1rem;color:var(--muted);margin:0 0 20px}
+h2{font-size:1.2rem;margin:40px 0 12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.grew{border-left:4px solid var(--accent)}
+.grew p{margin:.3em 0}
+.grew .then{color:var(--muted)}
+.journey{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:720px){.journey{grid-template-columns:1fr}h1{font-size:1.6rem}}
+svg{width:100%;height:auto;display:block}
+.node rect{fill:var(--surface);stroke:var(--line);stroke-width:1.5;transition:all .2s}
+.node text{fill:var(--ink);font-size:14px;font-weight:600;pointer-events:none}
+.node .num{fill:var(--muted);font-size:11px;font-weight:500}
+.node{cursor:pointer}
+.node.active rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
+.node.round rect{stroke-dasharray:4 3}
+.edge{fill:none;stroke:var(--muted);stroke-width:1.5}
+.edge.fail{stroke:var(--bad)}
+.edge.loop{stroke:var(--ok)}
+.lbl{font-size:12px;fill:var(--muted)}
+.lbl.fail{fill:var(--bad)}.lbl.loop{fill:var(--ok)}
+.panel{position:sticky;top:16px}
+.panel h3{margin:0 0 4px;font-size:1.05rem}
+.panel .where{font-size:13px;color:var(--muted);margin-bottom:8px}
+.ctrl{display:flex;gap:8px;margin-top:14px}
+button{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,.node:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.screens{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:720px){.screens{grid-template-columns:1fr 1fr}}
+.screen{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px}
+.screen b{display:block;margin-bottom:4px}
+.screen.main{border-color:var(--accent)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+summary{cursor:pointer;padding:14px 18px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted)}
+details[open] summary::after{content:"−"}
+.body{padding:0 18px 14px}
+.body p{margin:.2em 0 .6em}
+.crit{list-style:none;padding:0;margin:0}
+.crit li{padding-left:26px;position:relative;margin:4px 0;font-size:15px}
+.crit li::before{content:"";position:absolute;left:0;top:4px;width:14px;height:14px;border:1.5px solid var(--ok);border-radius:4px}
+.tag{font-size:12px;font-weight:500;color:var(--muted)}
+.states{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.states{grid-template-columns:1fr}}
+.state{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:15px}
+.state b{display:block}
+.assume{color:var(--warn);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.q{background:var(--warn-soft);border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:8px}
+.q .when{font-size:12px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.05em}
+ul.plain{margin:0;padding-left:20px}
+</style>
+</head>
+<body>
+<main>
+  <span class="badge">PRD · approved</span>
+  <h1>Carve-Out Tutor <span style="color:var(--muted);font-weight:400;font-size:.6em">(working title)</span></h1>
+  <p class="lede">Run a finished 3D asset store, then rebuild two pieces of it with a tutor that hints but never answers. Your lines of code end up running inside the working store.</p>
+
+  <div class="card grew">
+    <p class="then"><b>Scope said:</b> "The tutor carves out one piece… the learner writes code… the tutor asks a question."</p>
+    <p><b>Now we know:</b> the piece is <em>authentication</em>, then <em>cart behavior</em>, in a 3D asset store. Hints show up whenever you ask and after failed tests. Weak explanations get two hints before the tutor explains. The ownership score counts lines of code.</p>
+  </div>
+
+  <h2>The core journey</h2>
+  <p style="color:var(--muted);margin-top:0">Click a step, or use the buttons. Red shows a failed test, which loops back to work. Green shows round 2, which loops back to a new task.</p>
+  <div class="journey">
+    <div class="card"><svg id="flow" viewBox="0 0 600 640" role="img" aria-label="Journey diagram: ten steps from catalog to round 2, with a fail loop from Submit back to Work and a round-2 loop from See it working back to Task"></svg></div>
+    <div class="card panel" aria-live="polite">
+      <h3 id="st"></h3><div class="where" id="sw"></div><div id="sd"></div>
+      <div class="ctrl"><button id="prev" aria-label="Previous step">← Back</button><button id="next" aria-label="Next step">Next →</button></div>
+    </div>
+  </div>
+
+  <h2>Screens</h2>
+  <div class="screens">
+    <div class="screen"><b>1 · Home / catalog</b>Short intro, one project card, and a "Bring your own idea" card marked coming soon.</div>
+    <div class="screen"><b>2 · Project page</b>Description of the store, plus Run project and Start learning.</div>
+    <div class="screen main"><b>3 · Learning workspace</b>Task and references on one side, editor with output and tests on the other. Hint, Submit and Run buttons, the tutor area, and the ownership %.</div>
+    <div class="screen"><b>4 · 3D asset store</b>Opens in a separate tab: log-in, browsing, cart, fake checkout, download link and profile.</div>
+  </div>
+
+  <h2>Look and feel</h2>
+  <div class="card">
+    <ul class="plain">
+      <li><b>Overall:</b> light colors and generous spacing. Simple and very smooth, with a few subtle effects and not too much on any one page.</li>
+      <li><b>Tutor app:</b> calm and learning-focused, like GeeksforGeeks.</li>
+      <li><b>Editor:</b> like Programiz, with code on one side and output on the other. <span class="assume">Assumption, please confirm</span></li>
+      <li><b>Store:</b> clean, image-led asset browsing, like Sketchfab.</li>
+    </ul>
+  </div>
+
+  <h2>Features &amp; acceptance criteria</h2>
+  <div id="features"></div>
+
+  <h2>States &amp; edge cases</h2>
+  <div class="states">
+    <div class="state"><b>First open</b>The catalog appears, and the ownership score is 0%.</div>
+    <div class="state"><b>Piece carved out</b>Run project keeps using the AI's version until the learner's code passes, so the store never breaks.</div>
+    <div class="state"><b>Piece passed</b>It's the learner's code for good and never reverts. If it causes a bug later, they come back and fix it.</div>
+    <div class="state"><b>Close and come back</b>Nothing starts fresh. Finished pieces, the %, the current round and in-progress code are all restored.</div>
+    <div class="state"><b>Empty or broken code submitted</b>The tests fail and show the error, a hint is offered, and nothing is swapped in.</div>
+    <div class="state"><b>Wrong store log-in</b>An error message appears and the visitor stays logged out.</div>
+    <div class="state"><b>Empty cart</b>The cart says it's empty, and checkout isn't available.</div>
+    <div class="state"><b>After round 2</b>Both pieces are the learner's, the store works end to end, and the score shows the final share.</div>
+  </div>
+
+  <h2>What's in, what's not</h2>
+  <details open><summary>Building now</summary><div class="body"><ul class="plain">
+    <li><b>Tutor screens:</b> catalog (one project plus coming soon), project page, and learning workspace.</li>
+    <li><b>The store:</b> log-in, browsing, cart, fake checkout, on-page download link and profile, opened in its own tab.</li>
+    <li><b>The carve loop:</b> carving, focused task, hints, tests and swap-in, and the understanding check with retries.</li>
+    <li><b>Two rounds:</b> authentication, then cart behavior. Ownership score always visible.</li>
+  </ul></div></details>
+  <details><summary>Deferred from the POC</summary><div class="body"><ul class="plain">
+    <li><b>Download links by email:</b> needs a mail service and credentials. The on-page link proves the flow.</li>
+    <li><b>Real payments:</b> need a payment provider and don't help prove the learning.</li>
+    <li><b>Sign-ups and multiple users:</b> it's a one-user showcase.</li>
+    <li><b>Real 3D files and viewers:</b> pictures are enough.</li>
+    <li><b>A working "Bring your own idea":</b> needs live project generation, so it's shown but disabled.</li>
+  </ul></div></details>
+  <details><summary>Possible later</summary><div class="body"><ul class="plain">
+    <li><b>A bigger catalog:</b> about ten project types.</li>
+    <li><b>Bring your own idea, for real:</b> a Devpost-style interview, then AI-built projects.</li>
+    <li><b>Many more rounds:</b> until 40% or more, and eventually the core, is yours.</li>
+    <li><b>More:</b> games, mobile apps, other languages and a terminal. Accounts and saved progress for learners worldwide.</li>
+  </ul></div></details>
+  <details><summary>Non-goals</summary><div class="body"><ul class="plain">
+    <li><b>Detecting outside AI tools:</b> can't be enforced. The understanding check does that job.</li>
+    <li><b>Worldwide deployment:</b> not needed to prove the loop.</li>
+    <li><b>A full IDE:</b> no terminal and no editing outside the carved piece.</li>
+    <li><b>Live generation:</b> the store is prepared ahead of time.</li>
+    <li><b>Reverting a passed piece:</b> once it passes, it stays the learner's.</li>
+  </ul></div></details>
+
+  <h2>Open questions</h2>
+  <div class="q"><div class="when">Can wait</div><b>Round pieces:</b> authentication, then cart behavior, may change.</div>
+  <div class="q"><div class="when">Can wait</div><b>Editor reference:</b> confirm "programs" means Programiz. Is there a real name to replace "Carve-Out Tutor"?</div>
+</main>
+<script>
+const steps=[
+ ["Catalog","Home / catalog","One project (the 3D asset store) and a \"Bring your own idea\" card marked coming soon. The ownership score is 0%."],
+ ["Project page","Project page","A description of the store and what it does, with Run project and Start learning."],
+ ["Run it first","Store tab","The finished store opens in a new tab. Log in, browse, use the cart and check out, without seeing any code."],
+ ["Start round 1","Learning workspace","The tutor carves out authentication. It's stubbed in the editor, and the rest of the project is untouched."],
+ ["Focused task","Learning workspace","Inputs and outputs, where it's called, what breaks if it's wrong, and only the related files and code."],
+ ["Work + Hint","Learning workspace","Write code. Click Hint anytime for a nudge that never includes the answer."],
+ ["Submit","Learning workspace","The tests run. If they fail, you see what failed plus a hint about the most important thing you missed, then go back to Work. If they pass, your code swaps in and the score goes up."],
+ ["Explain it","Tutor area","Explain what you built and ask the tutor questions. You get a score, feedback and extras for similar work later. A weak explanation gets a hint and a retry, up to two times, and then the tutor explains it precisely. The round counts either way."],
+ ["See it working","Store tab","Run the store again. It works the same, but authentication is now your code."],
+ ["Round 2: cart","Learning workspace","The tutor keeps your authentication code and carves out cart behavior. Repeat steps 5–9, and the score rises again."]
+];
+const svg=document.getElementById('flow'),NS='http://www.w3.org/2000/svg';
+const el=(t,a,p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const defs=el('defs',{});
+[['a','var(--muted)'],['af','var(--bad)'],['al','var(--ok)']].forEach(([id,c])=>{const m=el('marker',{id,viewBox:'0 0 10 10',refX:'9',refY:'5',markerWidth:'7',markerHeight:'7',orient:'auto-start-reverse'},defs);el('path',{d:'M0,0 L10,5 L0,10 z',fill:c},m)});
+const X=170,W=260,H=44,Y=i=>20+i*62;
+for(let i=0;i<steps.length-1;i++)el('path',{class:'edge',d:`M300,${Y(i)+H} L300,${Y(i+1)-2}`,'marker-end':'url(#a)'});
+// fail loop: Submit -> Work (right side)
+el('path',{class:'edge fail',d:`M${X+W},${Y(6)+22} L${X+W+60},${Y(6)+22} L${X+W+60},${Y(5)+22} L${X+W+3},${Y(5)+22}`,'marker-end':'url(#af)'});
+el('text',{class:'lbl fail',x:X+W+66,y:Y(6)-6},svg).textContent='tests fail';
+el('text',{class:'lbl fail',x:X+W+66,y:Y(6)+8},svg).textContent='→ hint';
+// round 2 loop: Round 2 -> Focused task (left side)
+el('path',{class:'edge loop',d:`M${X},${Y(9)+22} L${X-70},${Y(9)+22} L${X-70},${Y(4)+22} L${X-3},${Y(4)+22}`,'marker-end':'url(#al)'});
+el('text',{class:'lbl loop',x:X-76,y:Y(7)+16,'text-anchor':'end'},svg).textContent='next';
+el('text',{class:'lbl loop',x:X-76,y:Y(7)+30,'text-anchor':'end'},svg).textContent='piece';
+const nodes=steps.map(([t],i)=>{const g=el('g',{class:'node'+(i===3||i===9?' round':''),tabindex:'0',role:'button','aria-label':`Step ${i+1}: ${t}`});
+ el('rect',{x:X,y:Y(i),width:W,height:H,rx:10},g);
+ el('text',{class:'num',x:X+14,y:Y(i)+27},g).textContent=i+1;
+ el('text',{x:X+40,y:Y(i)+28},g).textContent=t;
+ g.addEventListener('click',()=>show(i));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(i)}});return g});
+let cur=0;
+function show(i){cur=(i+steps.length)%steps.length;nodes.forEach((n,j)=>n.classList.toggle('active',j===cur));
+ st.textContent=`${cur+1}. ${steps[cur][0]}`;sw.textContent=steps[cur][1];sd.textContent=steps[cur][2]}
+prev.onclick=()=>show(cur-1);next.onclick=()=>show(cur+1);show(0);
+
+const features=[
+ ["Project Catalog","","The store is the one available project. \"Bring your own idea\" is visible, marked coming soon and can't be clicked.",
+  ["The catalog shows one project card that opens and one coming-soon card.","Opening the project card shows its description, Run project and Start learning."]],
+ ["Running the Project","scope › POC Boundary","Run project opens the store in a separate tab, running the current code: the AI's original, plus any pieces the learner has completed.",
+  ["Before any rounds, the store works fully in a new tab.","After each completed round, the store still works, and the learner's piece is the one running."]],
+ ["The 3D Asset Store","practice project","A one-user showcase. Log in with the single account (wrong credentials show an error). Browse pictures of models, animations and worlds. Add and remove items in the cart and see the total. Check out with a fake payment. A download link appears, and the profile lists everything bought.",
+  ["A visitor who isn't logged in can't check out. Correct credentials log in, and wrong ones show an error.","Adding and removing items updates the cart's contents and total correctly.","After a fake checkout, a download link appears and the purchase shows on the profile."]],
+ ["Carving a Piece","scope › Core Loop","Round 1 carves out authentication, and round 2 carves out cart behavior (may still change). The piece is removed from the editor view, leaving a clearly marked spot.",
+  ["After carving, that piece is empty or stubbed in the editor, and the rest of the project is untouched."]],
+ ["Focused Task","","Inputs and outputs, where it's called, what breaks in the store if it's wrong, and only the related files and snippets, never the whole project.",
+  ["The task panel shows inputs, outputs, call sites, consequences and only the relevant references."]],
+ ["Hints","","Available anytime while coding. A hint moves you toward this piece's goal and never gives the exact answer. After failed tests, hints focus on the most important thing you missed.",
+  ["Clicking Hint gives a nudge related to the current piece, with no complete solution code.","After failed tests, the hint addresses what a failing test is checking."]],
+ ["Tests and Swap-In","","Submit runs the piece's tests and shows the results. On pass, your code becomes the running code and the score updates.",
+  ["Failing code shows which tests failed plus a hint, and the round stays open.","Passing code shows all tests passed, your code is what runs, and the % goes up."]],
+ ["Understanding Check","kernel","After the tests pass: explain what you built and ask questions. You get a score, feedback on what was missing and extra information for later. A weak explanation gets a hint (\"You're missing something related to X…\") and a retry. After two hints, the tutor gives the precise explanation. The round counts once the tests pass.",
+  ["After passing, you're asked to explain and get a score with written feedback.","A weak explanation gets a targeted hint and a retry, up to two hints, and then the tutor gives the full explanation.","A low score never removes your code or lowers the %."]],
+ ["Saved Progress","","Closing and reopening restores everything: completed pieces, the %, the current round and in-progress code.",
+  ["After closing mid-round and reopening, the same round is open with the unfinished code still in the editor.","Completed pieces and the % are unchanged after reopening."]],
+ ["Ownership Percentage","scope › POC Boundary","Always visible. It shows the learner's lines ÷ the project's total lines of code.",
+  ["It starts at 0%, goes up after round 1, and goes up again after round 2."]]
+];
+const fbox=document.getElementById('features');
+features.forEach(([t,src,desc,crit],i)=>{const d=document.createElement('details');if(i===7)d.open=true;
+ d.innerHTML=`<summary><span>${t} ${src?`<span class="tag">· ${src}</span>`:''}</span></summary><div class="body"><p>${desc}</p><ul class="crit">${crit.map(c=>`<li>${c}</li>`).join('')}</ul></div>`;fbox.appendChild(d)});
+</script>
+</body>
+</html>

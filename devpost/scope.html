@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carve-Out Tutor Scope</title>
+<style>
+:root{
+  --bg:#f7f5f0;--surface:#ffffff;--ink:#1f2328;--muted:#5d6470;--line:#d9d4c7;
+  --accent:#c2562b;--accent-soft:#f6e3d9;--ok:#2f7d4f;--ok-soft:#dcefe3;--warn:#9a6b00;--warn-soft:#fbf0d2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16181c;--surface:#1f2228;--ink:#e8e6e1;--muted:#a0a6b0;--line:#363a42;
+    --accent:#ee8a5d;--accent-soft:#3a2a22;--ok:#6fcf97;--ok-soft:#1f3328;--warn:#e5bb55;--warn-soft:#3a3220;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16181c;--surface:#1f2228;--ink:#e8e6e1;--muted:#a0a6b0;--line:#363a42;
+  --accent:#ee8a5d;--accent-soft:#3a2a22;--ok:#6fcf97;--ok-soft:#1f3328;--warn:#e5bb55;--warn-soft:#3a3220;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+.badge{display:inline-block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 10px;border-radius:99px;background:var(--warn-soft);color:var(--warn);font-weight:600}
+h1{font-size:2rem;margin:.4em 0 .2em;line-height:1.2}
+.lede{font-size:1.15rem;color:var(--muted);margin:0 0 28px}
+h2{font-size:1.2rem;margin:40px 0 12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.kernel{border-left:4px solid var(--accent)}
+.kernel p:first-child{font-size:1.1rem;font-weight:600;margin-top:0}
+blockquote{margin:0;padding:12px 16px;border-left:3px solid var(--line);color:var(--muted);font-style:italic}
+svg{width:100%;height:auto;display:block}
+.node rect{fill:var(--surface);stroke:var(--line);stroke-width:1.5;transition:all .2s}
+.node text{fill:var(--ink);font-size:13px;font-weight:600;pointer-events:none}
+.node .num{fill:var(--muted);font-size:11px;font-weight:500}
+.node{cursor:pointer}
+.node.active rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
+.arc{fill:none;stroke:var(--muted);stroke-width:1.5}
+.hub circle{fill:var(--ok-soft);stroke:var(--ok);stroke-width:2}
+.hub text{fill:var(--ink);font-size:14px;font-weight:700}
+.hub .sub{fill:var(--muted);font-size:12px;font-weight:500}
+.stepper{display:flex;gap:12px;align-items:flex-start;margin-top:12px}
+.stepper button{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer}
+.stepper button:hover{border-color:var(--accent)}
+.stepper button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#detail{flex:1;min-height:72px}
+#detail strong{display:block}
+.timeline{list-style:none;padding:0;margin:0;counter-reset:t}
+.timeline li{position:relative;padding:0 0 16px 40px}
+.timeline li::before{counter-increment:t;content:counter(t);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;display:grid;place-items:center}
+.timeline li.payoff::before{background:var(--ok-soft);color:var(--ok)}
+.timeline li.opt{color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+summary{cursor:pointer;padding:14px 18px;font-weight:600;list-style:none;display:flex;justify-content:space-between}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted)}
+details[open] summary::after{content:"−"}
+details ul{margin:0;padding:0 18px 14px 38px}
+.now summary{color:var(--ok)}
+.later summary{color:var(--warn)}
+.cut summary{color:var(--muted)}
+.open-q{background:var(--warn-soft);border:1px solid var(--warn);border-radius:12px;padding:14px 18px}
+.open-q strong{color:var(--warn)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.grid{grid-template-columns:1fr}h1{font-size:1.6rem}}
+</style>
+</head>
+<body>
+<main>
+  <span class="badge">Scope · approved</span>
+  <h1>Carve-Out Tutor <span style="color:var(--muted);font-weight:400;font-size:.6em">(working title)</span></h1>
+  <p class="lede">A browser-based AI tutor that hands you a working Python web project, cuts out one small piece, and coaches you, with hints but never the answer, until your own code replaces it and the page still works.</p>
+
+  <h2>The unique kernel</h2>
+  <div class="card kernel">
+    <p>You learn by rebuilding real pieces of a project that already works, and it keeps working the whole time.</p>
+    <p>The tutor gives you only the context you need. It coaches with hints, swaps in your code once the tests pass, and then checks that you <em>understood</em> it. Each round, a bigger share of the project is yours.</p>
+    <blockquote>Mom does the meal. You peel the tomatoes and measure the flour, and you still get to taste the finished meal within the hour.</blockquote>
+  </div>
+
+  <h2>The core loop</h2>
+  <p style="color:var(--muted);margin-top:0">Click a step or use the buttons to walk through one round.</p>
+  <div class="card">
+    <svg id="loop" viewBox="0 0 600 520" role="img" aria-label="Diagram of the carve-out loop: seven steps in a cycle around the working web page"></svg>
+    <div class="stepper">
+      <button id="prev" aria-label="Previous step">←</button>
+      <div id="detail" aria-live="polite"></div>
+      <button id="next" aria-label="Next step">→</button>
+    </div>
+  </div>
+
+  <h2>Who it's for</h2>
+  <div class="card">Junior developers and beginners who know the basics of programming and want to build things. With coding agents, they could just prompt for a finished app and never learn how it works. Today they either let the AI do everything and learn nothing, or grind through tutorials that are cut off from anything they actually want to make.</div>
+
+  <h2>What "working" looks like: the one-minute demo</h2>
+  <div class="card">
+    <ol class="timeline">
+      <li><strong>Opening (~5 s):</strong> a short intro to the project.</li>
+      <li><strong>The page:</strong> the working Python web page appears. It was prepared ahead of time.</li>
+      <li><strong>The carve-out:</strong> the tutor cuts out a piece and hands over a focused task.</li>
+      <li><strong>The learning:</strong> try, get stuck, get hints, try again, pass the tests, answer the comprehension question.</li>
+      <li class="payoff"><strong>The payoff:</strong> the page runs again, now with the learner's code inside it, written without the AI handing over the answer. The ownership score goes up.</li>
+      <li class="payoff"><strong>Round two:</strong> a different piece, and the score goes up again. That's the proof they're learning.</li>
+    </ol>
+  </div>
+
+  <h2>Boundary</h2>
+  <details class="now" open>
+    <summary>Now: in the proof of concept</summary>
+    <ul>
+      <li><strong>One project:</strong> a single small Python web page, prepared ahead of time.</li>
+      <li><strong>One page in the browser:</strong> the task panel, a code editor, a way to run tests, and a preview of the running web page.</li>
+      <li><strong>The carve loop:</strong> cut out a piece, show the focused context, give hints without answers, run tests, swap in the learner's code, run the page again, then ask the comprehension question and give graded feedback.</li>
+      <li><strong>Rounds:</strong> two complete rounds, each on a different piece.</li>
+      <li><strong>Ownership score:</strong> the percentage of the project's lines of code that the learner wrote, always visible and rising as they contribute.</li>
+      <li><strong>Opening:</strong> a short intro in front of the prepared page. No live generation.</li>
+      <li><strong>"Bring your own idea":</strong> shown as a feature of the product but not working in the PoC and not explored in the demo.</li>
+    </ul>
+  </details>
+  <details class="later">
+    <summary>Later: worth doing, not now</summary>
+    <ul>
+      <li><strong>Full interview:</strong> a full Devpost-style interview (scope, PRD, spec) before the AI builds anything.</li>
+      <li><strong>Project catalog:</strong> about ten different kinds of web pages or websites to choose from.</li>
+      <li><strong>Bring your own idea, for real:</strong> the AI generates a working project from the learner's idea, then carves it.</li>
+      <li><strong>More project types:</strong> games, mobile apps (shown in a phone-sized preview), multi-page apps, and other languages.</li>
+      <li><strong>In-browser terminal:</strong> for running arbitrary commands.</li>
+      <li><strong>Many rounds:</strong> keep going until 40% of the project is yours, and eventually the whole core.</li>
+      <li><strong>Users everywhere:</strong> accounts and saved progress across sessions.</li>
+    </ul>
+  </details>
+  <details class="cut">
+    <summary>Explicitly cut</summary>
+    <ul>
+      <li><strong>Detecting or blocking outside AI tools:</strong> the learner shouldn't paste solutions from other AI tools, but the app can't reliably enforce that. The comprehension check is the PoC's answer.</li>
+      <li><strong>Deployment for users worldwide:</strong> optional for the hackathon and not needed to prove the loop.</li>
+    </ul>
+  </details>
+
+  <h2>Identity &amp; why it matters</h2>
+  <div class="grid">
+    <div class="card"><strong>Feel</strong><br>Focused and never overwhelming. One small piece at a time, everything on one page. Inspired by learning to cook through small, real steps, and by the Devpost flipped-interaction skills.</div>
+    <div class="card"><strong>For the learner</strong><br>"How can I keep what AI offers us, quick implementations, while still learning?" They want to become an AI engineer who can implement things, understand how code fits into a real product, and learn about agents along the way.</div>
+  </div>
+</main>
+<script>
+const steps=[
+  ["Carve","The tutor shows the working page, then cuts out one piece of its code."],
+  ["Focused task","What the piece takes in and returns, where it's used, what breaks if it's wrong, and only the code around it that's needed."],
+  ["Try & get stuck","The learner writes code in the in-browser editor, runs the tests, and gets stuck along the way."],
+  ["Hints","The tutor nudges toward the goal and never gives the exact answer."],
+  ["Tests pass","The learner's code replaces the AI's code, and the page still runs."],
+  ["Understanding check","The tutor asks a question, grades the explanation, fills in what's missing, and connects it to similar future work."],
+  ["Next piece","The learner's piece stays. Next round, the tutor carves out a different one."]
+];
+const svg=document.getElementById('loop'),NS='http://www.w3.org/2000/svg',cx=300,cy=260,R=190;
+const el=(t,a,p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const defs=el('defs',{});const m=el('marker',{id:'ah',viewBox:'0 0 10 10',refX:'8',refY:'5',markerWidth:'7',markerHeight:'7',orient:'auto-start-reverse'},defs);
+el('path',{d:'M0,0 L10,5 L0,10 z',fill:'var(--muted)'},m);
+const ang=i=>(-90+i*360/steps.length)*Math.PI/180,pt=a=>[cx+R*Math.cos(a),cy+R*Math.sin(a)];
+// arc from node to node; arrowhead sits at the midpoint so the boxes don't hide it
+steps.forEach((_,i)=>{const [x1,y1]=pt(ang(i)),[xm,ym]=pt((ang(i)+ang(i+1))/2),[x2,y2]=pt(ang(i+1));
+  el('path',{class:'arc',d:`M${x1},${y1} A${R},${R} 0 0 1 ${xm},${ym}`,'marker-end':'url(#ah)'});
+  el('path',{class:'arc',d:`M${xm},${ym} A${R},${R} 0 0 1 ${x2},${y2}`});});
+const hub=el('g',{class:'hub'});el('circle',{cx,cy,r:78},hub);
+el('text',{x:cx,y:cy-6,'text-anchor':'middle'},hub).textContent='Working Python';
+el('text',{x:cx,y:cy+12,'text-anchor':'middle'},hub).textContent='web page';
+el('text',{x:cx,y:cy+34,'text-anchor':'middle',class:'sub'},hub).textContent='ownership score ↑';
+const nodes=steps.map(([label],i)=>{const [x,y]=pt(ang(i));const g=el('g',{class:'node',tabindex:'0',role:'button','aria-label':`Step ${i+1}: ${label}`});
+  el('rect',{x:x-68,y:y-24,width:136,height:48,rx:10},g);
+  el('text',{x,y:y-4,'text-anchor':'middle',class:'num'},g).textContent='Step '+(i+1);
+  el('text',{x,y:y+13,'text-anchor':'middle'},g).textContent=label;
+  g.addEventListener('click',()=>show(i));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(i)}});return g});
+let cur=0;const detail=document.getElementById('detail');
+function show(i){cur=(i+steps.length)%steps.length;nodes.forEach((n,j)=>n.classList.toggle('active',j===cur));
+  detail.innerHTML=`<strong>${cur+1}. ${steps[cur][0]}</strong>${steps[cur][1]}`}
+document.getElementById('prev').onclick=()=>show(cur-1);document.getElementById('next').onclick=()=>show(cur+1);
+show(0);
+</script>
+</body>
+</html>

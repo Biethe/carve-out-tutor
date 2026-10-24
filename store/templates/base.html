@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Polyvault — 3D asset store{% endblock %}</title>
+  <link rel="stylesheet" href="/static/store.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/">Polyvault</a>
+    <nav>
+      <a href="/">Browse</a>
+      <a href="/cart">Cart{% if cart_count %} <span class="badge">{{ cart_count }}</span>{% endif %}</a>
+      {% if logged_in %}
+        <a href="/profile">Profile</a>
+        <form method="post" action="/logout"><button class="link">Log out</button></form>
+      {% else %}
+        <a class="btn small" href="/login">Log in</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main>
+    {% if message %}<p class="message">{{ message }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Models, animations and worlds</h1>
+  <p>Hand-picked 3D assets, ready for your next game or scene.</p>
+</section>
+<div class="grid">
+  {% for a in assets %}
+  <article class="card">
+    <img src="/static/assets/{{ a.image }}" alt="{{ a.name }} preview">
+    <div class="card-body">
+      <div>
+        <h2>{{ a.name }}</h2>
+        <span class="kind kind-{{ a.kind }}">{{ a.kind }}</span>
+      </div>
+      <div class="buy">
+        <span class="price">${{ "%.2f"|format(a.price) }}</span>
+        {% if a.id in in_cart %}
+          <a class="btn ghost small" href="/cart">In cart</a>
+        {% else %}
+          <form method="post" action="/cart/add/{{ a.id }}"><button class="btn small">Add to cart</button></form>
+        {% endif %}
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

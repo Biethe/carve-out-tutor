@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Profile — Polyvault{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>{{ username }}</h1>
+  <h2 class="sub">Your assets</h2>
+  {% if purchases %}
+    <ul class="rows">
+      {% for p in purchases %}
+      <li>
+        <img src="/static/assets/{{ p.image }}" alt="">
+        <span class="row-name">{{ p.name }} <span class="kind kind-{{ p.kind }}">{{ p.kind }}</span></span>
+        <span class="muted">{{ p.bought_at.replace("T", " ") }}</span>
+        <a class="btn small" href="/download/{{ p.id }}">Download</a>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">Nothing bought yet. <a href="/">Browse assets</a></p>
+  {% endif %}
+</section>
+{% endblock %}
