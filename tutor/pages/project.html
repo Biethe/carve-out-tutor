@@ -31,7 +31,7 @@
       if (s.current) document.getElementById("learn").textContent = s.all_done ? "See your work" : "Continue learning";
     });
     document.getElementById("learn").onclick = async () => {
-      await fetch("/api/round/start", { method: "POST" });
+      await fetch("/api/next", { method: "POST" });
       location.href = "/learn";
     };
   </script>

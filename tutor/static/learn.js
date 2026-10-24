@@ -28,25 +28,36 @@ function formatReply(text) {
     .replace(/\n/g, "<br>");
 }
 
-// The tutor window shows one thing at a time: in "hint" mode only the latest hint,
-// in "check" mode the explanation exchange (and Ask answers) for this piece.
-let mode = null;
+// ---- Tutor window --------------------------------------------------------------
+// "hint": while coding, each hint or question replaces the last one.
+// "check": after passing, the one question about this function and the replies to it.
+// "done": the question is answered; questions still welcome, one at a time.
+// Closing the window clears it.
+let mode = "hint", check = null;
 
 function setMode(newMode) {
-  if (newMode === mode) return;
   mode = newMode;
   $("messages").innerHTML = "";
-  $("tutor-mode").textContent = newMode === "hint" ? "Hints" : "Explain your code";
+  $("tutor-mode").textContent = { hint: "Hints & questions", check: "One question", done: "Questions" }[newMode];
+  $("explain").hidden = newMode !== "check";
+  $("chat-input").placeholder = newMode === "check"
+    ? "Answer in your own words…"
+    : "Ask about a library, a method, or a concept…";
+  if (newMode === "check") addMessage(`All tests pass. One question: <strong>${escapeHtml(check.question)}</strong>`);
 }
 
 function addMessage(html, cls = "tutor-msg") {
-  if (mode === "hint") $("messages").innerHTML = "";
   const el = document.createElement("p");
   el.className = "msg " + cls;
   el.innerHTML = html;
   $("messages").appendChild(el);
   el.scrollIntoView({ behavior: "smooth", block: "nearest" });
   return el;
+}
+
+// Outside the question, every exchange starts from a clean window.
+function startExchange() {
+  if (mode !== "check") $("messages").innerHTML = "";
 }
 
 // Shows "thinking…" while the tutor answers, then replaces it with the reply.
@@ -58,43 +69,25 @@ async function askTutor(url, body) {
 }
 
 async function getHint(afterSubmit) {
-  setMode("hint");
   openTutor();
+  startExchange();
   $("hint").disabled = true;
   const { el, res } = await askTutor("/api/hint", { code: editor.getValue(), after_submit: afterSubmit });
   el.innerHTML = formatReply(res.hint);
   $("hint").disabled = false;
 }
 
-// The understanding check: shown once the tests pass. Ask stays available after it's done.
-let allDone = false;
-
-function showNext() {
-  if (allDone) {
-    addMessage("That's every piece. The login and the cart are both your code now. Click <strong>Run project</strong> to see your store working end to end.");
-  } else {
-    $("next").hidden = false;
-  }
-}
-
-$("next").onclick = async () => {
-  $("next").disabled = true;
-  await api("POST", "/api/round/start");
-  location.reload();
+$("ask").onclick = async () => {
+  const text = $("chat-input").value.trim();
+  if (!text) return;
+  startExchange();
+  addMessage(escapeHtml(text), "learner-msg");
+  $("chat-input").value = "";
+  $("ask").disabled = true;
+  const { el, res } = await askTutor("/api/ask", { question: text, code: editor.getValue() });
+  $("ask").disabled = false;
+  el.innerHTML = formatReply(res.answer);
 };
-
-function openCheck(check) {
-  setMode("check");
-  $("chat").hidden = false;
-  if (check.done) {
-    $("explain").hidden = true;
-    $("chat-input").placeholder = "Ask the tutor anything about this piece…";
-    addMessage(`Understanding check complete${check.best_score !== null ? ` (best score ${check.best_score}/10)` : ""}. You can still ask me questions.`);
-  } else {
-    addMessage("Nice work, all tests pass! Now tell me in your own words: what does your code do, and why does it work that way?");
-  }
-  showNext();
-}
 
 $("explain").onclick = async () => {
   const text = $("chat-input").value.trim();
@@ -105,52 +98,50 @@ $("explain").onclick = async () => {
   const { el, res } = await askTutor("/api/explain", { explanation: text });
   $("explain").disabled = false;
   if (res.error) { el.textContent = res.error; return; }
-  let html = `<strong>Score: ${res.score}/10.</strong> `;
-  if (res.feedback) html += formatReply(res.feedback) + " ";
-  if (res.hint) html += `<br><br>${formatReply(res.hint)} Try explaining again.`;
-  if (res.final_explanation) html += `<br><br>You got the implementation right. To be more precise: ${formatReply(res.final_explanation)}`;
+  let html = `<strong>${res.score}/10.</strong> `;
+  if (res.hint) html += formatReply(res.hint);
+  if (res.feedback) html += formatReply(res.feedback);
+  if (res.final_explanation) html += `<br><br>Here's the full answer: ${formatReply(res.final_explanation)}`;
   if (res.extra) html += `<br><br><em>Good to know:</em> ${formatReply(res.extra)}`;
   el.innerHTML = html;
   if (res.done) {
+    check.done = true;
+    mode = "done";
+    $("tutor-mode").textContent = "Questions";
     $("explain").hidden = true;
-    $("chat-input").placeholder = "Ask the tutor anything about this piece…";
+    $("chat-input").placeholder = "Ask about a library, a method, or a concept…";
   }
-};
-
-$("ask").onclick = async () => {
-  const text = $("chat-input").value.trim();
-  if (!text) return;
-  addMessage(escapeHtml(text), "learner-msg");
-  $("chat-input").value = "";
-  $("ask").disabled = true;
-  const { el, res } = await askTutor("/api/ask", { question: text });
-  $("ask").disabled = false;
-  el.innerHTML = formatReply(res.answer);
 };
 
 const fab = $("tutor-fab"), win = $("tutor-win");
 
 function placeWindow() {
-  // Open the window beside the button, on whichever side has room, kept inside the screen.
-  const b = fab.getBoundingClientRect(), w = win.offsetWidth, h = win.offsetHeight, gap = 10;
-  let left = b.left + b.width / 2 < innerWidth / 2 ? b.left : b.right - w;
-  let top = b.top + b.height / 2 < innerHeight / 2 ? b.bottom + gap : b.top - h - gap;
-  win.style.left = Math.max(8, Math.min(left, innerWidth - w - 8)) + "px";
-  win.style.top = Math.max(8, Math.min(top, innerHeight - h - 8)) + "px";
+  // Open beside the button on whichever side has room. The window is anchored on the button's side,
+  // so when replies make it taller it grows away from the button instead of over it.
+  const b = fab.getBoundingClientRect(), gap = 10;
+  const below = b.top + b.height / 2 < innerHeight / 2, leftSide = b.left + b.width / 2 < innerWidth / 2;
+  win.style.top = below ? Math.min(b.bottom + gap, innerHeight - 200) + "px" : "auto";
+  win.style.bottom = below ? "auto" : Math.min(innerHeight - b.top + gap, innerHeight - 200) + "px";
+  win.style.left = leftSide ? Math.max(8, b.left) + "px" : "auto";
+  win.style.right = leftSide ? "auto" : Math.max(8, innerWidth - b.right) + "px";
+  win.style.maxHeight = Math.min(520, below ? innerHeight - b.bottom - gap - 8 : b.top - gap - 8) + "px";
 }
 
 function openTutor() {
+  if (!win.hidden) return;
   win.hidden = false;
   fab.setAttribute("aria-expanded", "true");
   if (!$("messages").children.length && mode === "hint") {
-    addMessage("Stuck? Click <strong>Hint</strong> and I'll nudge you, but I won't give you the answer.");
+    addMessage("Stuck? Click <strong>Hint</strong> for a nudge. You can also ask me about a library, a method, or a concept.");
   }
   placeWindow();
+  $("chat-input").focus();
 }
 
 function closeTutor() {
   win.hidden = true;
   fab.setAttribute("aria-expanded", "false");
+  setMode(mode);  // clears the window; the question comes back if it's still open
 }
 
 function moveFab(x, y) {
@@ -158,7 +149,7 @@ function moveFab(x, y) {
   y = Math.max(8, Math.min(y, innerHeight - fab.offsetHeight - 8));
   fab.style.left = x + "px";
   fab.style.top = y + "px";
-  fab.style.right = fab.style.bottom = "auto";
+  fab.style.bottom = "auto";
   if (!win.hidden) placeWindow();
 }
 
@@ -191,33 +182,39 @@ try {
   if (saved) moveFab(saved[0], saved[1]);
 } catch {}
 
-function setOwnership(pct) {
-  $("own-pct").textContent = pct + "%";
-  $("own-fill").style.width = pct + "%";
+// ---- Task panel ----------------------------------------------------------------
+function showTab(name) {
+  for (const tab of ["task", "read"]) {
+    $("tab-" + tab).hidden = tab !== name;
+    $("tab-btn-" + tab).classList.toggle("active", tab === name);
+    $("tab-btn-" + tab).setAttribute("aria-selected", tab === name);
+  }
 }
-
-function showTask(task, round, totalRounds) {
-  $("round").textContent = `Round ${round} of ${totalRounds} · ${task.title}`;
-  $("task-title").textContent = task.title;
-  $("task-summary").textContent = task.summary;
-  $("task-file").textContent = task.file;
-  $("task-functions").innerHTML = task.functions
-    .map(f => `<li><code>${escapeHtml(f.signature)}</code><p>${escapeHtml(f.description)}</p>
-      <p class="criteria-title">To pass, it must:</p>
-      <ul class="criteria">${f.criteria.map(c => `<li data-test="${c.test}"><span class="mark">•</span>${escapeHtml(c.text)}</li>`).join("")}</ul></li>`).join("");
-  criteriaText = Object.fromEntries(task.functions.flatMap(f => f.criteria.map(c => [c.test, c.text])));
-  $("task-calls").innerHTML = task.call_sites.map(c => `<li>${escapeHtml(c)}</li>`).join("");
-  $("task-breaks").textContent = task.breaks;
-  $("task-refs").innerHTML = task.references
-    .map(r => `<details><summary><code>${escapeHtml(r.name)}</code> in ${escapeHtml(r.file)}</summary><pre>${escapeHtml(r.code)}</pre></details>`).join("");
-}
+$("tab-btn-task").onclick = () => showTab("task");
+$("tab-btn-read").onclick = () => showTab("read");
 
 let criteriaText = {};
 
-// Marks each criterion in the task ✓ or ✗ from the latest test run.
+function showTask(s) {
+  const t = s.task;
+  $("round").textContent = `Round ${s.round} of ${s.total_rounds} · ${t.piece}`;
+  $("step-label").textContent = `Function ${s.step} of ${s.total_steps} · ${t.file}`;
+  $("fn-signature").textContent = t.signature;
+  $("fn-description").textContent = t.description;
+  $("criteria").innerHTML = t.criteria
+    .map(c => `<li data-test="${c.test}"><span class="mark">•</span>${escapeHtml(c.text)}</li>`).join("");
+  criteriaText = Object.fromEntries(t.criteria.map(c => [c.test, c.text]));
+  $("task-calls").innerHTML = t.call_sites.map(c => `<li>${escapeHtml(c)}</li>`).join("");
+  $("task-breaks").textContent = t.breaks;
+  $("task-refs").innerHTML = t.references
+    .map(r => `<details open><summary><code>${escapeHtml(r.name)}</code> in ${escapeHtml(r.file)}</summary><pre>${escapeHtml(r.code)}</pre></details>`).join("");
+  $("next").textContent = s.step < s.total_steps ? "Next function →" : "Next piece →";
+}
+
+// Marks each criterion ✓ or ✗ from the latest test run.
 function markCriteria(results) {
   const byName = Object.fromEntries((results || []).map(r => [r.name, r.passed]));
-  document.querySelectorAll(".criteria li").forEach(li => {
+  document.querySelectorAll("#criteria li").forEach(li => {
     const state = byName[li.dataset.test];
     li.className = state === undefined ? "" : state ? "pass" : "fail";
     li.querySelector(".mark").textContent = state === undefined ? "•" : state ? "✓" : "✗";
@@ -227,23 +224,38 @@ function markCriteria(results) {
 function showResults(results, passed) {
   markCriteria(results);
   if (!results) return;
-  const done = results.filter(r => r.passed).length;
+  // Focus on this function's criteria; other tests only show if this function broke them.
+  const all = results.filter(r => !r.passed), mine = all.filter(r => r.name in criteriaText);
+  const failing = mine.length ? mine : all;
   $("results").innerHTML =
     `<p class="summary ${passed ? "pass" : "fail"}">${passed
-      ? "All tests passed. Your code is running this part of the store now."
-      : `${done} of ${results.length} tests passed. What failed:`}</p>` +
-    `<ul class="tests">${results.filter(r => !r.passed).map(r => `<li class="fail">
+      ? "All tests pass. Your function is running in the store now."
+      : "Not yet. What failed:"}</p>` +
+    `<ul class="tests">${failing.map(r => `<li class="fail">
         <span class="mark">✗</span><span>${escapeHtml(criteriaText[r.name] || r.name.replace(/^test_/, "").replaceAll("_", " "))}</span>
         ${r.message ? `<pre>${escapeHtml(r.message)}</pre>` : ""}</li>`).join("")}</ul>`;
 }
 
-function lockIfPassed(status) {
-  const locked = status === "passed";
-  $("submit").disabled = locked;
-  $("hint").disabled = locked;
-  editor.setOption("readOnly", locked);
-  if (locked) $("save-state").textContent = "This piece is yours now.";
+// ---- Editor and steps ----------------------------------------------------------
+let allDone = false;
+
+function afterPass() {
+  $("submit").disabled = $("hint").disabled = true;
+  editor.setOption("readOnly", true);
+  $("save-state").textContent = "This function is yours now.";
+  if (allDone) {
+    $("results").insertAdjacentHTML("beforeend",
+      `<p class="done-note">That's every function. The login and the cart are your code now. Click <strong>Run project</strong> to see your store working end to end.</p>`);
+  } else {
+    $("next").hidden = false;
+  }
 }
+
+$("next").onclick = async () => {
+  $("next").disabled = true;
+  await api("POST", "/api/next");
+  location.reload();
+};
 
 // Autosave a moment after typing stops.
 let saveTimer, loaded = false;
@@ -268,8 +280,8 @@ $("submit").onclick = async () => {
   setOwnership(res.ownership);
   if (res.passed) {
     allDone = res.all_done;
-    lockIfPassed("passed");
-    openCheck({ done: false, best_score: null });
+    afterPass();
+    setMode("check");
     openTutor();
   } else getHint(true);
 };
@@ -278,16 +290,25 @@ $("hint").onclick = () => getHint(false);
 
 $("run").onclick = () => runProject($("run-status"));
 
+function setOwnership(pct) {
+  $("own-pct").textContent = pct + "%";
+  $("own-fill").style.width = pct + "%";
+}
+
 (async () => {
   const s = await api("GET", "/api/state");
   if (!s.current) { location.href = "/project"; return; }
-  showTask(s.task, s.round, s.total_rounds);
+  check = s.check;
+  allDone = s.all_done;
+  showTask(s);
   editor.setValue(s.code);
   loaded = true;
   setOwnership(s.ownership);
   showResults(s.last_results, s.status === "passed");
-  lockIfPassed(s.status);
-  allDone = s.all_done;
-  if (s.status === "passed") openCheck(s.check);
-  else setMode("hint");
+  if (s.status === "passed") {
+    afterPass();
+    setMode(check.done ? "done" : "check");
+  } else {
+    setMode("hint");
+  }
 })();

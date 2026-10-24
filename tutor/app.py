@@ -7,9 +7,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from tutor import llm, progress, runner
-from tutor.pieces import PIECES, task
+from tutor.pieces import PIECES, assemble, function, task
 
 PAGES = Path(__file__).parent / "pages"
+PASS_SCORE = 7
+MAX_HINTS = 2
 
 
 @asynccontextmanager
@@ -37,134 +39,140 @@ def learn():
     return FileResponse(PAGES / "learn.html")
 
 
+def _current(prog: dict) -> tuple[str | None, str | None, dict | None]:
+    """(piece, function name, that function's progress) for the open step, or Nones."""
+    piece, name = prog["current"], prog["step"]
+    if not piece:
+        return None, None, None
+    return piece, name, prog["pieces"][piece][name]
+
+
 @app.get("/api/state")
 def state():
     prog = progress.load()
-    current = prog["current"]
-    result = {
-        "current": current,
-        "ownership": progress.ownership(prog),
-        "passed": progress.passed(prog),
-        "all_done": len(progress.passed(prog)) == len(PIECES),
-    }
-    if current:
-        piece = prog["pieces"][current]
+    piece, name, fn = _current(prog)
+    result = {"current": piece, "ownership": progress.ownership(prog), "all_done": progress.all_done(prog)}
+    if piece:
+        names = [f["name"] for f in PIECES[piece]["functions"]]
+        f = function(piece, name)
         result.update(
-            round=list(PIECES).index(current) + 1,
+            round=list(PIECES).index(piece) + 1,
             total_rounds=len(PIECES),
-            task=task(current),
-            code=piece["draft"] if piece["draft"] is not None else PIECES[current]["stub"],
-            status=piece["status"],
-            last_results=piece["last_results"],
-            check=piece["check"],
+            step=names.index(name) + 1,
+            total_steps=len(names),
+            task=task(piece, name),
+            code=fn["draft"] if fn["draft"] is not None else f["stub"],
+            status=fn["status"],
+            last_results=fn["last_results"],
+            check={**fn["check"], "question": f["question"]},
         )
     return result
 
 
-@app.post("/api/round/start")
-def round_start():
-    """Open the next piece that hasn't passed. Ignored if a round is already open."""
+@app.post("/api/next")
+def next_step():
+    """Open the next function that hasn't passed (the rest of this piece first, then the next piece).
+    Ignored while the current function is still in progress."""
     prog = progress.load()
-    current = prog["current"]
-    if current and prog["pieces"][current]["status"] != "passed":
+    piece, name, fn = _current(prog)
+    if fn and fn["status"] != "passed":
         return state()
-    remaining = [p for p in PIECES if prog["pieces"][p]["status"] != "passed"]
-    if remaining:
-        prog["current"] = remaining[0]
-        prog["pieces"][remaining[0]]["status"] = "in_progress"
-        progress.save(prog)
+    for piece in PIECES:
+        for f in PIECES[piece]["functions"]:
+            if prog["pieces"][piece][f["name"]]["status"] != "passed":
+                prog["current"], prog["step"] = piece, f["name"]
+                prog["pieces"][piece][f["name"]]["status"] = "in_progress"
+                progress.save(prog)
+                return state()
     return state()
 
 
 @app.put("/api/code")
 def save_code(code: str = Body(embed=True)):
     prog = progress.load()
-    piece = prog["pieces"].get(prog["current"])
-    if piece and piece["status"] == "in_progress":
-        piece["draft"] = code
+    _, _, fn = _current(prog)
+    if fn and fn["status"] == "in_progress":
+        fn["draft"] = code
         progress.save(prog)
     return {"saved": True}
 
 
 @app.post("/api/submit")
 def submit(code: str = Body(embed=True)):
+    """Test the learner's function inside the piece's file. On pass, it runs in the store from now on."""
     prog = progress.load()
-    current = prog["current"]
-    piece = prog["pieces"].get(current)
-    if not piece or piece["status"] != "in_progress":
-        return {"error": "No open round to submit to."}
-    piece["draft"] = code
-    results = runner.run_tests(current, code)
-    piece["last_results"] = results
+    piece, name, fn = _current(prog)
+    if not fn or fn["status"] != "in_progress":
+        return {"error": "No open step to submit to."}
+    fn["draft"] = code
+    results = runner.run_tests(piece, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
+    fn["last_results"] = results
     all_passed = all(r["passed"] for r in results)
     if all_passed:
-        # Once a piece passes it is the learner's for good: Run project uses this file from now on.
-        learner_dir = progress.DATA / "learner"
-        learner_dir.mkdir(parents=True, exist_ok=True)
-        (learner_dir / PIECES[current]["file"]).write_text(code)
-        piece["status"] = "passed"
+        # Once a function passes it is the learner's for good: Run project uses it from now on.
+        fn["status"] = "passed"
+        progress.write_learner_file(prog, piece)
     progress.save(prog)
     return {"results": results, "passed": all_passed, "ownership": progress.ownership(prog),
-            "all_done": len(progress.passed(prog)) == len(PIECES)}
+            "all_done": progress.all_done(prog)}
 
 
 @app.post("/api/hint")
 def get_hint(code: str = Body(), after_submit: bool = Body(False)):
     """A hint for the current code. After a failed submit it targets the failing tests."""
     prog = progress.load()
-    current = prog["current"]
-    if not current:
-        return {"hint": "Start a round first."}
-    results = prog["pieces"][current]["last_results"] if after_submit else None
-    return {"hint": llm.hint(current, code, results)}
-
-
-PASS_SCORE = 7
-MAX_HINTS = 2
+    piece, name, fn = _current(prog)
+    if not fn:
+        return {"hint": "Start learning first."}
+    results = fn["last_results"] if after_submit else None
+    if results:
+        # Tests of other functions can fail because of this one; aim the hint at this function's own tests first.
+        mine = {test for test, _ in function(piece, name)["criteria"]}
+        if any(not r["passed"] for r in results if r["name"] in mine):
+            results = [r for r in results if r["name"] in mine]
+    return {"hint": llm.hint(piece, name, code, results)}
 
 
 @app.post("/api/explain")
 def explain(explanation: str = Body(embed=True)):
-    """Grade the learner's explanation. Two targeted hints on weak answers, then the full explanation.
-    The score never touches their code or the ownership %."""
+    """Grade the answer to this function's question. Up to two narrower follow-up questions, then the answer.
+    The score never touches the learner's code or the ownership %."""
     prog = progress.load()
-    current = prog["current"]
-    piece = prog["pieces"].get(current)
-    if not piece or piece["status"] != "passed":
-        return {"error": "Pass the tests first, then explain your code."}
-    check = piece["check"]
+    piece, name, fn = _current(prog)
+    if not fn or fn["status"] != "passed":
+        return {"error": "Pass the tests first, then answer the question."}
+    check = fn["check"]
     if check["done"]:
-        return {"error": "You've already finished the check for this piece."}
-    earlier = check.setdefault("explanations", [])
-    result = llm.grade(current, explanation, piece["draft"], earlier)
+        return {"error": "You've already answered the question for this function."}
+    result = llm.grade(piece, name, explanation, fn["draft"], check["explanations"])
     if result is None:
         return {"error": llm.BUSY}
-    earlier.append(explanation)
+    check["explanations"].append(explanation)
     check["attempts"] += 1
-    # Explanations build on each other, so the score never goes down.
+    # Answers build on each other, so the score never goes down.
     result["score"] = check["best_score"] = max(check["best_score"] or 0, result["score"])
     if result["score"] < PASS_SCORE and check["attempts"] <= MAX_HINTS:
-        # Only the hint: the full feedback would hand over the explanation before they retry.
+        # Only the follow-up question: the full feedback would hand over the answer before they retry.
         response = {"score": result["score"], "done": False,
-                    "hint": result["hint"] or "You're close. Think about what each function does with tricky inputs."}
+                    "hint": result["hint"] or "What happens in your function with a tricky input?"}
     else:
         check["done"] = True
         response = {"score": result["score"], "feedback": result["missing"], "extra": result["extra"], "done": True}
         if result["score"] < PASS_SCORE:
-            response["final_explanation"] = PIECES[current]["model_explanation"]
+            response["final_explanation"] = function(piece, name)["answer"]
     progress.save(prog)
     return response
 
 
 @app.post("/api/ask")
-def ask(question: str = Body(embed=True)):
+def ask(question: str = Body(), code: str = Body("")):
     prog = progress.load()
-    current = prog["current"]
-    if not current:
-        return {"answer": "Start a round first."}
-    return {"answer": llm.answer(current, question, prog["pieces"][current]["draft"] or "")}
+    piece, name, _ = _current(prog)
+    if not piece:
+        return {"answer": "Start learning first, then ask me anything about your function."}
+    return {"answer": llm.answer(piece, name, question, code)}
 
 
 @app.post("/api/run")
 def run():
-    return runner.run_store(passed=progress.passed(progress.load()))
+    return runner.run_store(passed=progress.swapped(progress.load()))

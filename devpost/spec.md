@@ -12,9 +12,9 @@ There are **two Python programs** running on your laptop, both built with **Fast
 1. **The tutor app** (`localhost:8000`). This is what the learner uses: the catalog, the project page and the learning workspace with the code editor, Hint, Submit and Run project buttons, and the ownership percentage. The pages are plain HTML with a bit of JavaScript, and the editor is CodeMirror, a ready-made code editor that runs in the browser.
 2. **The 3D asset store** (`localhost:8001`). This is the practice project: log in, browse pictures of assets, a cart, a fake checkout, download links and a profile. The tutor starts it as a second server whenever the learner clicks **Run project**.
 
-**The trick that makes carving work:** each piece the learner rebuilds is **its own file** in the store. Authentication is `store/pieces/auth.py` and cart behavior is `store/pieces/cart.py`. The rest of the store just calls the functions in those files without caring who wrote them. To carve a piece, the editor shows a **stub**: the same function names, inputs and return types, with empty bodies. The AI's original file is never touched.
+**The trick that makes carving work:** each piece the learner rebuilds is **its own file** in the store. Authentication is `store/pieces/auth.py` and cart behavior is `store/pieces/cart.py`. The rest of the store just calls the functions in those files without caring who wrote them. A piece is carved **one function at a time**: the editor shows a **stub** of just the current function (same name, inputs and return type, empty body). The tutor builds the piece's file by swapping the learner's functions into the AI's original, so the original is never touched.
 
-**When the learner clicks Submit**, the tutor saves their code and runs **pytest** (Python's standard test tool) on it in a separate process with a time limit, then shows which tests passed. If all pass, their file becomes the official version of that piece.
+**When the learner clicks Submit**, the tutor swaps their function into the piece's file and runs **pytest** (Python's standard test tool) on it in a separate process with a time limit, then marks each pass criterion. If all pass, that function is theirs and runs in the store from then on.
 
 **When the learner clicks Run project**, the tutor builds a fresh copy of the store. For each piece it uses the learner's file if it has passed, otherwise the AI's original. Then it restarts the store server and opens it in a new tab. That's why the store never breaks while someone is mid-round.
 
@@ -30,15 +30,16 @@ PRD ref: `prd.md > The Core Journey`.
 1. **Opening.** The learner opens `localhost:8000`. The tutor serves `catalog.html`, which shows the 3D asset store card and a greyed-out "Bring your own idea — coming soon" card.
 2. **Project page.** Clicking the card loads `project.html`: a description, **Run project** and **Start learning**.
 3. **Run it first.** **Run project** → the browser calls `POST /api/run` → `runner.py` copies `store/` into `.run/store/`. No pieces have passed yet, so the originals stay. It stops any old store process, starts `uvicorn` on port 8001 and waits until the server answers → the browser opens `localhost:8001` in a new tab. The learner logs in, browses, adds items to the cart and checks out.
-4. **Start round 1.** **Start learning** → `POST /api/round/start` → `progress.json` now says "round 1, piece `auth`" → the browser goes to `learn.html`.
-5. **Task workspace.** `learn.html` calls `GET /api/state`. The tutor returns the task for `auth`: inputs and outputs, call sites, what breaks, and the reference code pulled live from the store files. It also returns the learner's saved draft, or the stub if there isn't one. The editor shows it.
-6. **Work.** As the learner types, the browser autosaves with `PUT /api/code` (a couple of seconds after they stop typing). **Hint** → `POST /api/hint` with their code → `llm.py` asks Groq for a nudge with no solution code → the nudge appears in the tutor area.
-7. **Submit.** `POST /api/submit` → `runner.py` copies their code into a temp folder as `auth.py` and runs `pytest tests/test_auth.py` there, with a 15-second limit.
-   - **Fails:** The browser shows each test as ✓ or ✗ with its message. `llm.py` gets the failing tests (names and messages) plus the learner's code, and returns a hint aimed at the most important failure.
-   - **Passes:** The code is saved to `data/learner/auth.py`, the piece is marked `passed` in `progress.json`, and the ownership % is recalculated and shown going up.
-8. **Explain it.** The tutor area switches to the understanding check. The learner writes an explanation → `POST /api/explain` → Groq returns a score from 0 to 10, what was missing, and extra information. A low score gets a targeted hint and a retry, up to two times, and then the tutor gives the full explanation. The learner can also use **Ask** (`POST /api/ask`) for questions.
-9. **See it working.** **Run project** again → this time `runner.py` puts `data/learner/auth.py` into `.run/store/pieces/auth.py` before starting the store. Logging in now runs the learner's code.
-10. **Round 2.** **Next piece** → `POST /api/round/start` → piece `cart`. `auth` stays the learner's file forever. Steps 5–9 repeat, and the % rises again.
+4. **Start round 1.** **Start learning** → `POST /api/next` → `progress.json` now says "piece `auth`, function `hash_password`" → the browser goes to `learn.html`.
+5. **Task workspace.** `learn.html` calls `GET /api/state`. The tutor returns the current function: signature, description and pass criteria (**Your task** tab), plus call sites, what breaks and reference code pulled live from the store (**Read first** tab). It also returns the learner's saved draft of that function, or its stub.
+6. **Work.** As the learner types, the browser autosaves with `PUT /api/code`. **Hint** → `POST /api/hint` → `llm.py` asks Groq for one short nudge with no solution code. The learner can also **Ask** (`POST /api/ask`) about a library, method or concept at any time. Both appear in the floating tutor window, which shows only the latest exchange and clears when closed.
+7. **Submit.** `POST /api/submit` → `pieces.assemble()` swaps the learner's passed functions and this function into the AI's `auth.py` → `runner.py` writes that file to a temp folder and runs `pytest tests/test_auth.py` there, with a 15-second limit.
+   - **Fails:** Each pass criterion of this function is marked ✓ or ✗ with its message. `llm.py` gets this function's failing tests plus the learner's code, and returns a hint aimed at the most important failure.
+   - **Passes:** The function is marked `passed`, the assembled file is saved to `data/learner/auth.py`, and the ownership % goes up.
+8. **One question.** The tutor window asks the function's hand-written question → `POST /api/explain` → Groq scores the answer (0–10) against a reference answer, judging all of the learner's answers together. A low score gets a narrower follow-up question, up to two, and then the reference answer.
+9. **Next function.** `POST /api/next` opens the next function of the piece. Steps 5–8 repeat.
+10. **See it working.** **Run project** → `runner.py` puts `data/learner/auth.py` into `.run/store/pieces/auth.py` before starting the store. Logging in now runs the learner's code.
+11. **Round 2.** After the last auth function, `POST /api/next` moves to piece `cart`, function by function. The % keeps rising.
 
 ## Stack
 
@@ -113,7 +114,7 @@ Tests: `tests/test_cart.py`.
 PRD ref: `prd.md > Carving a Piece`, `prd.md > The 3D Asset Store`.
 
 ### Piece Definitions
-`tutor/pieces.py` holds a `PIECES` dict with one entry per piece (`auth`, `cart`, in round order). Each entry has: title, store file, stub code, test file, inputs/outputs text, call sites, what breaks, the "model explanation" used for grading, and a reference list of `(file, function name)`. The reference code is **pulled live** from the store files with Python's `ast` module, so it can never go stale. These are hand-written, not AI-generated.
+`tutor/pieces.py` holds a `PIECES` dict with one entry per piece (`auth`, `cart`, in round order): title, store file, test file, and a list of **functions** in order. Each function has: signature, description, stub, pass criteria (test name → plain-language criterion), call sites, what breaks, a reference list of `(file, function name)`, and one narrow question with its reference answer. `assemble(piece, snippets)` swaps learner functions into the AI's original file by line range (found with `ast`). The reference code is **pulled live** from the store files, so it can never go stale. These are hand-written, not AI-generated. `tests/test_pieces.py` checks that the criteria match the real tests and that `assemble` swaps exactly one function.
 PRD ref: `prd.md > Focused Task`, `prd.md > Carving a Piece`.
 
 ### Tutor Server
@@ -121,13 +122,13 @@ PRD ref: `prd.md > Focused Task`, `prd.md > Carving a Piece`.
 
 | Endpoint | Does |
 |---|---|
-| `GET /api/state` | Current round, piece, task context, editor code (draft, or the stub if there's no draft), test results, check status and ownership %. |
-| `POST /api/round/start` | Starts the next piece that hasn't passed. Ignored if a round is already open. |
+| `GET /api/state` | Current round, piece, function step, task (task + read tabs), editor code (draft or stub), test results, question status and ownership %. |
+| `POST /api/next` | Opens the next function that hasn't passed (rest of this piece, then the next piece). Ignored while the current function is in progress. |
 | `PUT /api/code` | Autosaves the draft. |
 | `POST /api/hint` | Returns a hint for the current code. |
 | `POST /api/submit` | Runs the tests. On pass, swaps the code in, updates the %, and opens the understanding check. On fail, returns results plus a hint. |
-| `POST /api/explain` | Grades an explanation and returns `{score, feedback, hint?, final_explanation?, done}`. |
-| `POST /api/ask` | Answers a learner question about the piece. |
+| `POST /api/explain` | Grades the answer to the function's question and returns `{score, hint?}` or, when done, `{score, feedback, extra, final_explanation?}`. |
+| `POST /api/ask` | Answers a question about a library, method or concept, at any time. |
 | `POST /api/run` | Assembles and (re)starts the store and returns its URL. |
 
 PRD ref: `prd.md > Hints`, `prd.md > Tests and Swap-In`, `prd.md > Understanding Check`, `prd.md > Running the Project`.
@@ -141,15 +142,15 @@ PRD ref: `prd.md > Running the Project`, `prd.md > Tests and Swap-In`, `prd.md >
 ### AI Tutor (LLM)
 `tutor/llm.py` is the only file that talks to Groq. It has three functions, each with its own instruction prompt:
 - **`hint(piece, code, failing_tests=None)`:** "Nudge, never give code or the exact answer." It receives the task context and the learner's code. After a failed submit, it also gets the failing tests' names and messages, with passing tests marked as already done, so the hint targets what's actually broken. **Backstop:** any fenced code block in the reply is stripped before it's shown.
-- **`grade(piece, explanation, attempt)`:** asks for JSON `{score: 0-10, missing, extra}` and compares against the piece's model explanation. Below 7 on attempt 1 or 2, it returns a targeted "you're missing something about X" hint. After the second miss, it returns the precise explanation.
-- **`answer(piece, question, code)`:** answers a learner question in context. It may explain concepts but not hand over code for the carved functions.
+- **`grade(piece, name, answer, code, earlier)`:** asks for JSON `{score: 0-10, missing, extra, hint}` against the function's reference answer, judging all the learner's answers together. The server keeps the best score, so it never drops. Below 7 on attempt 1 or 2, only the score and a narrower follow-up question are shown. After the second miss, the reference answer is shown.
+- **`answer(piece, name, question, code)`:** a short reference-style answer (modules, methods, attributes, concepts, tiny generic examples) that never writes the learner's function.
 
 Configured by environment variables (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`/`GROQ_API_KEY`), with Groq defaults.
 PRD ref: `prd.md > Hints`, `prd.md > Understanding Check`.
 
 ### Progress and Ownership
 `tutor/progress.py` loads and saves `data/progress.json` and computes ownership.
-**Ownership %** = the learner's lines ÷ all lines, counting non-blank, non-comment lines across the store's `.py` files as they'd run (learner pieces swapped in). Templates, CSS and tests aren't counted. It starts at 0% and only goes up.
+**Ownership %** = the learner's lines ÷ all lines, counting non-blank, non-comment lines across the store's `.py` files as they'd run (learner functions swapped in). Templates, CSS and tests aren't counted. It starts at 0% and goes up with every passed function.
 PRD ref: `prd.md > Ownership Percentage`, `prd.md > Saved Progress`.
 
 ### Tutor Pages
@@ -168,21 +169,26 @@ PRD ref: `prd.md > Project Catalog`, `prd.md > Screens and Layout`.
 | Purchases (id, asset_id, bought_at) | `data/store.db` → `purchases` | `POST /checkout` | Still on the profile |
 | Logged-in user, cart | Store session cookie | Login/logout, cart routes | Survives tab reloads. Cleared on logout or browser close (fine for a demo). |
 | Tutor progress | `data/progress.json` | Tutor API | Restored exactly |
-| Passed learner pieces | `data/learner/auth.py`, `cart.py` | `POST /api/submit` on pass | Kept permanently and used by every Run |
+| Passed learner functions, assembled into their piece's file | `data/learner/auth.py`, `cart.py` | `POST /api/submit` on pass | Kept permanently and used by every Run |
 
 `progress.json` shape:
 ```json
 {
-  "current": "cart",
+  "current": "auth",
+  "step": "check_login",
   "pieces": {
-    "auth": {"status": "passed", "draft": "...", "last_results": [...],
-             "check": {"attempts": 2, "best_score": 8, "done": true}},
-    "cart": {"status": "in_progress", "draft": "...", "last_results": null,
-             "check": {"attempts": 0, "best_score": null, "done": false}}
+    "auth": {
+      "hash_password": {"status": "passed", "draft": "...", "last_results": [...],
+                        "check": {"attempts": 1, "best_score": 8, "done": true, "explanations": ["..."]}},
+      "check_login": {"status": "in_progress", "draft": "...", "last_results": null,
+                      "check": {"attempts": 0, "best_score": null, "done": false, "explanations": []}},
+      "is_logged_in": {"status": "not_started", "...": "..."}
+    },
+    "cart": {"...": "..."}
   }
 }
 ```
-`status` is `not_started`, `in_progress` or `passed`. Once a piece is `passed`, it never goes back (`prd.md > States and Boundaries`).
+`status` is `not_started`, `in_progress` or `passed`, per function. Once a function is `passed`, it never goes back (`prd.md > States and Boundaries`).
 
 ## File Structure
 
@@ -203,7 +209,7 @@ Build_with_Ai_Basics/
 │   └── test_cart.py            # Tests for the cart piece
 ├── tutor/                      # The tutor app (FastAPI, localhost:8000)
 │   ├── app.py                  # Serves pages + /api/* endpoints
-│   ├── pieces.py               # PIECES: stubs, task context, model explanations, references
+│   ├── pieces.py               # PIECES: per-function stubs, criteria, questions, references; assemble()
 │   ├── runner.py               # run_tests() via pytest; run_store() assemble + restart
 │   ├── llm.py                  # hint / grade / answer through Groq (openai library)
 │   ├── progress.py             # progress.json load/save + ownership %

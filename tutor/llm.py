@@ -6,7 +6,7 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from tutor.pieces import PIECES
+from tutor.pieces import PIECES, function
 
 BUSY = "The tutor is busy, try again in a minute."
 
@@ -38,11 +38,11 @@ def _chat(system: str, user: str, json_mode: bool = False) -> str:
     return reply.choices[0].message.content or ""
 
 
-def _task_text(piece: str) -> str:
-    p = PIECES[piece]
-    functions = "\n".join(f"- {sig}: {desc}" for sig, desc, _ in p["functions"])
-    calls = "\n".join(f"- {c}" for c in p["call_sites"])
-    return f"Piece: {p['title']} ({p['file']})\n{p['summary']}\n\nFunctions to write:\n{functions}\n\nWhere it's used:\n{calls}"
+def _task_text(piece: str, name: str) -> str:
+    f = function(piece, name)
+    calls = "\n".join(f"- {c}" for c in f["call_sites"])
+    return (f"The learner is writing ONE function of the {PIECES[piece]['title']} piece ({PIECES[piece]['file']}):\n"
+            f"{f['signature']}: {f['description']}\n\nWhere it's used:\n{calls}")
 
 
 def _strip_code(text: str) -> str:
@@ -52,16 +52,16 @@ def _strip_code(text: str) -> str:
 
 HINT_RULES = """You are a patient coding tutor for a beginner who is rebuilding one piece of a working Python web app.
 Your job is to nudge, not to solve. Rules:
-- Talk about ONE function only: the first one that is missing or broken. Ignore the others.
-- Give only the NEXT small step, never the whole approach. 2-3 sentences. Ending with a guiding question is good.
+- Give exactly ONE idea: the single next thing to think about, in 1-2 sentences, ideally as a question.
+- Never list several steps, and never describe the whole approach, even for a short function.
 - Never write code: no code blocks, no lines of the solution, no calls with arguments, no chained calls like a.b(...).c().
 - You may name at most one module, function or concept (for example "the hashlib module") without showing how to call it.
 - Be warm and plain. Don't repeat the task back."""
 
 
-def hint(piece: str, code: str, results: list[dict] | None = None) -> str:
+def hint(piece: str, name: str, code: str, results: list[dict] | None = None) -> str:
     """A nudge toward the goal. After a failed submit, `results` focuses it on the failing tests."""
-    parts = [_task_text(piece), f"The learner's current code:\n{code}"]
+    parts = [_task_text(piece, name), f"The learner's current code:\n{code}"]
     if results:
         failing = [f"- {r['name']}: {r['message']}" for r in results if not r["passed"]]
         passing = [r["name"] for r in results if r["passed"]]
@@ -76,22 +76,23 @@ def hint(piece: str, code: str, results: list[dict] | None = None) -> str:
         return BUSY
 
 
-GRADE_RULES = """You grade a beginner's explanation of code they just wrote (their tests already pass).
-Compare it with the reference explanation. Plain words are fine; don't demand jargon.
-If they explained before, judge ALL their explanations together: the new one adds to what they already said,
+GRADE_RULES = """A beginner just wrote a function (its tests pass) and answered ONE narrow question about it.
+Grade the answer against the reference answer. Plain words are fine; don't demand jargon.
+If they answered before, judge ALL their answers together: the newest adds to what they already said,
 so a point made earlier still counts, and adding detail can never lower the score.
 Reply with JSON only, with these keys:
-"score": integer 0-10 (7 or more means they clearly understand the main ideas),
-"missing": 1-2 sentences to the learner on what was missing or imprecise ("" if nothing),
-"extra": 1-2 sentences of useful extra knowledge that helps with similar work later,
-"hint": if score < 7, one sentence like "You're missing something about X. Think about it." that names the topic without giving the answer; otherwise ""."""
+"score": integer 0-10 (7 or more means they got the main idea),
+"missing": one sentence to the learner on what was missing or imprecise ("" if nothing),
+"extra": one sentence of useful extra knowledge for similar work later,
+"hint": if score < 7, ONE short, narrower follow-up question that points at the missing idea without answering it; otherwise ""."""
 
 
-def grade(piece: str, explanation: str, code: str, earlier: list[str]) -> dict | None:
-    """Score an explanation together with earlier attempts: {score, missing, extra, hint}. None if the AI is unavailable."""
-    previous = "".join(f"\n\nTheir earlier explanation {i}:\n{e}" for i, e in enumerate(earlier, 1))
-    user = (f"{_task_text(piece)}\n\nReference explanation:\n{PIECES[piece]['model_explanation']}"
-            f"\n\nThe learner's code:\n{code}{previous}\n\n{'Their newest explanation' if earlier else 'Their explanation'}:\n{explanation}")
+def grade(piece: str, name: str, explanation: str, code: str, earlier: list[str]) -> dict | None:
+    """Score an answer together with earlier attempts: {score, missing, extra, hint}. None if the AI is unavailable."""
+    f = function(piece, name)
+    previous = "".join(f"\n\nTheir earlier answer {i}:\n{e}" for i, e in enumerate(earlier, 1))
+    user = (f"{_task_text(piece, name)}\n\nThe question: {f['question']}\nReference answer: {f['answer']}"
+            f"\n\nThe learner's code:\n{code}{previous}\n\n{'Their newest answer' if earlier else 'Their answer'}:\n{explanation}")
     for _ in range(2):  # one retry if the reply isn't valid JSON
         try:
             data = json.loads(_chat(GRADE_RULES, user, json_mode=True))
@@ -108,14 +109,17 @@ def grade(piece: str, explanation: str, code: str, earlier: list[str]) -> dict |
     return None
 
 
-ANSWER_RULES = """You are a patient coding tutor. The learner rebuilt one piece of a working Python web app and has a question.
-Answer clearly and briefly (under 120 words), in plain words, using their code and the app as context.
-You may explain concepts and show tiny generic examples, but never write code for the piece's own functions."""
+ANSWER_RULES = """You are a coding tutor acting as a quick, friendly reference for a beginner writing one Python function.
+They may ask about a library, a method, an attribute, a concept or an error message.
+Answer briefly (under 100 words) and precisely: name modules, list relevant methods or attributes and what they do,
+explain concepts, and use tiny generic examples that aren't about their task.
+Format: short plain sentences, or a simple list with "- " bullets. No tables, no headings.
+Never write the function they are working on, or the lines that would solve it."""
 
 
-def answer(piece: str, question: str, code: str) -> str:
+def answer(piece: str, name: str, question: str, code: str) -> str:
     try:
-        reply = _chat(ANSWER_RULES, f"{_task_text(piece)}\n\nThe learner's code:\n{code}\n\nTheir question:\n{question}")
+        reply = _chat(ANSWER_RULES, f"{_task_text(piece, name)}\n\nThe learner's current code:\n{code}\n\nTheir question:\n{question}")
         return reply.strip() or BUSY
     except Exception:
         return BUSY

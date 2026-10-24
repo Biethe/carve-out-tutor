@@ -20,16 +20,26 @@
   <main class="workspace">
     <section class="left">
       <div class="panel" id="task">
-        <h1 id="task-title"></h1>
-        <p class="muted" id="task-summary"></p>
-        <h2>What to write <span class="file" id="task-file"></span></h2>
-        <ul class="functions" id="task-functions"></ul>
-        <h2>Where it's used</h2>
-        <ul id="task-calls"></ul>
-        <h2>What breaks if it's wrong</h2>
-        <p id="task-breaks"></p>
-        <h2>Code you'll need to read</h2>
-        <div id="task-refs"></div>
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-task" id="tab-btn-task">Your task</button>
+          <button class="tab" role="tab" aria-selected="false" aria-controls="tab-read" id="tab-btn-read">Read first</button>
+        </div>
+        <div id="tab-task" role="tabpanel">
+          <p class="step-label" id="step-label"></p>
+          <h1><code id="fn-signature"></code></h1>
+          <p id="fn-description"></p>
+          <h2>To pass, it must</h2>
+          <ul class="criteria" id="criteria"></ul>
+          <p class="muted small">Write just this function in the editor. Imports go right above it.</p>
+        </div>
+        <div id="tab-read" role="tabpanel" hidden>
+          <h2>Where it's used</h2>
+          <ul id="task-calls"></ul>
+          <h2>What breaks if it's wrong</h2>
+          <p id="task-breaks"></p>
+          <h2>Code to read</h2>
+          <div id="task-refs"></div>
+        </div>
       </div>
     </section>
     <section class="right">
@@ -38,7 +48,7 @@
         <button class="btn" id="submit">Submit</button>
         <button class="btn secondary" id="hint">Hint</button>
         <button class="btn secondary" id="run">Run project</button>
-        <button class="btn" id="next" hidden>Next piece →</button>
+        <button class="btn" id="next" hidden>Next function →</button>
         <span class="save-state" id="save-state"></span>
       </div>
       <p class="status" id="run-status"></p>
@@ -58,11 +68,11 @@
       <button class="close" id="tutor-close" aria-label="Close tutor">×</button>
     </header>
     <div class="messages" id="messages"></div>
-    <form class="chat" id="chat" hidden>
-      <textarea id="chat-input" rows="3" placeholder="Explain your code in your own words…"></textarea>
+    <form class="chat" id="chat">
+      <textarea id="chat-input" rows="2" placeholder="Ask about a library, a method, or a concept…"></textarea>
       <div class="chat-buttons">
-        <button class="btn" id="explain" type="button">Send explanation</button>
-        <button class="btn secondary" id="ask" type="button">Ask a question</button>
+        <button class="btn" id="explain" type="button" hidden>Send answer</button>
+        <button class="btn secondary" id="ask" type="button">Ask</button>
       </div>
     </form>
   </section>

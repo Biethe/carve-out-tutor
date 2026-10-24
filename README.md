@@ -33,11 +33,11 @@ LLM_API_KEY=your_ai_studio_key
 ## Demo walkthrough
 
 1. **Catalog → Polyvault → Run project.** The finished store opens in a new tab. Log in, add assets to the cart, check out, and see the download links on your profile.
-2. **Start learning.** Round 1 carves out `store/pieces/auth.py`. The task panel shows what each function takes and returns, where it's called, what breaks if it's wrong, and the store code you need to read.
-3. **Write, Hint, Submit.** Hints nudge without giving code. A failed submit shows ✓/✗ per test and a hint aimed at the failing test.
-4. **Pass.** Your file replaces the original and the ownership bar goes up. Explain your code to the tutor: it scores you, gives up to two hints, then fills in what you missed. You can ask it questions too.
-5. **Run project again.** The store's login is now your code.
-6. **Next piece.** Round 2 carves out the cart (`store/pieces/cart.py`). Pass it and the bar rises again: login and cart are both yours.
+2. **Start learning.** Round 1 carves out the login (`store/pieces/auth.py`), **one function at a time**. *Your task* shows the function and what it must do to pass. *Read first* shows where it's used, what breaks, and the store code to read.
+3. **Write, Hint, Submit.** The editor holds just that function. **Hint** gives one nudge, never code. The draggable **Tutor** button opens a window where you can also ask about a library, a method or a concept. After **Submit**, each criterion gets ✓ or ✗.
+4. **Pass.** Your function replaces the original right away and the ownership bar goes up. The tutor asks one narrow question about it. A weak answer gets a narrower follow-up.
+5. **Next function**, then **Run project** once the round is done: the store's login is now your code.
+6. **Round 2** carves out the cart (`store/pieces/cart.py`), function by function. At the end, the login and cart are both yours.
 
 Close the tutor at any point and start it again. Your round, draft and progress are all still there.
 
@@ -46,7 +46,7 @@ Close the tutor at any point and start it again. Your round, draft and progress 
 ```
 tutor/            the tutor app (FastAPI, :8000)
   app.py          pages + JSON API
-  pieces.py       the carvable pieces: stubs, task text, reference explanations
+  pieces.py       the carvable pieces, function by function: stubs, criteria, questions; assemble()
   runner.py       runs pytest on your code (separate process, 15s limit); assembles and restarts the store
   llm.py          hints, grading and answers via an OpenAI-compatible API (Groq by default)
   progress.py     data/progress.json + the ownership %
@@ -55,6 +55,6 @@ store/            the practice project (FastAPI + Jinja2 + SQLite, :8001)
 tests/            the tests each piece must pass
 ```
 
-Each piece is its own file. When you pass, your code is saved to `data/learner/`, and **Run project** copies the store to `.run/store/` with your passed pieces swapped in, then restarts it. Pieces you haven't finished keep running the original, so the store never breaks.
+Each piece is its own file, rebuilt one function at a time. When a function passes, it's swapped into the AI's file and saved to `data/learner/`. **Run project** copies the store to `.run/store/` with your file in place, then restarts it. Functions you haven't written yet keep running the original, so the store never breaks.
 
 **Note:** your code runs directly on your machine, not in a sandbox. That's fine for one learner locally, but not for a public deployment.

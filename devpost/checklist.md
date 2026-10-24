@@ -69,10 +69,15 @@ Build mode: fast
 - [ ] Make the tutor pages more visually attractive. They're smooth but too plain (from the early checkpoint).
 - [ ] A fuller projects/home page, with a richer description of the project. Clarify what "a whole page for the projects" means first.
 - [ ] Home intro also mentions "bring your own idea" (coming soon), not only "start with a project that already works".
-- [ ] Floating tutor: a small draggable button that opens its own scrollable window, replacing the fixed tutor panel. Clicking **Hint** opens it right away.
-- [ ] Show only the latest hint, with no log. In the explanation stage, show only the explanation exchange.
-- [ ] Grading takes earlier explanations into account, and adding detail never lowers the score (the learner got 6/10, then 3/10 after adding more).
-- [ ] Passing criteria listed under each function in the task, marked ✓/✗ after Submit.
+- [ ] Floating tutor: a small draggable button that opens its own scrollable window, replacing the fixed tutor panel. Clicking **Hint** opens it right away. (Built and verified in the browser; waiting for the learner to retry.)
+- [ ] Show only the latest hint, with no log. In the explanation stage, show only the explanation exchange. (Built; waiting for the learner to retry.)
+- [ ] Grading takes earlier explanations into account, and adding detail never lowers the score (the learner got 6/10, then 3/10 after adding more). (Built; waiting for the learner to retry.)
+- [ ] Passing criteria listed under each function in the task, marked ✓/✗ after Submit. (Built; waiting for the learner to retry.)
+- [ ] One function at a time: the editor shows only the current function, it swaps into the store when it passes, and the bar rises at each step.
+- [ ] One narrow, hand-written question per function, one at a time. Follow-ups are narrower questions.
+- [ ] Task panel split into **Your task** and **Read first** tabs.
+- [ ] Ask the tutor about libraries, methods and concepts at any time. The window clears when closed.
+- [ ] Decide on the catalog of coming-soon projects and the locked "download at 60%" button (cost explained; learner hasn't answered yet).
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
@@ -96,3 +101,6 @@ Activity mode:
 - The tutor also reads the API key from a git-ignored `.env` file, not only an exported variable, so the key survives new terminals.
 - On a weak explanation that still has hints left, the tutor shows only the score and the hint, not the "what's missing" feedback. Live testing showed that feedback already spelled out the whole explanation, so the retry would be pointless. Feedback, extra tips and (if needed) the full explanation come once the check is done.
 - **Next piece** appears as soon as the tests pass, with the explanation check offered alongside it rather than required first. If the AI were down, a required check would block round 2, and the PRD counts a round once the tests pass.
+- Pieces are now rebuilt one function at a time, at the learner's request in the final review. The editor shows one function, `pieces.assemble()` swaps passed functions into the AI's file, tests run on the assembled file, and each function has its own hand-written question and reference answer. `POST /api/round/start` became `POST /api/next`. The learner found a whole piece at once (three functions, the full task, broad questions) too much to read and do. PRD (Core Journey, Carving, Focused Task, Hints, Understanding Check, Product Decisions) and spec (plain-language overview, journey, Piece Definitions, API, AI Tutor, Progress, Data Model) were updated to match.
+- Results and after-submit hints focus on the current function's own tests. The build found that a stubbed function also makes the AI's later functions fail (`check_login` calls `hash_password`), which showed confusing failures from other functions.
+- The tutor button defaults to the bottom-left, and its window is anchored on the button's side. In the browser check, the bottom-right default covered the **Hint** and **Next** buttons, and the window grew over the button as replies arrived.

@@ -14,15 +14,16 @@ Source: `scope.md > The Core Loop`, `scope.md > What "Working" Looks Like`.
 1. **Opening:** The learner opens the app and sees a short intro and the project catalog. The catalog has one project, the 3D asset store, and a "Bring your own idea" option marked as coming soon.
 2. **Project page:** They choose the 3D asset store and see a description of the project and what it does.
 3. **Run it first:** They click Run and the finished store opens in another browser tab. They log in, browse assets, use the cart and check out, all without seeing any code.
-4. **Start round 1:** They click the button to start learning. The tutor carves out the first piece, **authentication**.
-5. **Task workspace:** They see the focused task: what the piece takes in and returns, where it's called, what breaks if it's wrong, and only the related files and code they need to read. An editor shows the empty spot to fill in.
-6. **Work:** They write code. They can click **Hint** at any time, and the tutor nudges them without giving the answer.
-7. **Submit:** The tests run and the results appear.
-   - **Tests fail:** They see which tests failed, and the tutor gives hints focused on the most important thing they missed. Back to step 6.
-   - **Tests pass:** Their code replaces the AI's code, and the ownership percentage goes up.
-8. **Explain it:** The tutor asks them to explain what they built, and they can also ask the tutor questions. The tutor gives a score, fills in what they missed, and adds extra information that will help on similar work later. (See **Understanding Check**.)
-9. **See it working:** They run the store again in the other tab. It works the same, but now authentication is their code.
-10. **Round 2:** The tutor keeps their authentication code and carves out **cart behavior**. Steps 5–9 repeat, and the ownership percentage rises again.
+4. **Start round 1:** They click the button to start learning. The tutor carves out the first piece, **authentication**, and opens its first function. A piece is rebuilt **one function at a time**.
+5. **Task workspace:** They see one function: what it takes in and returns, and the criteria it must meet to pass. A separate **Read first** tab shows where it's called, what breaks if it's wrong, and only the code they need to read. The editor shows just that function, empty.
+6. **Work:** They write the function. They can click **Hint** for a nudge, and ask the tutor about a library, a method or a concept at any time.
+7. **Submit:** The tests run, and each criterion is marked passed or failed.
+   - **Tests fail:** They see which criteria failed, and the tutor gives a hint focused on the most important one. Back to step 6.
+   - **Tests pass:** Their function replaces the AI's in the store right away, and the ownership percentage goes up.
+8. **One question:** The tutor asks one narrow question about that function. A weak answer gets a narrower follow-up question. (See **Understanding Check**.)
+9. **Next function:** They move to the next function of the piece. Steps 5–8 repeat until the whole piece is theirs.
+10. **See it working:** They run the store again in the other tab. It works the same, but now authentication is their code.
+11. **Round 2:** The tutor keeps their authentication code and carves out **cart behavior**, again one function at a time. The ownership percentage keeps rising.
 
 The proof is complete when two pieces are the learner's, the store still works end to end, and the ownership percentage shows their share.
 
@@ -72,21 +73,23 @@ The practice project the learner rebuilds piece by piece. It is a showcase with 
 
 ### Carving a Piece
 Source: `scope.md > The Core Loop`.
-- **Start learning** (round 1) and the start of round 2 each carve out one predefined piece: **authentication** first, then **cart behavior**. *(The learner may swap these pieces before the build. See Open Questions.)*
-- The carved piece's code is removed from the learner's editor view, leaving a clearly marked place for their code.
-  - [ ] After a piece is carved out, the editor shows that piece as empty or stubbed, and the rest of the project is untouched.
+- **Start learning** (round 1) and the start of round 2 each carve out one predefined piece: **authentication** first, then **cart behavior**.
+- A piece is rebuilt **one function at a time**, in order. The editor shows only the current function as an empty stub, so the learner never faces several tasks at once.
+  - [ ] The editor shows one stubbed function, and the rest of the project is untouched.
+  - [ ] The next function opens only after the current one passes.
 
 ### Focused Task
-- For the carved piece, the task shows:
-  - What it takes in and what it returns.
-  - Where in the project it's called and used.
-  - What breaks in the store if it's wrong.
-  - Only the related files or code snippets needed to understand it, not the whole project.
-  - [ ] The task panel shows the inputs, outputs, call sites, consequences and only the references relevant to this piece.
+- The task is split into two tabs so there's little to read at once:
+  - **Your task:** the current function, what it takes in and returns, and the criteria it must meet to pass.
+  - **Read first:** where it's called, what breaks in the store if it's wrong, and only the code needed to understand it.
+  - [ ] The task tab shows one function and its pass criteria; the read tab shows call sites, consequences and references for that function only.
+  - [ ] After Submit, each criterion is marked passed or failed.
 
 ### Hints
-- The learner can ask for a hint at any time while coding. A hint moves them toward the goal of this piece and never gives the exact answer.
+- The learner can ask for a hint at any time while coding. A hint is one short idea, ideally a question, and never gives the exact answer.
 - After failed tests, hints focus on the most important thing the learner missed.
+- **Ask the tutor:** at any time, the learner can ask about a library, a method, an attribute or a concept, and gets a short reference-style answer that never writes their function.
+- **No log:** the tutor is a small button the learner can drag anywhere. It opens its own window, shows only the latest hint or answer, and clears when closed.
   - [ ] Clicking **Hint** gives a nudge related to the current piece that contains no complete solution code.
   - [ ] After failed tests, the hint addresses what a failing test is checking.
 
@@ -97,12 +100,13 @@ Source: `scope.md > The Core Loop`.
   - [ ] Passing code shows all tests passed, the learner's code is now what runs, and the percentage goes up.
 
 ### Understanding Check
-- **After the tests pass:** The tutor asks the learner to explain what they built. The learner can also ask the tutor questions about it.
-- **Feedback:** The tutor scores the explanation, says what was missing or imprecise, and adds extra information that helps with similar work later.
-- **If the explanation is weak or the score is low:** The tutor gives a hint ("You're missing something related to X. Think about it.") and the learner can explain again. After a second hint and try, if it's still not right, the tutor gives the precise explanation itself: "You got the implementation right. To be more precise, it's this, this and this."
-- **The round counts once the tests pass.** A correct implementation is already a good sign, and the explanation backs it up.
-  - [ ] After passing, the learner is asked to explain and gets a score with written feedback.
-  - [ ] A weak explanation gets a targeted hint and a retry, up to two hints, and then the tutor gives the full explanation.
+- **After a function passes:** The tutor asks **one narrow question** about it (for example, "Why compare the hashes with hmac.compare_digest instead of ==?").
+- **Feedback:** The tutor scores the answer, says what was missing, and adds one useful extra fact.
+- **If the answer is weak:** The tutor asks a narrower follow-up question and the learner answers again. Answers are judged together, so adding detail never lowers the score. After two follow-ups, the tutor gives the full answer.
+- **The function counts once the tests pass.** The question backs it up.
+  - [ ] After passing, the learner gets one narrow question and a score with feedback.
+  - [ ] A weak answer gets a narrower follow-up question and a retry, up to two, and then the full answer.
+  - [ ] A later answer never scores lower than an earlier one.
   - [ ] A low score never removes the learner's code or lowers the percentage.
 
 ### Saved Progress
@@ -134,7 +138,8 @@ Source: `scope.md > The POC Boundary`.
 - **Pictures instead of real 3D files:** The idea is shown without handling real assets.
 - **Download link on the page, not by email:** This avoids connecting to an outside mail service.
 - **Ownership is measured in lines of code:** Simple and visible.
-- **Rounds count once the tests pass:** The explanation backs up the implementation. Weak explanations get up to two hints, then the tutor explains.
+- **One function at a time:** Each piece is split into its functions so the learner always has one small task (changed during the final review: one whole piece at once was too much to read and do).
+- **Functions count once the tests pass:** One narrow question backs up the implementation. Weak answers get up to two narrower follow-ups, then the tutor gives the answer.
 - **Hints never give the exact answer while coding.**
 - **Progress persists:** Finished pieces, the percentage and in-progress work survive closing the app, so learners never start fresh.
 - **A passed piece stays the learner's:** The AI's version runs only while a piece is unfinished. Once it passes, it's theirs for good, including fixing any bugs it causes later.
