@@ -117,6 +117,49 @@ def get_hint(code: str = Body(), after_submit: bool = Body(False)):
     return {"hint": llm.hint(current, code, results)}
 
 
+PASS_SCORE = 7
+MAX_HINTS = 2
+
+
+@app.post("/api/explain")
+def explain(explanation: str = Body(embed=True)):
+    """Grade the learner's explanation. Two targeted hints on weak answers, then the full explanation.
+    The score never touches their code or the ownership %."""
+    prog = progress.load()
+    current = prog["current"]
+    piece = prog["pieces"].get(current)
+    if not piece or piece["status"] != "passed":
+        return {"error": "Pass the tests first, then explain your code."}
+    check = piece["check"]
+    if check["done"]:
+        return {"error": "You've already finished the check for this piece."}
+    result = llm.grade(current, explanation, piece["draft"])
+    if result is None:
+        return {"error": llm.BUSY}
+    check["attempts"] += 1
+    check["best_score"] = max(check["best_score"] or 0, result["score"])
+    if result["score"] < PASS_SCORE and check["attempts"] <= MAX_HINTS:
+        # Only the hint: the full feedback would hand over the explanation before they retry.
+        response = {"score": result["score"], "done": False,
+                    "hint": result["hint"] or "You're close. Think about what each function does with tricky inputs."}
+    else:
+        check["done"] = True
+        response = {"score": result["score"], "feedback": result["missing"], "extra": result["extra"], "done": True}
+        if result["score"] < PASS_SCORE:
+            response["final_explanation"] = PIECES[current]["model_explanation"]
+    progress.save(prog)
+    return response
+
+
+@app.post("/api/ask")
+def ask(question: str = Body(embed=True)):
+    prog = progress.load()
+    current = prog["current"]
+    if not current:
+        return {"answer": "Start a round first."}
+    return {"answer": llm.answer(current, question, prog["pieces"][current]["draft"] or "")}
+
+
 @app.post("/api/run")
 def run():
     return runner.run_store(passed=progress.passed(progress.load()))

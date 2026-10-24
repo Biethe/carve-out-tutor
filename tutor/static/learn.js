@@ -52,6 +52,50 @@ async function getHint(afterSubmit) {
   $("hint").disabled = false;
 }
 
+// The understanding check: shown once the tests pass. Ask stays available after it's done.
+function openCheck(check) {
+  $("chat").hidden = false;
+  if (check.done) {
+    $("explain").hidden = true;
+    $("chat-input").placeholder = "Ask the tutor anything about this piece…";
+    addMessage(`Understanding check complete${check.best_score !== null ? ` (best score ${check.best_score}/10)` : ""}. You can still ask me questions.`);
+  } else {
+    addMessage("Nice work, all tests pass! Now tell me in your own words: what does your code do, and why does it work that way?");
+  }
+}
+
+$("explain").onclick = async () => {
+  const text = $("chat-input").value.trim();
+  if (!text) return;
+  addMessage(escapeHtml(text), "learner-msg");
+  $("chat-input").value = "";
+  $("explain").disabled = true;
+  const { el, res } = await askTutor("/api/explain", { explanation: text });
+  $("explain").disabled = false;
+  if (res.error) { el.textContent = res.error; return; }
+  let html = `<strong>Score: ${res.score}/10.</strong> `;
+  if (res.feedback) html += formatReply(res.feedback) + " ";
+  if (res.hint) html += `<br><br>${formatReply(res.hint)} Try explaining again.`;
+  if (res.final_explanation) html += `<br><br>You got the implementation right. To be more precise: ${formatReply(res.final_explanation)}`;
+  if (res.extra) html += `<br><br><em>Good to know:</em> ${formatReply(res.extra)}`;
+  el.innerHTML = html;
+  if (res.done) {
+    $("explain").hidden = true;
+    $("chat-input").placeholder = "Ask the tutor anything about this piece…";
+  }
+};
+
+$("ask").onclick = async () => {
+  const text = $("chat-input").value.trim();
+  if (!text) return;
+  addMessage(escapeHtml(text), "learner-msg");
+  $("chat-input").value = "";
+  $("ask").disabled = true;
+  const { el, res } = await askTutor("/api/ask", { question: text });
+  $("ask").disabled = false;
+  el.innerHTML = formatReply(res.answer);
+};
+
 function setOwnership(pct) {
   $("own-pct").textContent = pct + "%";
   $("own-fill").style.width = pct + "%";
@@ -111,8 +155,10 @@ $("submit").onclick = async () => {
   if (res.error) { $("results").innerHTML = `<p class="summary fail">${escapeHtml(res.error)}</p>`; return; }
   showResults(res.results, res.passed);
   setOwnership(res.ownership);
-  if (res.passed) lockIfPassed("passed");
-  else getHint(true);
+  if (res.passed) {
+    lockIfPassed("passed");
+    openCheck({ done: false, best_score: null });
+  } else getHint(true);
 };
 
 $("hint").onclick = () => getHint(false);
@@ -128,4 +174,5 @@ $("run").onclick = () => runProject($("run-status"));
   setOwnership(s.ownership);
   showResults(s.last_results, s.status === "passed");
   lockIfPassed(s.status);
+  if (s.status === "passed") openCheck(s.check);
 })();

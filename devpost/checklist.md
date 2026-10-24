@@ -29,7 +29,7 @@ Build mode: fast
   Learner check: Click **Start learning**. Read the task, write the three auth functions yourself in the editor, and click **Submit** until everything is green. Watch the % go up, then click **Run project** and log in to the store. That login is now your code.
   Commit: `Add round 1 carve loop: workspace, tests, swap-in, ownership`
 
-- [ ] **3. You can ask the tutor for a hint, and failed tests get a hint aimed at what broke**
+- [x] **3. You can ask the tutor for a hint, and failed tests get a hint aimed at what broke**
   Becomes usable: **Hint** gives a nudge about your current code with no solution code. A failed **Submit** comes back with a hint focused on the most important failing test. If Groq is down or the key is missing, you see "The tutor is busy, try again in a minute" and everything else keeps working.
   Why now: The coaching is the second half of the kernel, and Groq is the only outside service, so its real behavior (model ID, limits, whether it leaks answers) should be checked before the understanding check also depends on it.
   PRD ref: `prd.md > The Core Journey` (steps 6-7), `prd.md > Hints`
@@ -90,3 +90,4 @@ Activity mode:
 - The practice store got a display name, "Polyvault" — the PRD only called it "the 3D asset store"; easy to rename.
 - Hint rules made stricter (one function, next step only, no calls with arguments) and `reasoning_effort="low"` added. Live testing with `openai/gpt-oss-120b` showed the first prompt handed over nearly the whole solution (`hashlib.sha256(...).hexdigest()` plus all three functions), and the free tier's 8K tokens/minute needs short replies.
 - The tutor also reads the API key from a git-ignored `.env` file, not only an exported variable, so the key survives new terminals.
+- On a weak explanation that still has hints left, the tutor shows only the score and the hint, not the "what's missing" feedback. Live testing showed that feedback already spelled out the whole explanation, so the retry would be pointless. Feedback, extra tips and (if needed) the full explanation come once the check is done.

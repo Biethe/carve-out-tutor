@@ -1,4 +1,5 @@
 """The only file that talks to the AI. Groq by default; any OpenAI-compatible endpoint works via env vars."""
+import json
 import os
 import re
 from pathlib import Path
@@ -23,7 +24,7 @@ def _env(name: str, default: str | None = None) -> str | None:
     return default
 
 
-def _chat(system: str, user: str) -> str:
+def _chat(system: str, user: str, json_mode: bool = False) -> str:
     api_key = _env("LLM_API_KEY") or _env("GROQ_API_KEY")
     if not api_key:
         raise RuntimeError("No API key set")
@@ -32,6 +33,7 @@ def _chat(system: str, user: str) -> str:
         model=_env("LLM_MODEL", "openai/gpt-oss-120b"),
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         reasoning_effort="low",  # keeps replies quick and inside the free tier's token budget
+        **({"response_format": {"type": "json_object"}} if json_mode else {}),
     )
     return reply.choices[0].message.content or ""
 
@@ -70,5 +72,47 @@ def hint(piece: str, code: str, results: list[dict] | None = None) -> str:
         parts.append("They asked for a hint while writing code.")
     try:
         return _strip_code(_chat(HINT_RULES, "\n\n".join(parts))) or BUSY
+    except Exception:
+        return BUSY
+
+
+GRADE_RULES = """You grade a beginner's explanation of code they just wrote (their tests already pass).
+Compare it with the reference explanation. Plain words are fine; don't demand jargon.
+Reply with JSON only, with these keys:
+"score": integer 0-10 (7 or more means they clearly understand the main ideas),
+"missing": 1-2 sentences to the learner on what was missing or imprecise ("" if nothing),
+"extra": 1-2 sentences of useful extra knowledge that helps with similar work later,
+"hint": if score < 7, one sentence like "You're missing something about X. Think about it." that names the topic without giving the answer; otherwise ""."""
+
+
+def grade(piece: str, explanation: str, code: str) -> dict | None:
+    """Score an explanation: {score, missing, extra, hint}. None if the AI is unavailable."""
+    user = (f"{_task_text(piece)}\n\nReference explanation:\n{PIECES[piece]['model_explanation']}"
+            f"\n\nThe learner's code:\n{code}\n\nThe learner's explanation:\n{explanation}")
+    for _ in range(2):  # one retry if the reply isn't valid JSON
+        try:
+            data = json.loads(_chat(GRADE_RULES, user, json_mode=True))
+            return {
+                "score": max(0, min(10, int(data["score"]))),
+                "missing": str(data.get("missing") or ""),
+                "extra": str(data.get("extra") or ""),
+                "hint": _strip_code(str(data.get("hint") or "")),
+            }
+        except (ValueError, KeyError, TypeError):
+            continue
+        except Exception:
+            return None
+    return None
+
+
+ANSWER_RULES = """You are a patient coding tutor. The learner rebuilt one piece of a working Python web app and has a question.
+Answer clearly and briefly (under 120 words), in plain words, using their code and the app as context.
+You may explain concepts and show tiny generic examples, but never write code for the piece's own functions."""
+
+
+def answer(piece: str, question: str, code: str) -> str:
+    try:
+        reply = _chat(ANSWER_RULES, f"{_task_text(piece)}\n\nThe learner's code:\n{code}\n\nTheir question:\n{question}")
+        return reply.strip() or BUSY
     except Exception:
         return BUSY

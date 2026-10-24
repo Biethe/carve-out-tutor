@@ -1,4 +1,5 @@
 :root { --bg: #faf8f5; --panel: #fff; --ink: #2a2622; --muted: #7a726a; --line: #ebe6df; --accent: #e8772e; --accent-dark: #c9611d; --pass: #2f9e5a; --fail: #c94a3b; }
+[hidden] { display: none !important; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
 a { color: var(--accent-dark); }
@@ -53,6 +54,11 @@ a.card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(60,40,2
 .msg { margin: 0; padding: 10px 14px; border-radius: 10px; font-size: 15px; line-height: 1.55; }
 .tutor-msg { background: #fdf4ec; border-left: 3px solid var(--accent); }
 .learner-msg { background: #f3f1ee; align-self: flex-end; max-width: 90%; }
+.chat { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.chat textarea { font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+.chat textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.chat-buttons { display: flex; gap: 8px; }
+.chat-buttons .btn { padding: 8px 16px; font-size: 14px; }
 .thinking { color: var(--muted); animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .45; } }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
