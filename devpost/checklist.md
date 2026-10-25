@@ -130,7 +130,7 @@ Build mode: fast
 - [ ] Ask the tutor about libraries, methods and concepts at any time. The window clears when closed.
 - [ ] Store sign-up so the learner can create users and check they can log in. Each user sees only their own purchases. (Built; waiting for the learner to retry.)
 - [ ] Decide on the locked "download at 60%" button (cost explained; learner hasn't answered yet). The catalog part is built as coming-soon cards.
-- [ ] The editor blocks paste and drag-drop, so code can only be typed. (Built and verified in the browser; waiting for the learner to try it.)
+- [ ] The editor blocks paste and drag-drop, so code can only be typed. On `localhost` pasting stays allowed, so the builder can paste during development; any other address (the public site) blocks it. (Built and verified in the browser for both cases.)
 - [ ] **Files** tab: the project's folder tree, with each Python file's one-line description and the current file marked. (Built; waiting for the learner to try it.)
 - [ ] **Map** tab: a hand-drawn diagram of how the files depend on each other and how data flows (browser, routes, pieces, database, templates), labelled with the functions called. (Built; waiting for the learner to try it.)
 - [ ] Handwritten-looking code in the editor, still colored by syntax. (Built; waiting for the learner to try it.)

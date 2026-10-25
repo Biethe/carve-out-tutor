@@ -8,20 +8,23 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Pasting is allowed only while building the tutor on your own machine. The public site always blocks it.
+const PASTE_ALLOWED = ["localhost", "127.0.0.1"].includes(location.hostname);
+
 // CodeMirror from the CDN, or the plain textarea if it didn't load (offline).
 let editor;
 if (window.CodeMirror) {
   editor = CodeMirror.fromTextArea($("editor"), {
-    mode: "python", lineNumbers: true, indentUnit: 4, dragDrop: false,
+    mode: "python", lineNumbers: true, indentUnit: 4, dragDrop: PASTE_ALLOWED,
     extraKeys: { Tab: cm => cm.execCommand(cm.somethingSelected() ? "indentMore" : "insertSoftTab") },
   });
   // Typing only: pasted or dropped text never reaches the editor.
   editor.on("beforeChange", (_, change) => {
-    if (change.origin === "paste" || change.origin === "drop") { change.cancel(); noPaste(); }
+    if (!PASTE_ALLOWED && (change.origin === "paste" || change.origin === "drop")) { change.cancel(); noPaste(); }
   });
 } else {
   const ta = $("editor");
-  for (const ev of ["paste", "drop"]) ta.addEventListener(ev, e => { e.preventDefault(); noPaste(); });
+  if (!PASTE_ALLOWED) for (const ev of ["paste", "drop"]) ta.addEventListener(ev, e => { e.preventDefault(); noPaste(); });
   editor = { getValue: () => ta.value, setValue: v => (ta.value = v), on: (_, fn) => ta.addEventListener("input", fn), setOption() {} };
 }
 
