@@ -166,7 +166,7 @@
     async function introduce() {
       clip?.pause();
       clip = new Audio("static/chip-intro.wav");
-      clip.playbackRate = Voice.RATE;
+      // Natural speed: a sped-up voice sounds processed.
       Voice.stopSpeaking();
       turn("chip");
       try {

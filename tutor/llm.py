@@ -84,17 +84,19 @@ async def _post_audio(url: str, headers: dict, body: dict) -> bytes:
 SPEECH = {"api.groq.com": ("canopylabs/orpheus-v1-english", "hannah"), "api.openai.com": ("gpt-4o-mini-tts", "coral")}
 
 
-async def speech(text: str) -> bytes:
-    """WAV audio of the text in a natural voice. Raises NoKey, or RuntimeError if the provider has no voice for us."""
+async def speech(text: str, voice: str | None = None, direction: str | None = "[cheerful]") -> bytes:
+    """WAV audio of the text in a natural voice. Raises NoKey, or RuntimeError if the provider has no voice for us.
+    `direction` is Orpheus' delivery note (not read out); None lets the voice speak plainly."""
     api_key = _env("LLM_API_KEY") or _env("GROQ_API_KEY")
     if not api_key:
         raise NoKey()
     base = _env("LLM_BASE_URL", DEFAULTS["LLM_BASE_URL"]).rstrip("/")
-    model, voice = next((v for host, v in SPEECH.items() if host in base), (None, None))
+    model, default_voice = next((v for host, v in SPEECH.items() if host in base), (None, None))
+    voice = voice or default_voice
     if not model:
         raise RuntimeError("Your AI provider has no natural voice here, so the browser's voice is used.")
-    if "orpheus" in model and not text.startswith("["):
-        text = "[cheerful] " + text  # Orpheus' delivery direction: upbeat, and it isn't read out
+    if "orpheus" in model and direction and not text.startswith("["):
+        text = f"{direction} {text}"
     body = {"model": model, "voice": voice, "input": text, "response_format": "wav"}
     return await _post_audio(base + "/audio/speech", {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, body)
 
