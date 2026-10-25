@@ -32,14 +32,19 @@ def _short(text: str, lines: int = 12, last: bool = False) -> str:
     return "\n".join(text_lines[-lines:] if last else text_lines[:lines])
 
 
-def run_tests(file: str, test_name: str, test_code: str, code: str) -> str:
-    """Run one test file against a copy of the store with `file` replaced by `code`, as tutor/runner.py does locally.
-    Returns the results as JSON."""
+def run_tests(file: str, test_name: str, test_code: str, code: str, project: str = "store", files_json: str = "") -> str:
+    """Run one test file against a copy of the project with `file` replaced by `code`, as tutor/runner.py does locally.
+    The built-in store is here already; an uploaded project's files come with the job. Returns the results as JSON."""
     import pytest
 
     with tempfile.TemporaryDirectory() as tmp:
-        store = Path(tmp, "store")
-        shutil.copytree(ROOT / "store", store, ignore=shutil.ignore_patterns("__pycache__", "*.db"))
+        store = Path(tmp, project)
+        if files_json:
+            for rel, text in json.loads(files_json).items():
+                (store / rel).parent.mkdir(parents=True, exist_ok=True)
+                (store / rel).write_text(text)
+        else:
+            shutil.copytree(ROOT / "store", store, ignore=shutil.ignore_patterns("__pycache__", "*.db"))
         (store / file).write_text(code)
         Path(tmp, "tests").mkdir()
         shutil.copy(ROOT / "tests" / "conftest.py", Path(tmp, "tests"))
@@ -97,41 +102,90 @@ def start_tutor():
 
 
 async def _browser_tests(file: str, test_name: str, test_code: str, code: str) -> list[dict]:
-    """The tutor's runner, in the browser: the page runs the tests in the separate tests worker."""
+    """The tutor's runner, in the browser: the page runs the tests in the separate tests worker.
+    An uploaded project lives only in this worker's storage, so its files travel with the job."""
     from js import runTests
-    return json.loads(await runTests(json.dumps({"file": file, "test_name": test_name, "test_code": test_code, "code": code})))
+    from tutor import pieces, projects
+    job = {"file": file, "test_name": test_name, "test_code": test_code, "code": code, "project": pieces.STORE.name}
+    if pieces.STORE != pieces.BUILTIN:
+        job["files"] = {str(p.relative_to(pieces.STORE)): p.read_text(errors="replace") for p in pieces.STORE.rglob("*")
+                        if p.is_file() and p.suffix in (".py", ".txt", ".html", ".json", ".cfg", ".toml", ".ini", ".csv", ".sql")}
+        job["requirements"] = projects.requirements(pieces.STORE)
+    return json.loads(await runTests(json.dumps(job)))
 
 
-def _browser_store(passed: list[str]) -> dict:
+async def _browser_store(passed: list[str]) -> dict:
+    """Run project, in the browser: the active project starts in this worker and is served at run/."""
+    from tutor import pieces, progress, projects
     from tutor.pieces import PIECES
-    from tutor.progress import DATA
+    how = projects.kind(pieces.STORE)
+    if how["kind"] == "tests":
+        return {"error": "This project isn't a web app or a web page, so it's checked with tests only."}
     try:
-        start_app("run", "store", {f"store/{PIECES[p]['file']}": (DATA / "learner" / PIECES[p]["file"]).read_text() for p in passed})
+        needs = projects.requirements(pieces.STORE)
+        if needs:
+            import micropip
+            await micropip.install(needs)
+        start_app("run", pieces.STORE, how, {PIECES[p]["file"]: (progress.work() / "learner" / PIECES[p]["file"]).read_text() for p in passed})
     except Exception as err:
-        return {"error": "The store couldn't start.", "output": _short(repr(err), last=True)}
+        return {"error": "The project couldn't start in the browser.", "output": _short(repr(err), last=True)}
     return {"url": f"{BASE}/run/"}
 
 
-def start_app(mount: str, folder: str, overrides: dict):
-    """(Re)load the web app in `folder` (its app.py) from a fresh copy with the learner's files swapped in."""
-    copy = RUNNING / mount
-    _forget((str(copy),))
-    shutil.rmtree(copy, ignore_errors=True)
-    shutil.copytree(ROOT / folder, copy / folder)
+_wsgi_apps: set = set()  # mounts whose app is WSGI (Flask)
+
+
+def start_app(mount: str, root: Path, how: dict, overrides: dict):
+    """(Re)load a project's web app from a fresh copy with the learner's files swapped in.
+    how: {"kind": "asgi"/"wsgi", "module", "var"} or {"kind": "static", "folder"} (see tutor/projects.py)."""
+    copy = RUNNING / mount / root.name
+    _forget((str(RUNNING / mount),))
+    shutil.rmtree(RUNNING / mount, ignore_errors=True)
+    shutil.copytree(root, copy, ignore=shutil.ignore_patterns("__pycache__", "*.db", ".git", "node_modules"))
     for path, code in overrides.items():
         (copy / path).write_text(code)
-    app_dir = str(copy / folder)
+    _wsgi_apps.discard(mount)
+    _cookies[mount] = {}
+    if how["kind"] == "static":
+        from starlette.staticfiles import StaticFiles
+        _apps[mount] = StaticFiles(directory=str(copy / how["folder"]), html=True)
+        return
     sys.path[:] = [p for p in sys.path if not p.startswith(str(RUNNING))]
-    sys.path.insert(0, app_dir)
+    sys.path.insert(0, str(copy))
     cwd = os.getcwd()
-    os.chdir(app_dir)
+    os.chdir(copy)
     try:
-        import app as module
+        import importlib
+        module = importlib.import_module(how["module"])
     finally:
         os.chdir(cwd)
-        sys.modules.pop("app", None)  # the next start imports a fresh copy
-    _apps[mount] = module.app
-    _cookies[mount] = {}
+    _apps[mount] = getattr(module, how["var"])
+    if how["kind"] == "wsgi":
+        _wsgi_apps.add(mount)
+
+
+def _call_wsgi(app, method: str, path: str, query: str, headers: list, body: bytes) -> dict:
+    """A Flask (WSGI) app answers one request. Plain and synchronous: the browser has no threads."""
+    import io
+    environ = {"REQUEST_METHOD": method, "PATH_INFO": path or "/", "QUERY_STRING": query, "SCRIPT_NAME": "",
+               "SERVER_NAME": "app", "SERVER_PORT": "80", "SERVER_PROTOCOL": "HTTP/1.1", "wsgi.version": (1, 0),
+               "wsgi.url_scheme": "http", "wsgi.input": io.BytesIO(body), "wsgi.errors": sys.stderr,
+               "wsgi.multithread": False, "wsgi.multiprocess": False, "wsgi.run_once": False, "CONTENT_LENGTH": str(len(body))}
+    for k, v in headers:
+        key = k.upper().replace("-", "_")
+        environ[key if key in ("CONTENT_TYPE", "CONTENT_LENGTH") else "HTTP_" + key] = v
+    sent = {}
+
+    def start_response(status, response_headers, exc_info=None):
+        sent["status"], sent["headers"] = int(status.split()[0]), list(response_headers)
+        return lambda data: None
+
+    result = app(environ, start_response)
+    try:
+        sent["body"] = b"".join(result)
+    finally:
+        getattr(result, "close", lambda: None)()
+    return sent
 
 
 def _remember_cookies(jar: dict, headers: list[tuple[str, str]]):
@@ -167,8 +221,16 @@ async def handle(mount: str, method: str, path: str, query: str, headers_json: s
         "headers": [(k.lower().encode(), v.encode()) for k, v in headers],
         "server": ("app", 80), "client": ("browser", 0),
     }
+    if mount in _wsgi_apps:
+        sent = _call_wsgi(app, method, path, query, headers, bytes(body))
+    else:
+        sent = await _call_asgi(app, scope, bytes(body))
+    return _finish(sent, jar, prefix)
+
+
+async def _call_asgi(app, scope: dict, body: bytes) -> dict:
     sent = {"body": b""}
-    chunks = [{"type": "http.request", "body": bytes(body), "more_body": False}]
+    chunks = [{"type": "http.request", "body": body, "more_body": False}]
 
     async def receive():
         return chunks.pop(0) if chunks else {"type": "http.disconnect"}
@@ -181,6 +243,11 @@ async def handle(mount: str, method: str, path: str, query: str, headers_json: s
             sent["body"] += message.get("body", b"")
 
     await app(scope, receive, send)
+    return sent
+
+
+def _finish(sent: dict, jar: dict, prefix: str) -> dict:
+    """Keeps the cookies, and moves links starting with / under the mount."""
     _remember_cookies(jar, sent["headers"])
     out_headers, body = [], sent["body"]
     for k, v in sent["headers"]:

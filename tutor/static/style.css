@@ -628,3 +628,14 @@ details pre, .clean-code { font-size: 15px; }
 .switch[aria-pressed="true"] { background: var(--marker); color: var(--on-marker); border-style: dashed; }
 .switch:disabled { background: var(--pass-soft); color: var(--pass); border-color: var(--pass); cursor: default; }
 .chip.spot { font-size: 12px; padding: 1px 8px; background: var(--accent-soft); }
+
+/* ---------- Bring your own project (catalog) -------------------------------------- */
+.p-upload { border-style: dashed; }
+.p-upload label.btn { align-self: flex-start; }
+.upload-result .bad { color: var(--fail); margin: 0; }
+.upload-result .good { color: var(--pass); margin: 0; }
+.upload-result ul, .p-mine ul { margin: 4px 0; padding-left: 18px; }
+.uploads { display: contents; }
+.p-mine .remove { position: absolute; top: 14px; right: 14px; }
+.p-mine .btn { margin-top: auto; align-self: flex-start; }
+.p-mine.blocked { background: var(--fail-soft); }

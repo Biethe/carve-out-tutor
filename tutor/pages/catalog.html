@@ -66,9 +66,9 @@
 
     <section class="projects" id="projects" aria-labelledby="projects-title">
       <h2 id="projects-title">Projects you can learn from.</h2>
-      <p class="lead">Each one is a complete app that runs from day one. Polyvault is ready now; the others are on their way.</p>
+      <p class="lead">Each one is a complete app that runs from day one. Start with Polyvault, or bring your own.</p>
       <div class="bento">
-        <a class="card p-main" href="/project">
+        <a class="card p-main" href="/project?open=store">
           <div class="mosaic">
             <img src="/store-assets/neon-city.svg" alt="Neon city world preview" width="400" height="300">
             <img src="/store-assets/fox.svg" alt="Low-poly fox model preview" width="400" height="300">
@@ -76,7 +76,7 @@
           </div>
           <h3>Polyvault</h3>
           <p>A 3D asset store in Python. Log in, browse models and worlds, fill a cart, check out and download what you bought.</p>
-          <div class="chips"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">SQLite</span><span class="chip">6 functions to rebuild</span></div>
+          <div class="chips"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">SQLite</span><span class="chip">28 functions to rebuild</span></div>
           <div class="go">
             <span class="btn small">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
             <span class="mine" id="mine" hidden></span>
@@ -103,6 +103,16 @@
           <p>A tiny two-player game that runs in the browser.</p>
           <div class="chips"><span class="chip">JavaScript</span><span class="chip">Canvas</span></div>
         </div>
+        <div class="card p-upload">
+          <i class="ph-bold ph-upload-simple icon" aria-hidden="true"></i>
+          <h3>Bring your own project</h3>
+          <p>Upload a working project as a <strong>.zip</strong>, for example one you downloaded from GitHub. Python web apps and plain web pages run right here; other Python code gets tests.</p>
+          <label class="btn small"><i class="ph-bold ph-file-zip" aria-hidden="true"></i> Upload a .zip
+            <input type="file" id="upload" accept=".zip,application/zip" hidden></label>
+          <p class="small muted">Only upload projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
+          <div class="upload-result" id="upload-result" role="status"></div>
+        </div>
+        <div id="uploads" class="uploads"></div>
         <div class="card p-idea" aria-disabled="true">
           <span class="chip soon">Coming soon</span>
           <i class="ph-bold ph-lightbulb icon" aria-hidden="true"></i>
@@ -121,6 +131,42 @@
   <script>
     // First launch: the interview comes first, so the tutor knows who it's teaching.
     fetch("api/profile").then(r => r.json()).then(p => { if (!p.done) location.replace("interview"); }).catch(() => {});
+    // ---- Bring your own project ------------------------------------------------------
+    const esc = t => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
+    const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page", tests: "Python, tests only" };
+    function showUploads({ projects }) {
+      document.getElementById("uploads").innerHTML = projects.map(p => `
+        <div class="card p-mine${p.blocked ? " blocked" : ""}">
+          <button class="icon-btn remove" data-remove="${esc(p.name)}" aria-label="Remove ${esc(p.name)}"><i class="ph-bold ph-trash" aria-hidden="true"></i></button>
+          <i class="ph-bold ${p.blocked ? "ph-shield-warning" : "ph-folder-open"} icon" aria-hidden="true"></i>
+          <h3>${esc(p.name)}</h3>
+          <div class="chips"><span class="chip">${KIND[p.kind]}</span>${p.blocked ? `<span class="chip soon">Blocked</span>` : ""}</div>
+          ${p.blocked ? `<ul class="small">${p.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>`
+                      : `<a class="btn small" href="project?open=${encodeURIComponent(p.name)}">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>`}
+        </div>`).join("");
+    }
+    fetch("api/projects").then(r => r.json()).then(showUploads);
+    document.getElementById("uploads").onclick = async e => {
+      const b = e.target.closest("[data-remove]");
+      if (b) showUploads(await fetch(`api/projects/${encodeURIComponent(b.dataset.remove)}`, { method: "DELETE" }).then(r => r.json()));
+    };
+    document.getElementById("upload").onchange = async e => {
+      const file = e.target.files[0], out = document.getElementById("upload-result");
+      if (!file) return;
+      out.innerHTML = `<p class="hand">Unpacking and checking it for harmful code…</p>`;
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("api/projects", { method: "POST", body: form }).then(r => r.json());
+      e.target.value = "";
+      if (res.error) { out.innerHTML = `<p class="bad">${esc(res.error)}</p>`; return; }
+      out.innerHTML = res.blocked
+        ? `<p class="bad"><strong>Blocked.</strong> It won't run:</p><ul class="small">${res.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>`
+        : `<p class="good"><strong>${esc(res.name)}</strong> passed the check (${KIND[res.kind]}).</p>`
+          + (res.warnings.length ? `<p class="small muted">Worth knowing:</p><ul class="small">${res.warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "")
+          + `<a class="btn small" href="project?open=${encodeURIComponent(res.name)}">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>`;
+      fetch("api/projects").then(r => r.json()).then(showUploads);
+    };
+
     // If they've started, say how much of Polyvault is already theirs.
     fetch("api/state").then(r => r.json()).then(s => {
       if (s.ownership > 0) {

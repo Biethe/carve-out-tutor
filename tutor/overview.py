@@ -4,19 +4,20 @@ import ast
 import re
 from pathlib import Path
 
-from tutor.pieces import STORE
+from tutor import pieces
 
 SKIP = {"__pycache__"}
 VERBS = {"get", "post", "put", "delete", "patch"}
 
 
-def tree(path: Path = STORE) -> list[dict]:
+def tree(path: Path | None = None) -> list[dict]:
     """[{name, path, dir, children}], folders first. Names only: the learner never sees file contents here."""
+    path = path or pieces.STORE
     items = []
     for p in sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name)):
         if p.name in SKIP or p.name.startswith("."):
             continue
-        item = {"name": p.name, "path": str(p.relative_to(STORE.parent)), "dir": p.is_dir()}
+        item = {"name": p.name, "path": str(p.relative_to(pieces.STORE.parent)), "dir": p.is_dir()}
         if p.is_dir():
             item["children"] = tree(p)
         items.append(item)
@@ -26,9 +27,9 @@ def tree(path: Path = STORE) -> list[dict]:
 class Project:
     """Every top-level function of every .py file, and what each name in a file refers to."""
 
-    def __init__(self, root: Path = STORE):
-        self.files = {".".join(f.relative_to(root).with_suffix("").parts): f for f in sorted(root.rglob("*.py"))
-                      if not SKIP & set(f.parts)}
+    def __init__(self, root: Path | None = None):
+        root = root or pieces.STORE
+        self.files = {".".join(f.relative_to(root).with_suffix("").parts): f for f in pieces.python_files(root)}
         self.sources = {m: f.read_text() for m, f in self.files.items()}
         self.trees = {m: ast.parse(s) for m, s in self.sources.items()}
         self.funcs = {(m, n.name): n for m, t in self.trees.items() for n in t.body if isinstance(n, ast.FunctionDef)}
@@ -49,7 +50,7 @@ class Project:
         return names
 
     def path(self, module: str) -> str:
-        return str(self.files[module].relative_to(STORE))
+        return str(self.files[module].relative_to(pieces.STORE))
 
     def calls(self, module: str, fn: ast.FunctionDef) -> list[tuple[str, str, list[str]]]:
         """Project functions this function calls, in the order they run: [(module, name, argument texts)]."""
@@ -141,7 +142,7 @@ def system(current_file: str | None = None, project: Project | None = None, curr
             if cm != m:
                 calls.setdefault((m, cm), set()).add(cn)
                 used.setdefault(cm, set()).add(cn)
-    mine = next((m for m in p.files if str(p.files[m].relative_to(STORE.parent)) == current_file), None)
+    mine = next((m for m in p.files if str(p.files[m].relative_to(pieces.STORE.parent)) == current_file), None)
     lines = ["flowchart TB", '  browser(["Browser"])']
     for m in p.files:
         star = lambda n: "★ " if m == mine and n == current_fn else ""  # noqa: E731
@@ -172,7 +173,7 @@ def system(current_file: str | None = None, project: Project | None = None, curr
 
 
 def _you(p: Project, current_file: str | None) -> list[str]:
-    mine = [m for m in p.files if current_file and str(p.files[m].relative_to(STORE.parent)) == current_file]
+    mine = [m for m in p.files if current_file and str(p.files[m].relative_to(pieces.STORE.parent)) == current_file]
     return ["  classDef you stroke-width:4px,stroke-dasharray:6 4"] + [f"  class {_id(m)} you" for m in mine] if mine else []
 
 
@@ -309,7 +310,7 @@ def diagrams(current_file: str | None = None, current_fn: str | None = None) -> 
     """The system map, plus only the requests that matter to the learner now: those that reach their function,
     else those that reach their file. With nothing to work on, every request."""
     p = Project()
-    module = current_file and ".".join(Path(current_file).relative_to("store").with_suffix("").parts)
+    module = current_file and ".".join(Path(current_file).relative_to(pieces.STORE.name).with_suffix("").parts)
     current = (module, current_fn) if module else None
     flows = [(f"{v} {path}", *flow(v, path, current, p)) for v, path, _, _ in p.routes()]
     relevant = ([f for f in flows if current in f[2]] or [f for f in flows if any(m == module for m, _ in f[2])] or flows)

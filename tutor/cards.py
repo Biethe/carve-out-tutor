@@ -4,15 +4,12 @@ on the empty stub, so a bad AI-written test can never fail the learner unfairly.
 import json
 from pathlib import Path
 
-from tutor import llm, overview, runner
-from tutor.pieces import PIECES, STORE, assemble, reference_code
-from tutor.progress import DATA
-
-DIR = DATA / "cards"
+from tutor import llm, overview, pieces, progress, runner
+from tutor.pieces import PIECES, assemble, reference_code
 
 
 def _path(piece: str, name: str, suffix: str) -> Path:
-    return DIR / f"{piece}.{name}{suffix}"
+    return progress.work() / "cards" / f"{piece}.{name}{suffix}"
 
 
 def load(piece: str, name: str) -> dict | None:
@@ -20,8 +17,12 @@ def load(piece: str, name: str) -> dict | None:
     return json.loads(path.read_text()) if path.exists() else None
 
 
+def _test_name(piece: str, name: str) -> str:
+    return f"test_{piece.replace('.', '_')}_{name}.py"  # a dot in a test file's name would break its import
+
+
 def test_file(piece: str, name: str) -> tuple[str, str]:
-    return f"test_{piece}_{name}.py", _path(piece, name, ".py").read_text()
+    return _test_name(piece, name), _path(piece, name, ".py").read_text()
 
 
 def facts(piece: str, name: str) -> dict:
@@ -44,17 +45,17 @@ async def prepare(piece: str, name: str) -> str | None:
     file = PIECES[piece]["file"]
     base = next(f for f in PIECES[piece]["functions"] if f["name"] == name)
     known = facts(piece, name)
-    context = {"file": file, "source": (STORE / file).read_text(), "function": reference_code(file, name),
+    context = {"file": file, "source": (pieces.STORE / file).read_text(), "function": reference_code(file, name),
                "call_sites": known["call_sites"],
                "callers": "\n\n".join(reference_code(f, n) for f, n in known["references"])}
-    original = (STORE / file).read_text()
+    original = (pieces.STORE / file).read_text()
     stubbed = assemble(piece, {name: base["stub"]})
     problem = ""
     for _ in range(2):  # one retry, told what went wrong
         card = await llm.card(piece, name, context, problem)
         if card is None:
             return llm.BUSY
-        test_name = f"test_{piece}_{name}.py"
+        test_name = _test_name(piece, name)
         on_original = await runner.run_test_code(file, test_name, card["tests"], original)
         on_stub = await runner.run_test_code(file, test_name, card["tests"], stubbed)
         failing = [f"{r['name']}: {r['message']}" for r in on_original if not r["passed"]]
@@ -64,7 +65,7 @@ async def prepare(piece: str, name: str) -> str | None:
             problem = "These tests still PASS when the function only raises NotImplementedError, so they don't test it."
         else:
             names = {r["name"] for r in on_original}
-            DIR.mkdir(parents=True, exist_ok=True)
+            _path(piece, name, "").parent.mkdir(parents=True, exist_ok=True)
             _path(piece, name, ".py").write_text(card["tests"])
             _path(piece, name, ".json").write_text(json.dumps({
                 "description": card["description"], "breaks": card["breaks"], "question": card["question"],

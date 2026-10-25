@@ -11,11 +11,11 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from tutor import pieces
 from tutor.pieces import PIECES
 from tutor.progress import DATA
 
 ROOT = Path(__file__).parent.parent
-RUN_DIR = ROOT / ".run" / "store"
 STORE_PORT = 8001
 STORE_URL = f"http://localhost:{STORE_PORT}"
 
@@ -46,8 +46,8 @@ async def run_test_code(file: str, test_name: str, test_code: str, code: str) ->
 def _run_tests(file: str, test_name: str, test_code: str, code: str) -> list[dict]:
     """The tests run against a copy of the whole store with `file` (e.g. pieces/auth.py) replaced by `code`."""
     with tempfile.TemporaryDirectory() as tmp:
-        store = Path(tmp, "store")
-        shutil.copytree(ROOT / "store", store, ignore=shutil.ignore_patterns("__pycache__", "*.db"))
+        store = Path(tmp, pieces.STORE.name)
+        shutil.copytree(pieces.STORE, store, ignore=shutil.ignore_patterns("__pycache__", "*.db", ".git", "node_modules"))
         (store / file).write_text(code)
         Path(tmp, "tests").mkdir()
         shutil.copy(ROOT / "tests" / "conftest.py", Path(tmp, "tests"))
@@ -97,25 +97,42 @@ def stop_store():
     _store_proc = None
 
 
+STATIC_SHIM = """from starlette.staticfiles import StaticFiles
+app = StaticFiles(directory={folder!r}, html=True)  # a plain web page, served as it is
+"""
+
+
 def run_store(passed: list[str]) -> dict:
-    """Copy the store, swap in the learner's passed pieces, restart it. Returns {"url"} or {"error"}."""
+    """Copy the active project, swap in the learner's passed pieces, (re)start it. Returns {"url"} or {"error"}.
+    FastAPI/Starlette apps run as they are, Flask apps as WSGI, a plain web page is served as static files."""
     global _store_proc
+    from tutor import projects, progress
     stop_store()
+    root = pieces.STORE
+    how = projects.kind(root)
+    if how["kind"] == "tests":
+        return {"error": "This project isn't a web app or a web page, so it's checked with tests only."}
     if _port_in_use(STORE_PORT):
         return {"error": f"Port {STORE_PORT} is already in use by another program. Close it and try again."}
 
-    shutil.rmtree(RUN_DIR, ignore_errors=True)
-    shutil.copytree(ROOT / "store", RUN_DIR, ignore=shutil.ignore_patterns("__pycache__", "*.db"))
+    run_dir = ROOT / ".run" / root.name
+    shutil.rmtree(run_dir, ignore_errors=True)
+    shutil.copytree(root, run_dir, ignore=shutil.ignore_patterns("__pycache__", "*.db", ".git", "node_modules"))
     for piece in passed:
-        shutil.copy(DATA / "learner" / PIECES[piece]["file"], RUN_DIR / PIECES[piece]["file"])
+        shutil.copy(progress.work() / "learner" / PIECES[piece]["file"], run_dir / PIECES[piece]["file"])
+    if how["kind"] == "static":
+        (run_dir / "_carve_static.py").write_text(STATIC_SHIM.format(folder=how["folder"]))
+        target = ["_carve_static:app"]
+    else:
+        target = [f"{how['module']}:{how['var']}"] + (["--interface", "wsgi"] if how["kind"] == "wsgi" else [])
 
     DATA.mkdir(exist_ok=True)
-    log_path = RUN_DIR.parent / "store.log"
+    log_path = run_dir.parent / f"{root.name}.log"
     env = {**os.environ, "STORE_DB": str(DATA / "store.db")}
     with open(log_path, "w") as log:
         _store_proc = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "app:app", "--port", str(STORE_PORT)],
-            cwd=RUN_DIR, env=env, stdout=log, stderr=subprocess.STDOUT,
+            [sys.executable, "-m", "uvicorn", *target, "--port", str(STORE_PORT)],
+            cwd=run_dir, env=env, stdout=log, stderr=subprocess.STDOUT,
         )
 
     deadline = time.time() + 10
@@ -129,4 +146,4 @@ def run_store(passed: list[str]) -> dict:
             time.sleep(0.2)
     stop_store()
     tail = "\n".join(log_path.read_text().splitlines()[-15:])
-    return {"error": "The store couldn't start.", "output": tail}
+    return {"error": "The project couldn't start. If it needs extra packages: pip install -r requirements.txt", "output": tail}

@@ -3,11 +3,14 @@ import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Body, FastAPI
+from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from tutor import cards, llm, overview, progress, runner
+import inspect
+import shutil
+
+from tutor import cards, llm, overview, pieces, progress, projects, runner, safety
 from tutor.pieces import PIECES, assemble, function, task
 
 PAGES = Path(__file__).parent / "pages"
@@ -204,7 +207,7 @@ async def clean():
 @app.get("/api/overview")
 def project_overview():
     prog = progress.load()
-    current = f"store/{PIECES[prog['current']]['file']}" if prog["current"] else None
+    current = f"{pieces.STORE.name}/{PIECES[prog['current']]['file']}" if prog["current"] else None
     return {"tree": overview.tree(), "current": current, **overview.diagrams(current, prog["step"])}
 
 
@@ -252,12 +255,13 @@ async def ask(question: str = Body(), code: str = Body("")):
 
 
 @app.post("/api/run")
-def run():
+async def run():
     prog = progress.load()
     passed = progress.swapped(prog)
     for piece in passed:  # rewritten each time, so the files always match the latest passed code
         progress.write_learner_file(prog, piece)
-    return runner.run_store(passed=passed)
+    result = runner.run_store(passed=passed)
+    return await result if inspect.isawaitable(result) else result  # in the browser it installs packages first
 
 
 @app.get("/api/settings")
@@ -403,3 +407,56 @@ def edit_plan(marks: dict[str, str] = Body(embed=True)):
     prog["plan"] = plan
     progress.save(prog)
     return get_plan()
+
+
+# ---- Projects: Polyvault, or one the learner uploaded -----------------------------------------
+projects.activate(projects.active()) and projects.activate("store")  # the last one opened (or Polyvault)
+
+
+@app.get("/api/project")
+def project_info():
+    root = pieces.STORE
+    readme = next((p for p in root.glob("README*") if p.is_file()), None)
+    intro = next((block.strip() for block in (readme.read_text(errors="replace").split("\n\n") if readme else [])
+                  if block.strip() and not block.lstrip().startswith(("#", "!", "[", "<", "```"))), "")
+    return {"name": projects.active(), "builtin": root == pieces.BUILTIN, "kind": projects.kind(root)["kind"],
+            "functions": sum(len(p["functions"]) for p in PIECES.values()), "files": len(PIECES), "intro": intro[:400],
+            "safety": None if root == pieces.BUILTIN else projects.report(root.name)}
+
+
+@app.get("/api/projects")
+def list_projects():
+    return {"projects": projects.listing(), "active": projects.active()}
+
+
+@app.post("/api/projects")
+async def upload_project(file: UploadFile = File(...)):
+    """Unpack a zip, then check it for harmful code before anything else can happen with it."""
+    name, problem = projects.unpack(file.filename or "project.zip", await file.read())
+    if problem:
+        return {"error": problem}
+    result = await safety.check(name, projects.UPLOADS / name)
+    return {"name": name, "kind": projects.kind(projects.UPLOADS / name)["kind"], **result}
+
+
+@app.post("/api/projects/{name}/open")
+def open_project(name: str):
+    problem = projects.activate(name)
+    return {"error": problem} if problem else project_info()
+
+
+@app.delete("/api/projects/{name}")
+def delete_project(name: str):
+    if name == "store":
+        return {"error": "Polyvault stays."}
+    shutil.rmtree(projects.UPLOADS / name, ignore_errors=True)
+    shutil.rmtree(progress.DATA / "work" / name, ignore_errors=True)
+    if projects.active() == name:
+        projects.activate("store")
+    return list_projects()
+
+
+@app.get("/api/download")
+def download_project():
+    name, data = projects.download()
+    return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})

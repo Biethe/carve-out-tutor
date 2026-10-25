@@ -3,11 +3,16 @@ import json
 import os
 from pathlib import Path
 
-from tutor.pieces import HAND, PIECES, STORE, _function_spans, assemble
+from tutor import pieces
+from tutor.pieces import HAND, PIECES, _function_spans, assemble
 
 ROOT = Path(__file__).parent.parent
 DATA = Path(os.environ.get("TUTOR_DATA", ROOT / "data"))  # override to keep test runs out of your real progress
-PATH = DATA / "progress.json"
+
+
+def work() -> Path:
+    """Where the active project's progress, cards and the learner's code live. Polyvault's stay in data/ itself."""
+    return DATA if pieces.STORE == pieces.BUILTIN else DATA / "work" / pieces.STORE.name
 
 
 def _new_function() -> dict:
@@ -16,7 +21,8 @@ def _new_function() -> dict:
 
 
 def load() -> dict:
-    progress = json.loads(PATH.read_text()) if PATH.exists() else {}
+    path = work() / "progress.json"
+    progress = json.loads(path.read_text()) if path.exists() else {}
     if "step" not in progress:  # first start, or a file from before functions were carved one at a time
         progress = {"current": None, "step": None, "pieces": {}}
     for piece, p in PIECES.items():
@@ -27,8 +33,8 @@ def load() -> dict:
 
 
 def save(progress: dict):
-    DATA.mkdir(exist_ok=True)
-    PATH.write_text(json.dumps(progress, indent=2))
+    work().mkdir(parents=True, exist_ok=True)
+    (work() / "progress.json").write_text(json.dumps(progress, indent=2))
 
 
 def passed_snippets(progress: dict, piece: str) -> dict[str, str]:
@@ -42,10 +48,12 @@ def swapped(progress: dict) -> list[str]:
 
 
 def plan(progress: dict) -> list[tuple[str, str]]:
-    """The functions the learner will write, in order: their saved plan, or else the hand-made rounds."""
+    """The functions the learner will write, in order: their saved plan, or else the default (Polyvault: the six
+    hand-made rounds; an uploaded project: everything)."""
     if progress.get("plan"):
-        return [tuple(key.split(".", 1)) for key in progress["plan"]["order"] if progress["plan"]["marks"].get(key) == "write"]
-    return [(piece, f["name"]) for piece in HAND for f in PIECES[piece]["functions"]]
+        return [tuple(key.rsplit(".", 1)) for key in progress["plan"]["order"] if progress["plan"]["marks"].get(key) == "write"]
+    builtin = pieces.STORE == pieces.BUILTIN  # an uploaded project starts with every function to write
+    return [(piece, f["name"]) for piece in PIECES if piece in HAND or not builtin for f in PIECES[piece]["functions"]]
 
 
 def all_done(progress: dict) -> bool:
@@ -54,7 +62,7 @@ def all_done(progress: dict) -> bool:
 
 def write_learner_file(progress: dict, piece: str):
     """data/learner/<file>: the piece with every passed function swapped in. Run project uses it."""
-    path = DATA / "learner" / PIECES[piece]["file"]
+    path = work() / "learner" / PIECES[piece]["file"]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(assemble(piece, passed_snippets(progress, piece)))
 
@@ -69,7 +77,7 @@ def ownership(progress: dict) -> float:
     (Imports and setup lines between functions aren't counted: there's nothing to carve there.)"""
     mine = total = 0
     for piece, p in PIECES.items():
-        source = (STORE / p["file"]).read_text()
+        source = (pieces.STORE / p["file"]).read_text()
         lines = source.splitlines()
         for name, (first, last) in _function_spans(source, decorators=False).items():
             f = progress["pieces"][piece].get(name)

@@ -32,6 +32,14 @@ async function boot(data) {
   }
 }
 
+// Installs packages with micropip once per worker. A package that can't install is skipped: its tests will say so.
+const installed = new Set();
+async function installOnce(names) {
+  const todo = names.filter(n => !installed.has(n));
+  todo.forEach(n => installed.add(n));
+  for (const name of todo) { try { await py.pyimport("micropip").install(name); } catch {} }
+}
+
 // IndexedDB <-> /persist. `load` reads saved data in; otherwise writes changes out.
 const sync = load => new Promise((ok, fail) => py.FS.syncfs(load, err => (err ? fail(err) : ok())));
 
@@ -46,7 +54,11 @@ self.runTests = job => new Promise(resolve => {
 
 const handlers = {
   init: data => boot(data).then(() => ({ ready: true })),
-  tests: ({ job }) => JSON.parse(bridge.run_tests(job.file, job.test_name, job.test_code, job.code)),
+  tests: async ({ job }) => {
+    if (job.requirements?.length) await installOnce(job.requirements);  // an uploaded project's own packages
+    return JSON.parse(bridge.run_tests(job.file, job.test_name, job.test_code, job.code, job.project || "store",
+                                       job.files ? JSON.stringify(job.files) : ""));
+  },
   "tests-done": ({ testId, results }) => { testReplies.get(testId)?.(results); testReplies.delete(testId); },
   http: async ({ req }) => {
     const res = await bridge.handle(req.mount, req.method, req.path, req.query, JSON.stringify(req.headers), new Uint8Array(req.body));

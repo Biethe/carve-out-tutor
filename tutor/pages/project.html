@@ -23,9 +23,10 @@
   <main class="project">
     <div>
       <a class="back" href="/"><i class="ph-bold ph-arrow-left" aria-hidden="true"></i> All projects</a>
-      <h1 class="rise-in">Polyvault</h1>
-      <p class="tagline rise-in" style="--i:1">a 3D asset store, already working</p>
-      <p class="lead rise-in" style="--i:2">A small but <em>complete</em> online store written in Python. Browse models, animations and worlds, fill a cart, check out with a pretend payment, and download what you bought.</p>
+      <h1 class="rise-in" id="p-name">Polyvault</h1>
+      <p class="tagline rise-in" style="--i:1" id="p-tagline">a 3D asset store, already working</p>
+      <ul class="small warnings" id="p-warnings" hidden></ul>
+      <p class="lead rise-in" style="--i:2" id="p-lead">A small but <em>complete</em> online store written in Python. Browse models, animations and worlds, fill a cart, check out with a pretend payment, and download what you bought.</p>
 
       <h2>Your plan</h2>
       <p class="muted small" id="plan-summary">Every function of the store can be yours. Choose what you write.</p>
@@ -36,13 +37,14 @@
       <p class="status" id="plan-status" role="status"></p>
       <div class="plan" id="plan"></div>
 
-      <div class="built"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">Jinja2 templates</span><span class="chip">SQLite</span></div>
+      <div class="built" id="p-built"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">Jinja2 templates</span><span class="chip">SQLite</span></div>
 
       <div class="actions">
         <button class="btn secondary" id="run"><i class="ph-bold ph-play" aria-hidden="true"></i> Run project</button>
         <button class="btn" id="learn">Start learning <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button>
+        <button class="btn secondary" id="download"><i class="ph-bold ph-download-simple" aria-hidden="true"></i> Download with my code</button>
       </div>
-      <p class="status" id="run-status" role="status">Try the finished store first. It opens in a new tab.</p>
+      <p class="status" id="run-status" role="status">Try the finished project first. It opens in a new tab.</p>
     </div>
 
     <aside class="project-side">
@@ -64,12 +66,44 @@
 
   <script src="/static/run.js"></script>
   <script>
+    // ?open=<name> switches the project being learned (Polyvault is "store"), then the page describes it.
+    const opening = new URLSearchParams(location.search).get("open");
+    const ready = (opening ? fetch(`api/projects/${encodeURIComponent(opening)}/open`, { method: "POST" }) : fetch("api/project"))
+      .then(r => r.json()).then(info => {
+        if (info.error) { document.querySelector("main").innerHTML = `<p class="lead">${info.error} <a href="/">Back to projects</a></p>`; return; }
+        if (opening) history.replaceState(null, "", "project");
+        if (info.builtin) return;
+        const kinds = { asgi: "a Python web app, running in your browser", wsgi: "a Flask web app, running in your browser",
+                        static: "a web page, running in your browser", tests: "Python code, checked with tests" };
+        document.getElementById("p-name").textContent = info.name;
+        document.getElementById("p-tagline").textContent = kinds[info.kind];
+        document.getElementById("p-lead").textContent = info.intro || `Your own project: ${info.functions} functions in ${info.files} files, all of them yours to rebuild.`;
+        document.querySelector(".project-side").hidden = true;
+        document.getElementById("p-built").hidden = true;
+        if (info.kind === "tests") document.getElementById("run").hidden = true;
+        const warn = info.safety?.warnings || [];
+        if (warn.length) {
+          const ul = document.getElementById("p-warnings");
+          ul.innerHTML = "<li><strong>From the safety check:</strong></li>" + warn.map(w => `<li>${w.replace(/</g, "&lt;")}</li>`).join("");
+          ul.hidden = false;
+        }
+        document.title = `${info.name} | Carve-Out Tutor`;
+      });
+    // The zip is fetched, then saved as a file: a plain download link is cancelled inside the tutor's frame.
+    document.getElementById("download").onclick = async () => {
+      const res = await fetch("api/download");
+      const name = (res.headers.get("content-disposition") || "").match(/filename="(.+)"/)?.[1] || "project.zip";
+      const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: name });
+      document.body.append(link);
+      link.click();
+      link.remove();
+    };
     document.getElementById("run").onclick = () => runProject(document.getElementById("run-status"));
-    fetch("api/state").then(r => r.json()).then(s => {
+    ready.then(() => fetch("api/state")).then(r => r.json()).then(s => {
       if (s.current) document.getElementById("learn").firstChild.textContent = s.all_done ? "See your work " : "Continue learning ";
       if (s.ownership > 0) {
         const el = document.getElementById("progress");
-        el.innerHTML = `You've written <strong>${s.ownership}%</strong> of Polyvault so far.`;
+        el.innerHTML = `You've written <strong>${s.ownership}%</strong> of it so far.`;
         el.hidden = false;
       }
     });
@@ -93,7 +127,7 @@
       const files = [...new Set(data.functions.map(f => f.file))];
       const writing = data.functions.filter(f => f.mark === "write"), done = writing.filter(f => f.status === "passed");
       $("plan-summary").innerHTML = `You'll write <strong>${writing.length}</strong> of ${data.functions.length} functions`
-        + (done.length ? `, <strong>${done.length}</strong> done` : "") + `. Write them all to make Polyvault 100% yours.`;
+        + (done.length ? `, <strong>${done.length}</strong> done` : "") + `. Write them all to make it 100% yours.`;
       $("plan").innerHTML = files.map(file => {
         const fns = data.functions.filter(f => f.file === file);
         const mine = fns.filter(f => f.mark === "write").length;
@@ -127,7 +161,7 @@
       planStatus("Here's Chip's plan for you. Change anything you like.");
       showPlan(res);
     };
-    api("GET", "api/plan").then(data => {
+    ready.then(() => api("GET", "api/plan")).then(data => {
       showPlan(data);
       if (data.profile && !data.suggested) $("suggest").click();  // first visit after the interview: Chip suggests one
     });

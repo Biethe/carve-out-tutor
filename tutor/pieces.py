@@ -4,8 +4,10 @@ written by the learner's AI the first time it's opened (tutor/cards.py). Referen
 import ast
 from pathlib import Path
 
-STORE = Path(__file__).parent.parent / "store"
-ROOT = STORE.parent
+ROOT = Path(__file__).parent.parent
+BUILTIN = ROOT / "store"
+STORE = BUILTIN  # the active project's folder: the built-in store, or an uploaded project (see use())
+SKIP_DIRS = {"__pycache__", ".git", "node_modules", "venv", ".venv", "env", "site-packages", "dist", "build", "tests", "test"}
 
 
 def _stub(signature: str, docstring: str) -> str:
@@ -147,24 +149,34 @@ HAND = {
 TITLES = {"app.py": "The web app's pages and forms", "db.py": "The database"}
 
 
+def python_files(root: Path) -> list[Path]:
+    """The project's own .py files: no tests, no installed packages, no build output."""
+    return [p for p in sorted(root.rglob("*.py")) if not SKIP_DIRS & set(p.relative_to(root).parts)
+            and not p.name.startswith("test_") and p.name not in ("conftest.py", "setup.py")]
+
+
 def _discover() -> dict:
-    """Every store file is a piece, every top-level function in it carvable. Hand-written cards win."""
+    """Every file of the project is a piece, every top-level function in it carvable. Hand-written cards win."""
     pieces = {}
-    for path in sorted(STORE.rglob("*.py")):
-        if "__pycache__" in path.parts:
-            continue
+    builtin = STORE == BUILTIN
+    for path in python_files(STORE):
         file = str(path.relative_to(STORE))
-        key = path.stem
-        hand = HAND.get(key, {})
-        tree = ast.parse(path.read_text())
+        key = path.stem if builtin else file.removesuffix(".py").replace("/", ".")
+        hand = HAND.get(key, {}) if builtin else {}
+        try:
+            tree = ast.parse(path.read_text())
+        except (SyntaxError, UnicodeDecodeError):
+            continue
         known = {f["name"]: f for f in hand.get("functions", [])}
         functions = []
         for node in tree.body:
             if isinstance(node, ast.FunctionDef):
                 functions.append(known.get(node.name) or _auto(node))
-        pieces[key] = {"title": hand.get("title") or TITLES.get(file, file), "file": file,
-                       "test": hand.get("test"), "functions": functions}
-    return {k: pieces[k] for k in [*HAND, *sorted(set(pieces) - set(HAND))]}  # the hand-made rounds first
+        if functions:
+            pieces[key] = {"title": hand.get("title") or (TITLES.get(file, file) if builtin else file), "file": file,
+                           "test": hand.get("test"), "functions": functions}
+    first = [k for k in HAND if k in pieces]  # the hand-made rounds first
+    return {k: pieces[k] for k in [*first, *sorted(set(pieces) - set(first))]}
 
 
 def _auto(node: ast.FunctionDef) -> dict:
@@ -178,6 +190,14 @@ def _auto(node: ast.FunctionDef) -> dict:
 
 
 PIECES = _discover()
+
+
+def use(root: Path):
+    """Switch the active project. PIECES is refilled in place, so every module sees the new one."""
+    global STORE
+    STORE = root
+    PIECES.clear()
+    PIECES.update(_discover())
 
 
 def function(piece: str, name: str) -> dict:
@@ -221,12 +241,12 @@ def task(piece: str, name: str) -> dict:
     p, f = PIECES[piece], function(piece, name)
     return {
         "piece": p["title"],
-        "file": f"store/{p['file']}",
+        "file": f"{STORE.name}/{p['file']}",
         "name": name,
         "signature": f["signature"],
         "description": f["description"],
         "criteria": [{"test": t, "text": c} for t, c in f["criteria"]],
         "call_sites": f["call_sites"],
         "breaks": f["breaks"],
-        "references": [{"file": f"store/{file}", "name": n, "code": reference_code(file, n)} for file, n in f["references"]],
+        "references": [{"file": f"{STORE.name}/{file}", "name": n, "code": reference_code(file, n)} for file, n in f["references"]],
     }
