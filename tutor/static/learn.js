@@ -276,7 +276,7 @@ async function loadOverview() {
 
 const CAPTIONS = {
   system: "Each box is a file, listing the functions other files call: what goes in → what comes back. Your file is highlighted and ★ marks your function. Thick arrows show who calls your code and what it calls, so you can see what your code affects. Click the diagram to see it full size.",
-  flow: "One request, read top to bottom: the numbers give the order, from the click to what goes back to the browser. ★ marks your function. A framed \"alt\" block shows two paths (if / otherwise); a \"loop\" block repeats, and says when it stops.",
+  flow: "One request, read top to bottom: the numbers give the order, from the click to what goes back to the browser. Your file is the yellow column, and the yellow band is the moment your code runs. A framed \"alt\" block shows two paths (if / otherwise); a \"loop\" block repeats, and says when it stops.",
 };
 $("map-view").onchange = () => drawDiagram();
 $("map-expand").onclick = () => { $("map-dialog").showModal(); drawDiagram($("diagram-big")); };

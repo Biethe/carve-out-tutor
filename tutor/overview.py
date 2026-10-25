@@ -217,6 +217,9 @@ def _reply(p: Project, app: str, node: ast.AST) -> str | None:
     return "sends back the answer"
 
 
+YOURS = "rgba(255, 214, 0, 0.35)"  # the highlighter yellow, see-through so it reads on every theme
+
+
 def flow(verb: str, path: str, current: tuple[str, str] | None = None, project: Project | None = None) -> tuple[str, set]:
     """Sequence diagram of one request, read top to bottom: numbered steps from the browser's request to what comes
     back, with if/else branches and loops (and when each loop ends). Also returns the (file, function)s it reaches."""
@@ -236,11 +239,13 @@ def flow(verb: str, path: str, current: tuple[str, str] | None = None, project: 
             parts[cm] = p.path(cm)
             reached.add((cm, cn))
             params = ", ".join(a.arg for a in p.funcs[(cm, cn)].args.args)
-            mine = " ★ your code" if current == (cm, cn) else ""
-            out.append(f"{_id(caller)}->>{_id(cm)}: calls {cn}({params}){mine}")
+            yours = current == (cm, cn)
+            step = [f"{_id(caller)}->>{_id(cm)}: {'★ YOUR CODE ★ ' if yours else ''}calls {cn}({params})"]
             if depth < 3:
-                out += body(cm, p.funcs[(cm, cn)].body, cm, depth + 1, top=False)
-            out.append(f"{_id(cm)}-->>{_id(caller)}: gives back {p.returns(cm, cn)}")
+                step += body(cm, p.funcs[(cm, cn)].body, cm, depth + 1, top=False)
+            step.append(f"{_id(cm)}-->>{_id(caller)}: {'★ your code ' if yours else ''}gives back {p.returns(cm, cn)}")
+            # Your function's whole moment (call, what happens inside, what it gives back) sits in a yellow band.
+            out += [f"rect {YOURS}", *step, "end"] if yours else step
         return out
 
     def body(m: str, stmts: list[ast.stmt], caller: str, depth: int, top: bool) -> list[str]:
@@ -291,7 +296,12 @@ def flow(verb: str, path: str, current: tuple[str, str] | None = None, project: 
     fields = _form_fields(fn) + re.findall(r"{(\w+)}", path)
     steps = [f"browser->>{_id(app)}: {verb} {path}" + (f" with {', '.join(fields)}" if fields else "")]
     steps += body(app, fn.body, app, 0, top=True)
-    head = ["sequenceDiagram", "  autonumber"] + [f"  participant {_id(m)} as {label}" for m, label in parts.items()]
+    head = ["sequenceDiagram", "  autonumber"]
+    for m, label in parts.items():
+        if current and m == current[0]:  # your file's whole column is tinted
+            head += [f"  box {YOURS} your file", f"  participant {_id(m)} as ★ {label}", "  end"]
+        else:
+            head.append(f"  participant {_id(m)} as {label}")
     return "\n".join(head + ["  " + _safe(s, 90) for s in steps]), reached
 
 
@@ -318,7 +328,8 @@ if __name__ == "__main__":
     assert {f["name"] for f in d["flows"]} == {"POST /login"}, [f["name"] for f in d["flows"]]  # only what reaches it
     login = d["flows"][0]["diagram"]
     assert login.index("get_users") < login.index("check_login("), login  # arguments run before the call
-    assert "autonumber" in login and "★ your code" in login and "alt if check_login gives back True" in login, login
+    assert "autonumber" in login and "★ YOUR CODE ★ calls check_login" in login and "alt if check_login gives back True" in login, login
+    assert "box rgba" in login and login.index("rect rgba") < login.index("★ YOUR CODE") < login.index("★ your code gives back"), login
     assert login.index("saves username") < login.index("else otherwise") < login.index("login.html"), login
     assert "sends the browser to /" in login and "sends back the page login.html" in login, login
     cart = diagrams("store/pieces/cart.py", "cart_total")

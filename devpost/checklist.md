@@ -148,6 +148,7 @@ Build mode: fast
 - [ ] Request diagrams read as a story: numbered steps from the click to the reply, plain words ("calls", "gives back", "runs SQL", "saves username"), the session cookie as its own lane, if/otherwise branches (a branch that answers early makes the rest the "otherwise"), and loops with their end condition. (Checked, including a sample app with a for loop and a while loop; waiting for the learner to try it.)
 - [ ] Editor can grow taller: the results step aside, the task panel stays, and Esc or Submit brings it back. (Checked in the browser; waiting for the learner to try it.)
 - [ ] Tutor answers are short and example-based: under 60 words, plain words, a "what goes in → what comes out" example, linked to the learner's function, no code for "what is" questions, and never the call their function needs. (Checked live; waiting for the learner to try it.)
+- [ ] In request diagrams, the learner's code is obvious at a glance: their file's whole column is tinted yellow ("your file"), and the moment their function runs (call, what happens inside, what it gives back) sits in a yellow band starting "★ YOUR CODE ★". (Checked in the browser; waiting for the learner to try it.)
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
