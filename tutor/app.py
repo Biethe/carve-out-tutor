@@ -270,11 +270,12 @@ async def interview(answer: str = Body("", embed=True)):
     if step is None:
         return {"error": llm.BUSY}
     if step["done"]:
-        profile.update({k: v for k, v in step.items()}, pending=None)
+        profile.update({k: v for k, v in step.items() if k != "closing"}, pending=None)
     else:
         profile["pending"] = step["question"]
     progress.save_profile(profile)
-    return {"done": step["done"], "question": profile["pending"], "number": len(profile["interview"]) + 1, "profile": profile}
+    return {"done": step["done"], "question": profile["pending"], "feedback": step.get("feedback", ""),
+            "closing": step.get("closing", ""), "number": len(profile["interview"]) + 1, "profile": profile}
 
 
 @app.post("/api/interview/restart")

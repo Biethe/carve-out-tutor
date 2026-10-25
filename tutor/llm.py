@@ -257,8 +257,11 @@ Bad: "How good are you at Python?" Adapt to their answers: skip what they've alr
 they claim experience, go easier if they're new. Cover, in about 5 questions: Python basics (functions, lists, dicts),
 how websites handle forms and logins, databases and SQL, security ideas like hashing, testing, and what they want to get
 better at. The question is read aloud, so keep it warm, plain and under 25 words.
-Reply with JSON only. While asking: {"done": false, "question": "..."}
-When you know enough: {"done": true, "level": "beginner" or "intermediate" or "advanced",
+Before each new question, react to their last answer in "feedback": one short, warm, specific line (under 15 words)
+that shows you listened, e.g. "Nice, so dictionaries are old friends!" or "No worries, that's exactly what we'll practise."
+Never judge or correct. For the very first question, "feedback" is "".
+Reply with JSON only. While asking: {"done": false, "feedback": "...", "question": "..."}
+When you know enough: {"done": true, "closing": "one upbeat line (under 20 words) reacting to their last answer and saying you've got a good picture of them", "level": "beginner" or "intermediate" or "advanced",
 "summary": "one sentence describing them, for a tutor",
 "claims": [{"skill": "short skill name", "said": "what they said, short"}] (only things they say they CAN do),
 "gaps": ["short skill name"] (things they said they haven't done or don't know),
@@ -275,13 +278,13 @@ async def interview(history: list[dict], finish: bool) -> dict | None:
         try:
             data = json.loads(await _chat(INTERVIEW_RULES, user, json_mode=True))
             if data.get("done"):
-                return {"done": True, "level": str(data.get("level") or "beginner"), "summary": str(data.get("summary") or ""),
+                return {"done": True, "closing": str(data.get("closing") or ""), "level": str(data.get("level") or "beginner"), "summary": str(data.get("summary") or ""),
                         "claims": [{"skill": str(c.get("skill", "")), "said": str(c.get("said", "")), "status": "claimed"}
                                    for c in data.get("claims") or [] if isinstance(c, dict)],
                         "gaps": [str(g) for g in data.get("gaps") or []],
                         "wants": [str(w) for w in data.get("wants") or []]}
             if data.get("question"):
-                return {"done": False, "question": _strip_code(str(data["question"]))}
+                return {"done": False, "question": _strip_code(str(data["question"])), "feedback": str(data.get("feedback") or "")}
         except (ValueError, KeyError, TypeError, AttributeError):
             continue
         except NoKey:

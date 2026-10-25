@@ -21,49 +21,47 @@
   </header>
 
   <main class="interview">
-    <!-- 1. Before starting -->
+    <!-- 1. Chip introduces itself: a voice and a wave, no text to read. -->
     <section id="intro" hidden>
-      <div class="meet">
-        <span class="avatar" id="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
-        <div>
-          <p class="hero-note">your tutor</p>
-          <h1>Hi, I'm <span class="carved">Chip</span>.</h1>
-        </div>
+      <div class="stage">
+        <span class="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
+        <span class="wave" id="intro-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
       </div>
-      <!-- Chip's introduction: read out loud line by line, each line lit up as it's spoken. -->
-      <ol class="script" id="script">
-        <li>Here's the deal: you get a real app that <strong>already works</strong>.</li>
-        <li>I snip out one piece, you code it back in, and <strong>boom</strong>, the app runs on your code!</li>
-        <li>Piece by piece, the whole thing becomes <strong>yours</strong>.</li>
-        <li>But first, a few quick questions to get to know you. No wrong answers.</li>
-        <li><strong>Ready? Let's go!</strong></li>
-      </ol>
-      <div class="actions">
+      <h1 class="meet-title">Hi, I'm <span class="carved">Chip</span>.</h1>
+      <p class="sr-only">Chip says: Hey! I'm Chip, your coding sidekick. You get a real app that already works. I snip out one piece,
+        you code it back in, and the app runs on your code. Piece by piece, the whole thing becomes yours. But first, a few quick
+        questions to get to know you. No wrong answers. Ready? Let's go!</p>
+      <div class="actions center">
         <button class="btn secondary" id="hear"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i> Hear Chip</button>
         <button class="btn" id="start-voice"><i class="ph-bold ph-microphone" aria-hidden="true"></i> I'm ready, let's talk</button>
-        <button class="btn secondary" id="start-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> I'm ready, I'll type</button>
+        <button class="btn secondary" id="start-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> I'd rather type</button>
       </div>
-      <p class="status" id="ready-status" role="status"></p>
-      <p class="muted small" id="voice-note"></p>
+      <p class="muted small center" id="voice-note"></p>
     </section>
 
-    <!-- 2. The interview: one question at a time -->
+    <!-- 2. The interview. Talking: just the wave, showing whose turn it is. Typing: the question and a box. -->
     <section id="chat" hidden>
-      <p class="step-count" id="count"></p>
-      <div class="card ask">
-        <span class="who">Chip</span>
-        <p id="question" aria-live="polite"></p>
-        <button class="icon-btn" id="replay" title="Say it again" aria-label="Say the question again"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i></button>
+      <div class="stage" id="stage" title="Tap to talk">
+        <span class="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
+        <span class="wave" id="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="avatar you" aria-hidden="true"><i class="ph-bold ph-user"></i></span>
       </div>
-      <div class="answer">
-        <button class="mic" id="mic" aria-pressed="false" title="Talk"><i class="ph-bold ph-microphone" aria-hidden="true"></i><span>Tap to talk</span></button>
-        <textarea id="answer" rows="3" placeholder="Your answer…"></textarea>
-        <div class="actions">
-          <button class="btn" id="send">Send <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button>
-          <label class="toggle"><input type="checkbox" id="hands-free" checked> Hands-free: the tutor talks, then listens, and sends when you pause</label>
+      <p class="turn" id="turn" role="status"></p>
+      <div id="typed" hidden>
+        <div class="card ask">
+          <p class="feedback" id="feedback"></p>
+          <p id="question"></p>
+        </div>
+        <div class="answer">
+          <textarea id="answer" rows="3" placeholder="Your answer…"></textarea>
+          <div class="actions"><button class="btn" id="send">Send <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button></div>
         </div>
       </div>
-      <p class="status" id="status" role="status"></p>
+      <div class="actions center">
+        <button class="btn small secondary" id="to-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> Type instead</button>
+        <button class="btn small secondary" id="to-talk" hidden><i class="ph-bold ph-microphone" aria-hidden="true"></i> Talk instead</button>
+      </div>
+      <p class="status center" id="status" role="status"></p>
     </section>
 
     <!-- 3. The profile it made -->
@@ -97,79 +95,95 @@
 
     $("voice-note").textContent = Voice.canListen
       ? "Talking uses your browser's speech-to-text (in Chrome, the audio goes to Google to become text)."
-      : "This browser can't turn speech into text, so you'll type. The tutor can still read the questions out loud.";
-    if (!Voice.canListen) { $("start-voice").hidden = true; $("mic").hidden = true; $("hands-free").checked = false; }
+      : "This browser can't turn speech into text, so you'll type. Chip still talks.";
+    if (!Voice.canListen) $("start-voice").hidden = true;
 
-    // ---- Asking -----------------------------------------------------------------
+    // The wave shows whose turn it is: "chip" (Chip talking), "you" (listening to you), "thinking", or still.
+    function turn(who, label = "") {
+      for (const w of [$("wave"), $("intro-wave")]) w.dataset.who = who;
+      $("turn").textContent = label;
+    }
+
+    // ---- Talking or typing ------------------------------------------------------
+    let talking = true, last = null;  // last: the latest {feedback, question}
+
+    function useTalking(on) {
+      talking = on && Voice.canListen;
+      $("typed").hidden = talking;
+      $("to-type").hidden = !talking;
+      $("to-talk").hidden = talking || !Voice.canListen;
+      if (talking) { if (last) converse(); }
+      else { Voice.stopListening(); Voice.stopSpeaking(); turn(""); $("answer").focus(); }
+    }
+    $("to-type").onclick = () => useTalking(false);
+    $("to-talk").onclick = () => useTalking(true);
+
+    // ---- The conversation -------------------------------------------------------
     async function next(answer = "") {
       $("send").disabled = true;
-      $("status").textContent = "Chip is thinking…";
+      turn("thinking", "Chip is thinking…");
       const res = await api("POST", "api/interview", { answer });
       $("send").disabled = false;
-      $("status").textContent = "";
+      turn("");
       if (res.error) {
         $("status").innerHTML = res.no_key
           ? `First, add your AI key: click the <strong>gear</strong> at the top, then <button class="link" id="retry">try again</button>.`
           : esc(res.error) + ` <button class="link" id="retry">Try again</button>`;
-        $("retry").onclick = () => next(answer);
+        $("retry").onclick = () => { $("status").textContent = ""; next(answer); };
         return;
       }
-      if (res.done) return showProfile(res.profile);
-      $("count").textContent = `Question ${res.number}`;
+      if (res.done) {
+        if (talking && res.closing) { turn("chip"); await Voice.speak(res.closing); }
+        return showProfile(res.profile);
+      }
+      last = res;
+      $("feedback").textContent = res.feedback || "";
       $("question").textContent = res.question;
       $("answer").value = "";
-      if ($("hands-free").checked) { await Voice.speak(res.question); talk(); }
+      if (talking) converse();
     }
 
-    async function talk() {
-      if (Voice.listening) return Voice.stopListening();
-      Voice.stopSpeaking();
-      $("mic").setAttribute("aria-pressed", "true");
-      $("mic").lastElementChild.textContent = "Listening… tap to stop";
-      const said = await Voice.listen(text => ($("answer").value = text));
-      $("mic").setAttribute("aria-pressed", "false");
-      $("mic").lastElementChild.textContent = "Tap to talk";
-      if (said && $("hands-free").checked) next(said);
+    // Chip reacts to the last answer and asks the next question, out loud; then it's your turn.
+    async function converse(retry = true) {
+      turn("chip", "Chip");
+      await Voice.speak([last.feedback, last.question].filter(Boolean).join(" "));
+      if (!talking) return;
+      turn("you", "Your turn");
+      const said = await Voice.listen();
+      if (!talking) return;
+      if (said) return next(said);
+      if (retry) return converse(false);  // didn't catch anything: ask again, once
+      turn("", "Tap the wave to answer");
     }
+    $("stage").onclick = () => { if (talking && !Voice.listening && last) converse(false); };
 
-    $("mic").onclick = talk;
-    $("replay").onclick = () => Voice.speak($("question").textContent);
-    $("send").onclick = () => { Voice.stopListening(); const a = $("answer").value.trim(); if (a) next(a); };
+    $("send").onclick = () => { const a = $("answer").value.trim(); if (a) next(a); };
     $("answer").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("send").click(); } };
-    // ---- Chip introduces itself, then asks if they're ready -----------------------
-    const lines = [...document.querySelectorAll("#script li")];
-    // Chip's introduction is a recorded clip (tutor/record_intro.py): instant, never cut off, no AI call.
-    // Each line lights up while it's being said (timed by its share of the words).
+
+    // ---- Chip introduces itself (a recorded clip: instant, no AI call), then asks if they're ready ----
     let clip = null;
     async function introduce() {
       clip?.pause();
       clip = new Audio("static/chip-intro.wav");
       clip.playbackRate = Voice.RATE;
-      const sizes = lines.map(l => l.textContent.length), total = sizes.reduce((a, b) => a + b);
-      clip.ontimeupdate = () => {
-        let at = (clip.currentTime / clip.duration) * total * 1.15 - total * 0.15;  // the first ~15% is "Hey, I'm Chip"
-        lines.forEach((l, i) => { l.classList.toggle("now", at >= 0 && at < sizes[i]); at -= sizes[i]; });
-      };
       Voice.stopSpeaking();
-      $("avatar").classList.add("talking");
+      turn("chip");
       try {
         await clip.play();
         await new Promise(done => (clip.onended = clip.onerror = done));
-      } catch { $("avatar").classList.remove("talking"); return; }  // the browser blocked sound: they'll click "Hear Chip"
-      lines.forEach(l => l.classList.remove("now"));
-      if (!$("avatar").classList.contains("talking")) return;  // they started already
-      $("avatar").classList.remove("talking");
-      if (!Voice.canListen) return;
-      $("ready-status").textContent = "Listening… say \"yes\" when you're ready!";
-      const said = await Voice.listen();
-      if (/\b(yes|yeah|yep|ready|sure|ok|okay|let's|go|start)\b/i.test(said)) return $("start-voice").click();
-      $("ready-status").textContent = "No rush. Tap a button when you're ready.";
+      } catch { turn(""); return; }  // the browser blocked sound: "Hear Chip" plays it
+      if (!$("intro").hidden && Voice.canListen) {
+        turn("you");
+        const said = await Voice.listen();
+        if (!$("intro").hidden && /\b(yes|yeah|yep|ready|sure|ok|okay|let's|go|start)\b/i.test(said)) return $("start-voice").click();
+      }
+      turn("");
     }
     $("hear").onclick = introduce;
-    const stopIntro = () => { clip?.pause(); $("avatar").classList.remove("talking"); Voice.stopSpeaking(); Voice.stopListening(); };
+    const stopIntro = () => { clip?.pause(); Voice.stopSpeaking(); Voice.stopListening(); turn(""); };
 
-    $("start-voice").onclick = () => { stopIntro(); $("hands-free").checked = true; show("chat"); next(); };
-    $("start-type").onclick = () => { stopIntro(); $("hands-free").checked = false; show("chat"); next(); $("answer").focus(); };
+    $("start-voice").onclick = () => { stopIntro(); show("chat"); useTalking(true); next(); };
+    $("start-type").onclick = () => { stopIntro(); show("chat"); useTalking(false); next(); };
 
     // ---- The profile ------------------------------------------------------------
     function showProfile(p) {
