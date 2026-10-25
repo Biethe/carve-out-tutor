@@ -135,7 +135,7 @@ async def _browser_store(passed: list[str]) -> dict:
                 pass
         start_app("run", pieces.STORE, how, {PIECES[p]["file"]: (progress.work() / "learner" / PIECES[p]["file"]).read_text() for p in passed})
     except Exception as err:
-        return {"error": "The project couldn't start in the browser.", "output": _short(repr(err), last=True)}
+        return {"error": "The project couldn't start. " + projects.explain_start_error(repr(err)), "output": _short(repr(err), last=True)}
     return {"url": f"{BASE}/run/"}
 
 

@@ -90,6 +90,25 @@ def needs(root: Path) -> list[str]:
     return sorted(n for n in names if n)
 
 
+def explain_start_error(text: str) -> str:
+    """Plain words for why an uploaded app couldn't start, from its error (the technical text stays below it)."""
+    rules = [
+        (r"no such table: (\w+)", "The app reads a database table ({0}) when it starts, but the project doesn't include that "
+                                   "database. It's usually created by another script or on the original machine, "
+                                   "so the app has no data to show here."),
+        (r"unable to open database file", "The app opens a database file that isn't in the project."),
+        (r"No module named '([\w.]+)'", "The app needs the library {0}, which couldn't be installed here."),
+        (r"No such file or directory: '([^']+)'", "The app needs a file that isn't in the project: {0}."),
+        (r"Adafruit|RPi\.GPIO|smbus|spidev|picamera", "The app is written for special hardware (like a Raspberry Pi with "
+                                                    "sensors), which a browser or a normal computer doesn't have."),
+    ]
+    for pattern, words in rules:
+        found = re.search(pattern, text)
+        if found:
+            return words.format(*found.groups())
+    return "The app raised an error while starting."
+
+
 def report(name: str) -> dict:
     """The safety check's result for an uploaded project (tutor/safety.py writes it)."""
     path = progress.DATA / "work" / name / "safety.json"

@@ -146,4 +146,5 @@ def run_store(passed: list[str]) -> dict:
             time.sleep(0.2)
     stop_store()
     tail = "\n".join(log_path.read_text().splitlines()[-15:])
-    return {"error": "The project couldn't start. If it needs extra packages: pip install -r requirements.txt", "output": tail}
+    from tutor import projects
+    return {"error": "The project couldn't start. " + projects.explain_start_error(tail), "output": tail}
