@@ -19,6 +19,7 @@ app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="carve-out-demo-key", session_cookie="store_session")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 templates = Jinja2Templates(directory=HERE / "templates")
+templates.env.globals["details"] = db.DETAILS  # polygon counts and authors, shown on each asset
 
 db.init()
 

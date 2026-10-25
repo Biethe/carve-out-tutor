@@ -8,16 +8,28 @@ from pieces.auth import hash_password
 
 DB_PATH = os.environ.get("STORE_DB", str(Path(__file__).parent / "store.db"))
 
+# Real 3D renders from Poly Haven (polyhaven.com), all CC0: free for any use, no credit needed (given anyway).
 ASSETS = [
-    ("Low-poly Fox", "model", 12.00, "fox.svg"),
-    ("Sci-fi Cargo Crate", "model", 4.50, "crate.svg"),
-    ("Medieval Longsword", "model", 7.99, "sword.svg"),
-    ("Robot Walk Cycle", "animation", 9.00, "robot-walk.svg"),
-    ("Dragon Flight Loop", "animation", 15.50, "dragon-flight.svg"),
-    ("Floating Islands", "world", 24.00, "islands.svg"),
-    ("Neon City Block", "world", 19.99, "neon-city.svg"),
-    ("Forest Clearing", "world", 14.25, "forest.svg"),
+    ("Treasure Chest", "model", 18.50, "chest.webp"),
+    ("Kite Shield", "model", 9.75, "shield.webp"),
+    ("Boombox", "model", 12.00, "boombox.webp"),
+    ("Vintage Film Camera", "model", 11.25, "camera.webp"),
+    ("Oil Lantern", "model", 7.40, "lantern.webp"),
+    ("Old Military Crate", "model", 6.90, "crate.webp"),
+    ("Autumn Forest", "world", 21.00, "forest.webp"),
+    ("Alpine Meadow", "world", 16.80, "meadow.webp"),
 ]
+# Shown with each asset: polygon count (models) or panorama size (worlds), and who made it.
+DETAILS = {
+    "chest.webp": ("103,330 polys", "Rico Cilliers"),
+    "shield.webp": ("10,306 polys", "Ulan Cabanilla"),
+    "boombox.webp": ("10,168 polys", "Thomas Paul Mouilleron"),
+    "camera.webp": ("18,682 polys", "James Ray Cock"),
+    "lantern.webp": ("33,902 polys", "Rajil Jose Macatangay"),
+    "crate.webp": ("10,476 polys", "Jack Mava"),
+    "forest.webp": ("16K panorama", "Andreas Mischok"),
+    "meadow.webp": ("20K panorama", "Andreas Mischok"),
+}
 
 
 def connect() -> sqlite3.Connection:
@@ -39,6 +51,10 @@ def init():
         if "username" not in [c["name"] for c in conn.execute("PRAGMA table_info(purchases)")]:
             conn.execute("ALTER TABLE purchases ADD COLUMN username TEXT")
             conn.execute("UPDATE purchases SET username = 'learner'")
+        # Databases from before the real renders get the new catalogue, with the same ids (purchases still match).
+        if conn.execute("SELECT 1 FROM assets WHERE image LIKE '%.svg'").fetchone():
+            for asset_id, asset in enumerate(ASSETS, 1):
+                conn.execute("UPDATE assets SET name = ?, kind = ?, price = ?, image = ? WHERE id = ?", (*asset, asset_id))
         if not conn.execute("SELECT 1 FROM users").fetchone():
             conn.execute("INSERT INTO users VALUES (?, ?)", ("learner", hash_password("carve123")))
             conn.executemany("INSERT INTO assets (name, kind, price, image) VALUES (?, ?, ?, ?)", ASSETS)
