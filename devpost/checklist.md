@@ -1,6 +1,6 @@
 ---
 doc: checklist
-status: draft
+status: approved
 ---
 
 # Build Checklist
@@ -59,7 +59,7 @@ Build mode: fast
   Learner check: Click **Next piece**, start the cart functions, close the tutor server mid-way and start it again. Your draft should still be there. Finish the round and run the store: add, remove, check out. All of that is now your code.
   Commit: `Add round 2 (cart), resume, and README`
 
-- [ ] **6. The store runs inside a browser page, tests and all, with no server**
+- [x] **6. The store runs inside a browser page, tests and all, with no server**
   Becomes usable: A test page (`web/spike.html`) loads browser Python, runs the store's pytest tests with one function swapped for a learner version, and shows the working store in a frame: browse, log in, add to cart, check out.
   Why now: Everything standalone depends on this, and it's the riskiest part (a service worker passing requests to Python in the page, sessions without real cookies). If it fails, we choose a fallback before building anything else on it.
   PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (Open anywhere, Upload and download: runs live)
@@ -79,25 +79,25 @@ Build mode: fast
   Learner check: Open the GitHub Pages address on a different laptop or browser, add your Groq key in Settings, and do one function from start to finish, then close the tab and come back.
   Commit: `Run the tutor as a standalone page on GitHub Pages`
 
-- [ ] **8. A first-launch interview, spoken or typed, builds your profile**
-  Becomes usable: On first visit the tutor asks a few questions about what you can do and want to learn. You can answer with the microphone. Your answers become claims in a profile you can read and edit. The microphone is also in the tutor window, and replies can be read aloud.
-  Why now: The profile drives what gets carved in slice 9, so it has to exist first.
-  PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (First-launch interview, Voice)
-  Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Voice, Storage, AI)
-  Build: Interview screen, turning answers into claims with the learner's model, a profile page, the microphone button with a Groq Whisper fallback, and read-aloud.
-  Verify (mechanical): The headless script answers the interview by typing and the profile holds the claims after a reload. The speech fallback sends a short sample recording and gets text back from Groq. The interview is skipped on the second visit.
-  Learner check: Clear the site's data, open the tutor, and answer the interview by speaking. Read your profile: does it say what you meant?
-  Commit: `Add first-launch interview, profile, and voice`
-
-- [ ] **9. Every function can be carved, chosen by your profile, up to 100%**
+- [ ] **8. Every function can be carved, chosen by your profile, up to 100%**
   Becomes usable: The project page lists every function in the store. The model marks the key spots and your profile fills in "I'll write it" or "Keep the original" for each, and you can change any mark or pick "Write everything". Functions without tests get model-written tests that are checked against the original code. Now and then a spot check carves something you said you know, and the result is saved next to the claim. The ownership bar can reach 100%.
-  Why now: This is your 100%-ownership goal, proven on the store we know works before uploads bring unknown projects.
+  Why now: This is your 100%-ownership goal, proven on the store we know works before uploads bring unknown projects. It comes before the interview so it works with marks set by hand; the interview fills them in later.
   PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (What to carve, Checking your code, Spot checks)
   Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Reused Python, Tests), `spec.md > Piece Definitions`
   Build: List functions with `ast`. Task cards built live (signature, docstring, where it's used from the import map, references) with the model writing the description and the question. Test generation kept only if passing on the original. Carve plan with marks, spot-check rule, claim results in the profile. The hand-written cards for the six current functions stay as better versions.
   Verify (mechanical): Every function in `store/` gets a card or a stated reason it can't be carved. Generated tests pass on the original and fail on the stub. With everything marked, passing every function shows 100% and the store still runs. A spot check fires on a claimed skill and its result shows in the profile.
   Learner check: Look at the marks your profile suggested for the store. Change a few, then do a function you said you already know when the spot check picks it. Does the profile now show what you proved?
   Commit: `Carve any function, chosen by profile, with spot checks`
+
+- [ ] **9. A first-launch interview, spoken or typed, builds your profile**
+  Becomes usable: On first visit the tutor asks a few questions about what you can do and want to learn. You can answer with the microphone. Your answers become claims in a profile you can read and edit. The microphone is also in the tutor window, and replies can be read aloud.
+  Why now: The profile fills in the carve marks from slice 8, so learners don't have to set them by hand.
+  PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (First-launch interview, Voice)
+  Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Voice, Storage, AI)
+  Build: Interview screen, turning answers into claims with the learner's model, a profile page, the microphone button with a Groq Whisper fallback, and read-aloud.
+  Verify (mechanical): The headless script answers the interview by typing and the profile holds the claims after a reload. The speech fallback sends a short sample recording and gets text back from Groq. The interview is skipped on the second visit.
+  Learner check: Clear the site's data, open the tutor, and answer the interview by speaking. Read your profile: does it say what you meant?
+  Commit: `Add first-launch interview, profile, and voice`
 
 - [ ] **10. Upload your own project as a zip, and download it with your code inside**
   Becomes usable: **Upload a project** takes a zip of a Python project (for example downloaded from GitHub). It shows Files, Map and the carve plan. FastAPI, Flask and plain HTML/JavaScript projects run in the frame; anything else runs its tests only, and the page says so. **Download** returns the zip with your passed functions in place.
@@ -173,3 +173,5 @@ Activity mode:
 - `TUTOR_DATA` can point the tutor at another data folder. While the learner's own tutor was running, test runs that write progress kept clashing with their real `data/` (and twice deleted it). Tests now run in a scratch folder.
 - Second design and feature round at the learner's request in the final review: no paste in the editor, Files and Map tabs (`tutor/overview.py` reads the tree and the import graph live with `ast`; Mermaid 11 draws it in hand-drawn style), handwritten code font, a Clean button with hints and a test-verified cleaner version, Blueprint instead of Night, a cut-out wordmark, and shorter hints. Resubmitting after a pass is now allowed: the new code replaces the old only if it passes, so a failed cleanup never takes away a passing function. A browser check typed into the learner's real draft through autosave; the text was removed and the draft restored.
 - Scope change agreed in the final review: the product becomes a standalone GitHub Pages site (browser Python, the learner's own AI provider, browser storage), with uploaded projects, a voice interview and profile, and profile-based carving of every function up to 100%. Slices 6-10 were added. Slice 6 is a risk spike, because a web app running inside the page with no server is the part most likely not to work. The earlier final-review items still stand and get retried on the standalone version.
+- Build order approved with the deadline in view (submission 2026-10-26 22:00 CET): 6, 7, then carving (now 8) before the interview (now 9), then uploads (10). Hard stop Monday 2026-10-26 14:00 CET: anything unfinished becomes a labelled coming-soon card, and the work moves to final review and `6-ship`.
+- Slice 6 spike passed: Pyodide **0.29.3** (0.27 ships a `typing-extensions` too old for current FastAPI). FastAPI runs plain `def` routes and file reads "in a thread", and the browser has none, so `web/bridge.py` makes `anyio.to_thread.run_sync` run the function directly. The store's links start with `/`, which would leave the page's address on GitHub Pages, so the bridge moves `href`/`src`/`action`, CSS `url(/...)` and redirects under `run/`. Measured in headless Chromium: Python ready in under 3 s, cart tests pass on the original and fail only `test_total` and `test_total_is_rounded` with a broken `cart_total`, an endless loop is stopped at the limit, and browse, wrong login, login, add, checkout and profile all work in the frame.

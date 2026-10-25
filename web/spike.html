@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Browser Python spike</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 16px; display: grid; gap: 12px; }
+    .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    pre { background: #f3f3ee; padding: 10px; margin: 0; max-height: 220px; overflow: auto; white-space: pre-wrap; }
+    iframe { width: 100%; height: 560px; border: 2px solid #17181c; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <strong id="status">Starting Python…</strong>
+  <div class="bar">
+    <button id="t-ok" disabled>Run tests (original cart)</button>
+    <button id="t-bad" disabled>Run tests (broken cart_total)</button>
+    <button id="t-loop" disabled>Run tests (endless loop)</button>
+    <button id="run" disabled>Run the store</button>
+  </div>
+  <pre id="out"></pre>
+  <iframe id="frame" title="The store, running in this page"></iframe>
+  <script src="python.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const CART = "store/pieces/cart.py";
+    const show = results => ($("out").textContent = results.map(r => `${r.passed ? "✓" : "✗"} ${r.name}${r.message ? "\n    " + r.message : ""}`).join("\n"));
+    const broken = "def add_item(cart, asset_id):\n    return cart if asset_id in cart else cart + [asset_id]\n\ndef remove_item(cart, asset_id):\n    return [i for i in cart if i != asset_id]\n\ndef cart_total(cart, prices):\n    return 0.0\n";
+    const loop = broken.replace("return 0.0", "while True:\n        pass");
+    const t0 = performance.now();
+    Python.start().then(() => {
+      $("status").textContent = `Python ready (${((performance.now() - t0) / 1000).toFixed(1)}s)`;
+      document.querySelectorAll("button").forEach(b => (b.disabled = false));
+    }).catch(e => ($("status").textContent = "Python failed: " + e.message));
+    $("t-ok").onclick = async () => show(await Python.tests("tests/test_cart.py", {}));
+    $("t-bad").onclick = async () => show(await Python.tests("tests/test_cart.py", { [CART]: broken }));
+    $("t-loop").onclick = async () => show(await Python.tests("tests/test_cart.py", { [CART]: loop }, 5000));
+    $("run").onclick = async () => ($("frame").src = await Python.run("store"));
+  </script>
+</body>
+</html>
