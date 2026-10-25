@@ -370,7 +370,7 @@ details pre { margin: 0; padding: 14px; background: var(--cm-bg); border-top: 2p
 :root { --code-font: var(--code-hand); --code-axes: "INFM" 100, "BNCE" 25; }
 :root[data-code-font="mono"] { --code-font: "JetBrains Mono", ui-monospace, monospace; --code-axes: normal; }
 :root[data-code-font="legible"] { --code-font: "Atkinson Hyperlegible Mono", ui-monospace, monospace; --code-axes: normal; }
-.editor-wrap .CodeMirror, .editor-wrap textarea, details pre, .clean-code, .font-preview {
+.editor-wrap .CodeMirror, .editor-wrap textarea, details pre, .clean-code {
   font-family: var(--code-font); font-variation-settings: var(--code-axes);
 }
 :root:not([data-code-font="hand"]) .editor-wrap .CodeMirror { font-size: 15px; }  /* a mono looks bigger than handwriting */
@@ -665,4 +665,10 @@ img.model { object-fit: contain !important; padding: 6%; background: radial-grad
 .yesno { display: flex; justify-content: center; gap: 16px; margin: 18px 0 8px; }
 .yesno .btn { min-width: 132px; min-height: 56px; font-size: 20px; }
 .interview .lead.center { margin-left: auto; margin-right: auto; text-align: center; }
-.settings-dialog .font-preview { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--cm-bg); border: 2px solid var(--hairline); font-size: 14px; white-space: pre; overflow-x: auto; }
+/* The code font picker, on the editor's top-right corner next to the make-taller button. */
+.editor-font { position: absolute; top: 10px; right: 56px; z-index: 5; display: inline-flex; align-items: center; gap: 6px; height: 38px;
+  padding: 0 6px 0 12px; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); opacity: .75; transition: opacity .15s; }
+.editor-font:hover, .editor-font:focus-within { opacity: 1; }
+.editor-font span { font: 700 15px var(--display); }
+.editor-font select { border: 0; background: transparent; color: var(--ink); font: 600 13px var(--body); cursor: pointer; }
+.editor-font select:focus { outline: none; }
