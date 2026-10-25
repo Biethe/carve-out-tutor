@@ -34,6 +34,7 @@
  "tutor/record_intro.py",
  "tutor/runner.py",
  "tutor/static/chip-intro.wav",
+ "tutor/static/kokoro-worker.js",
  "tutor/static/learn.js",
  "tutor/static/run.js",
  "tutor/static/settings.js",

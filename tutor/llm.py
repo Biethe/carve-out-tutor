@@ -76,7 +76,8 @@ async def _post_audio(url: str, headers: dict, body: dict) -> bytes:
     return await asyncio.to_thread(send)
 
 
-# A natural AI voice from the learner's provider. Groq's Orpheus is free, but needs its terms accepted once.
+# A natural AI voice from the provider, used to record Chip's introduction (tutor/record_intro.py). Live speech runs
+# in the browser instead (tutor/static/kokoro-worker.js): Groq's free plan allows only a few minutes of voice a day.
 SPEECH = {"api.groq.com": ("canopylabs/orpheus-v1-english", "hannah"), "api.openai.com": ("gpt-4o-mini-tts", "coral")}
 
 

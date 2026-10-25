@@ -97,6 +97,7 @@
       ? "Talking uses your browser's speech-to-text (in Chrome, the audio goes to Google to become text)."
       : "This browser can't turn speech into text, so you'll type. Chip still talks.";
     if (!Voice.canListen) $("start-voice").hidden = true;
+    Voice.warmUp();  // start downloading Chip's voice now, while the intro plays
 
     // The wave shows whose turn it is: "chip" (Chip talking), "you" (listening to you), "thinking", or still.
     function turn(who, label = "") {
@@ -133,7 +134,7 @@
         return;
       }
       if (res.done) {
-        if (talking && res.closing) { turn("chip"); await Voice.speak(res.closing); }
+        if (talking && res.closing) await Voice.speak(res.closing, () => turn("chip"));
         return showProfile(res.profile);
       }
       last = res;
@@ -145,8 +146,8 @@
 
     // Chip reacts to the last answer and asks the next question, out loud; then it's your turn.
     async function converse(retry = true) {
-      turn("chip", "Chip");
-      await Voice.speak([last.feedback, last.question].filter(Boolean).join(" "));
+      turn("thinking");
+      await Voice.speak([last.feedback, last.question].filter(Boolean).join(" "), () => turn("chip", "Chip"));
       if (!talking) return;
       turn("you", "Your turn");
       const said = await Voice.listen();
