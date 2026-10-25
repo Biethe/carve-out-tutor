@@ -75,6 +75,20 @@ PRD ref: `prd.md > The Core Journey`.
 - **Starting over for a fresh demo recording:** delete the `data/` folder.
 - **Submission:** a short demo video recorded locally, plus a public GitHub repo. No deployment. It's optional, and we can revisit it in `6-ship`.
 
+## Standalone Browser Build (added in the final review)
+
+This replaces **Stack** and **Where It Runs** above for the hosted product. The local FastAPI tutor stays in the repo until the browser version does everything it does, then it's removed.
+
+- **Hosting:** GitHub Pages, published by a GitHub Actions workflow on every push to `main`. Free, static, no server.
+- **Python in the browser:** **Pyodide** ([docs](https://pyodide.org/)) from jsDelivr, running in a Web Worker so the page never freezes. `pytest`, `pydantic`, `jinja2`, `sqlite3` come with Pyodide. FastAPI, Starlette, `itsdangerous` and `python-multipart` are pure Python and install with `micropip`.
+- **Reused Python:** `tutor/pieces.py` (`assemble`, `_function_spans`), `tutor/overview.py` and the ownership count run inside Pyodide unchanged. Project files live in Pyodide's in-memory file system.
+- **Tests:** `pytest.main()` inside the worker on the assembled files, with the same junitxml parsing as `runner.run_tests`. A time limit stops runaway code by terminating and restarting the worker.
+- **Running a web app in the page:** a **service worker** catches every request under `/run/` and passes it to the worker, which calls the app directly as an ASGI app (WSGI for Flask) and sends the response back. The app shows in an iframe. Cookies are kept in a small cookie jar in the worker, because pages can't set cookies from a service worker's reply. A plain HTML and JavaScript project is served from the same path without Python.
+- **AI:** `fetch` from the page to the learner's provider using the OpenAI chat-completions format. Groq, OpenRouter and Google Gemini all accept calls from a web page (checked 2026-10-25). The prompts from `tutor/llm.py` move to JavaScript unchanged.
+- **Voice:** the browser's built-in speech recognition and speech synthesis. Where speech recognition is missing (Firefox), audio is recorded and sent to Groq's Whisper with the learner's key.
+- **Storage:** IndexedDB for the profile, settings, uploaded projects, drafts and progress. **JSZip** from cdnjs reads uploaded zips and builds downloads.
+- **Code from uploads:** It runs inside the browser's sandbox, not on anyone's computer, and the page has no secrets but the learner's own key. Uploaded web apps run on the tutor's own address, so a malicious upload could read that key from the page. The settings page says to upload only projects you trust.
+
 ## Look and Feel
 Carried from `prd.md > Look and Feel`, then reworked in the final review at the learner's request ("fun, original, human-like writing, different fonts, italics, bold, sizes, dark and light mode").
 

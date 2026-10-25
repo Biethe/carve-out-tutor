@@ -1,6 +1,6 @@
 ---
 doc: checklist
-status: approved
+status: draft
 ---
 
 # Build Checklist
@@ -59,9 +59,60 @@ Build mode: fast
   Learner check: Click **Next piece**, start the cart functions, close the tutor server mid-way and start it again. Your draft should still be there. Finish the round and run the store: add, remove, check out. All of that is now your code.
   Commit: `Add round 2 (cart), resume, and README`
 
+- [ ] **6. The store runs inside a browser page, tests and all, with no server**
+  Becomes usable: A test page (`web/spike.html`) loads browser Python, runs the store's pytest tests with one function swapped for a learner version, and shows the working store in a frame: browse, log in, add to cart, check out.
+  Why now: Everything standalone depends on this, and it's the riskiest part (a service worker passing requests to Python in the page, sessions without real cookies). If it fails, we choose a fallback before building anything else on it.
+  PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (Open anywhere, Upload and download: runs live)
+  Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Python in the browser, Tests, Running a web app in the page)
+  Build: `web/` folder served as static files. Pyodide in a Web Worker, micropip installs FastAPI and friends, store files copied in. `pytest.main` with junitxml read back. Service worker for `/run/`, ASGI bridge and cookie jar in the worker. Store database in Pyodide's file system.
+  Verify (mechanical): Headless Chromium script against `python -m http.server` on `web/`: tests pass with the original `cart.py` and fail with a broken `cart_total`. The frame shows the store's asset grid, a wrong login shows an error, `learner`/`carve123` logs in, add to cart and checkout work, and the profile lists the purchase. A function with an endless loop is stopped by the time limit.
+  Learner check: Open the spike page, wait for "Python ready", click **Run tests**, then use the store in the frame: log in, buy something, open your profile. Nothing is running on a server.
+  Commit: `Spike: run the store and its tests in browser Python`
+
+- [ ] **7. The tutor works as a standalone web page on GitHub Pages, with your own AI provider**
+  Becomes usable: The catalog, project page and workspace work from a public GitHub Pages address: carve, edit, Submit, hints, Ask, the question, Clean, Files, Map, Run project in a frame, the ownership bar. Settings picks the provider, model and key. Progress survives closing the tab.
+  Why now: It moves the whole proven kernel onto the new foundation before anything new is added, so every later slice is built where it will live.
+  PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (Open anywhere, Your AI provider, Saved in the browser), `prd.md > Features and Behavior`
+  Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Hosting, Reused Python, AI, Storage), `spec.md > AI Tutor (LLM)`, `spec.md > Look and Feel`
+  Build: Move the pages to `web/` and replace each `/api/*` call with a worker or IndexedDB call. Move the prompts from `llm.py` to `web/ai.js`. Settings dialog. `.github/workflows/pages.yml`.
+  Verify (mechanical): Headless script on the local static server runs the slice 2-5 journey with a fake AI endpoint: stub, failing submit, passing submit, ownership rises, reload restores the draft, Run project shows the learner's code working. One live hint against Groq. The Pages workflow succeeds and the public URL loads.
+  Learner check: Open the GitHub Pages address on a different laptop or browser, add your Groq key in Settings, and do one function from start to finish, then close the tab and come back.
+  Commit: `Run the tutor as a standalone page on GitHub Pages`
+
+- [ ] **8. A first-launch interview, spoken or typed, builds your profile**
+  Becomes usable: On first visit the tutor asks a few questions about what you can do and want to learn. You can answer with the microphone. Your answers become claims in a profile you can read and edit. The microphone is also in the tutor window, and replies can be read aloud.
+  Why now: The profile drives what gets carved in slice 9, so it has to exist first.
+  PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (First-launch interview, Voice)
+  Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Voice, Storage, AI)
+  Build: Interview screen, turning answers into claims with the learner's model, a profile page, the microphone button with a Groq Whisper fallback, and read-aloud.
+  Verify (mechanical): The headless script answers the interview by typing and the profile holds the claims after a reload. The speech fallback sends a short sample recording and gets text back from Groq. The interview is skipped on the second visit.
+  Learner check: Clear the site's data, open the tutor, and answer the interview by speaking. Read your profile: does it say what you meant?
+  Commit: `Add first-launch interview, profile, and voice`
+
+- [ ] **9. Every function can be carved, chosen by your profile, up to 100%**
+  Becomes usable: The project page lists every function in the store. The model marks the key spots and your profile fills in "I'll write it" or "Keep the original" for each, and you can change any mark or pick "Write everything". Functions without tests get model-written tests that are checked against the original code. Now and then a spot check carves something you said you know, and the result is saved next to the claim. The ownership bar can reach 100%.
+  Why now: This is your 100%-ownership goal, proven on the store we know works before uploads bring unknown projects.
+  PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (What to carve, Checking your code, Spot checks)
+  Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Reused Python, Tests), `spec.md > Piece Definitions`
+  Build: List functions with `ast`. Task cards built live (signature, docstring, where it's used from the import map, references) with the model writing the description and the question. Test generation kept only if passing on the original. Carve plan with marks, spot-check rule, claim results in the profile. The hand-written cards for the six current functions stay as better versions.
+  Verify (mechanical): Every function in `store/` gets a card or a stated reason it can't be carved. Generated tests pass on the original and fail on the stub. With everything marked, passing every function shows 100% and the store still runs. A spot check fires on a claimed skill and its result shows in the profile.
+  Learner check: Look at the marks your profile suggested for the store. Change a few, then do a function you said you already know when the spot check picks it. Does the profile now show what you proved?
+  Commit: `Carve any function, chosen by profile, with spot checks`
+
+- [ ] **10. Upload your own project as a zip, and download it with your code inside**
+  Becomes usable: **Upload a project** takes a zip of a Python project (for example downloaded from GitHub). It shows Files, Map and the carve plan. FastAPI, Flask and plain HTML/JavaScript projects run in the frame; anything else runs its tests only, and the page says so. **Download** returns the zip with your passed functions in place.
+  Why now: Last, because it reuses everything before it. It adds unknown projects, which bring new kinds of failure.
+  PRD ref: `prd.md > Standalone, Bring Your Own (added in the final review)` (Upload and download)
+  Spec ref: `spec.md > Standalone Browser Build (added in the final review)` (Running a web app in the page, Storage, Code from uploads)
+  Build: JSZip upload into IndexedDB and Pyodide's file system. A safety check right after upload and before anything runs: a pattern scan (reading the page's storage or the learner's key, network calls to outside addresses, `eval`/`exec`, `subprocess`, deleting files, hidden or encoded code) plus a review by the learner's model. A project that fails is not run, and the page says what was found without showing the code. Then `requirements.txt` installed with micropip where possible, detection of what kind of project it is, a WSGI bridge for Flask, download zip, and the trust warning (shown even when the check passes, since it can't catch everything).
+  Verify (mechanical): A zip with code that reads the page's storage and sends it to another address is stopped before it runs, with a plain reason. Three sample zips: a small Flask app with tests (runs live and its tests pass), a plain HTML/JavaScript game (runs in the frame), and a Python library with tests only (tests-only mode). A function passed in each one shows up in the downloaded zip. A zip with no Python and no HTML gets a clear message.
+  Learner check: Download a small Python project from GitHub as a zip, upload it, look at its Files and Map, rebuild one function, and download it back. Open the zip and find your code.
+  Commit: `Upload a project as a zip and download it with your code`
+
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — after slice 2: you rebuild authentication yourself and run the store with your code, so feedback on the workspace can shape the AI slices. Feedback: smooth and comfortable, but the design is too basic; no hints yet was expected (slices 3-4). Design items moved to Final Review at the learner's request.
+- [ ] Standalone check after slice 7: open the GitHub Pages address on another browser and do one function with your own key.
 - [ ] Final kick-the-tires exploration and feedback completed
 
 ## Final Review
@@ -87,6 +138,10 @@ Build mode: fast
 - [ ] Replace the dark mode, which felt generic. (Replaced with Blueprint; waiting for the learner to try it.)
 - [ ] A more distinctive wordmark and headline that carry the site's identity. (Cut-out "out" piece, scissors cut line, Fraunces headlines; waiting for the learner to try it.)
 - [ ] Hints shorter and straight to the point, possibly several. (1 to 3 bullets under 15 words; checked live; waiting for the learner to try it.)
+- [ ] Files tab shows names only: folders and files, no descriptions or contents. (Built; waiting for the learner to try it.)
+- [ ] Map is a UML-style data-flow view for a mental model of the system: a component diagram with what travels on each arrow (form fields, calls with inputs and outputs, session keys, tables), plus a sequence diagram that follows any one request, with an Expand view. (Built and checked in the browser; waiting for the learner to try it.)
+- [ ] Clean hints cover shorter, faster, more robust and more secure code, each hint labelled with its kind. (Checked live; waiting for the learner to try it after passing a function.)
+- [ ] Pages and scripts are never served from an old cached copy. The learner didn't see the Files tab or Clean because their browser kept the old script. (Built.)
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
@@ -117,3 +172,4 @@ Activity mode:
 - Visual redesign at the learner's request (fun, original, human-like writing, mixed fonts, dark and light mode, no em dashes): notebook style with Bricolage Grotesque, Figtree, Caveat and JetBrains Mono, Phosphor icons, Paper/Night/Chalkboard themes, and motion that respects reduced-motion settings. The home page gained a "three moves" section and a catalog with coming-soon projects. The store got Manrope and a system dark mode. The tutor serves the store's asset pictures at `/store-assets`. PRD and spec Look and Feel were updated. Screenshot checks found that the project card's pictures overflowed their grid (rows sized to the images), the hero illustration overlapped itself, and light text on the highlighter was unreadable in dark themes; all three were fixed.
 - `TUTOR_DATA` can point the tutor at another data folder. While the learner's own tutor was running, test runs that write progress kept clashing with their real `data/` (and twice deleted it). Tests now run in a scratch folder.
 - Second design and feature round at the learner's request in the final review: no paste in the editor, Files and Map tabs (`tutor/overview.py` reads the tree and the import graph live with `ast`; Mermaid 11 draws it in hand-drawn style), handwritten code font, a Clean button with hints and a test-verified cleaner version, Blueprint instead of Night, a cut-out wordmark, and shorter hints. Resubmitting after a pass is now allowed: the new code replaces the old only if it passes, so a failed cleanup never takes away a passing function. A browser check typed into the learner's real draft through autosave; the text was removed and the draft restored.
+- Scope change agreed in the final review: the product becomes a standalone GitHub Pages site (browser Python, the learner's own AI provider, browser storage), with uploaded projects, a voice interview and profile, and profile-based carving of every function up to 100%. Slices 6-10 were added. Slice 6 is a risk spike, because a web app running inside the page with no server is the part most likely not to work. The earlier final-review items still stand and get retried on the standalone version.

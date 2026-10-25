@@ -111,11 +111,16 @@ def grade(piece: str, name: str, explanation: str, code: str, earlier: list[str]
     return None
 
 
-CLEAN_RULES = """A beginner's Python function already passes all its tests. Review it for cleanliness only:
-fewer lines, simpler logic, clearer names, idiomatic Python, no wasted work. Behavior must stay exactly the same.
+CLEAN_RULES = """A beginner's Python function already passes all its tests. Review it as production code:
+- shorter: fewer lines, no wasted variables or steps, idiomatic Python;
+- efficient: no needless loops, copies or repeated work;
+- robust: handles odd inputs (empty, missing, wrong type) the way its callers need;
+- secure: nothing an attacker could exploit (timing leaks, injection, trusting user input).
+Keep the behavior the tests check exactly the same.
 Reply with JSON only, with these keys:
 "clean": true if it is already about as clean as it gets, else false,
-"hints": 1 to 3 hints, each ONE short sentence under 15 words, pointing at one concrete improvement, no code ([] if clean),
+"hints": 1 to 3 hints, the most important first, each ONE short sentence under 15 words that starts with its kind
+("Shorter:", "Faster:", "Robust:" or "Secure:") and points at one concrete improvement, no code ([] if clean),
 "code": the cleaner version of the whole function, same signature, plain Python, no markdown fences ("" if clean)."""
 
 

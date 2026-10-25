@@ -56,15 +56,19 @@ A one-minute demo:
 - **Ownership score:** The percentage of the project's lines of code that the learner wrote, always visible and rising as they contribute.
 - **Opening:** A short intro in front of the prepared page. No live generation.
 - **"Bring your own idea":** Shown as a feature of the product but not working in the PoC and not explored in the demo.
+- **Standalone (added in the final review):** The whole product is a static web page on GitHub Pages. Python and tests run in the browser, the AI is called from the browser with the learner's own provider and key, and progress is saved in the browser. Nothing depends on the builder's computer.
+- **Bring your own project (added in the final review):** Upload a working Python project as a zip (for example from GitHub) and download it back with your code inside. A web app runs live in the page. A project that can't run in a browser (it needs a game engine or a local machine) is checked with tests only.
+- **Profile-based carving, up to 100% (added in the final review):** A short first-launch interview, spoken or typed, records what the learner says they can do. Every function can be carved. The learner's model finds the key spots, the profile decides what to leave to the original code, and a learner can choose to write everything. Claimed skills get spot-checked during the project, and the results are saved next to the claims.
+- **Voice:** Speak to the tutor any time, especially in the interview and explanations.
 
 ## Later
 - **Full interview:** A full Devpost-style interview (scope, PRD, spec) before the AI builds anything.
 - **Project catalog:** About ten different kinds of web pages or websites for the learner to choose from.
+- **Languages other than Python** for uploaded projects, and tests for JavaScript games.
 - **Bring your own idea, for real:** The AI generates a working project from the learner's idea, then carves it.
 - **More project types:** Games, mobile apps (shown in a phone-sized preview) and multi-page apps, plus more languages.
 - **In-browser terminal:** For running arbitrary commands.
-- **Many rounds:** Keep going until 40% of the project is yours, and eventually the whole core.
-- **Users everywhere:** Accounts and saved progress across sessions.
+- **Accounts and sync:** Progress that follows the learner across devices. In the PoC, the downloaded zip is the way to move work.
 
 ## Explicitly Cut
 - **Detecting or blocking outside AI tools:** The rule is that the learner doesn't paste solutions from other AI tools, but the app can't reliably enforce that. The comprehension check is the PoC's answer.

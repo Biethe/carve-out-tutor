@@ -214,16 +214,28 @@ async function loadOverview() {
   const render = items => items.map(i => i.dir
     ? `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>${escapeHtml(i.name)}/</summary><ul>${render(i.children)}</ul></details></li>`
     : `<li class="${i.path === overview.current ? "you" : ""}"><i class="ph-bold ph-file" aria-hidden="true"></i><code>${escapeHtml(i.name)}</code>` +
-      (i.path === overview.current ? ` <span class="chip">you're here</span>` : "") +
-      (i.about ? `<span class="about">${escapeHtml(i.about)}</span>` : "") + `</li>`).join("");
+      (i.path === overview.current ? ` <span class="chip">you're here</span>` : "") + `</li>`).join("");
   $("file-tree").innerHTML = `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>store/</summary><ul>${render(overview.tree)}</ul></details></li>`;
+  $("map-view").insertAdjacentHTML("beforeend", `<optgroup label="Follow one request">${
+    overview.flows.map((f, i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join("")}</optgroup>`);
   drawDiagram();
 }
 
+const CAPTIONS = {
+  system: "Each box is a file. Arrows show what travels between them: form fields, function calls with what goes in and what comes back, the session cookie, and the database tables. Your file has the dashed outline.",
+  flow: "One request from start to finish, top to bottom: every function it reaches, what it hands over, and what it gets back.",
+};
+$("map-view").onchange = () => drawDiagram();
+$("map-expand").onclick = () => { $("map-dialog").showModal(); drawDiagram($("diagram-big")); };
+$("map-close").onclick = () => $("map-dialog").close();
+
 // Mermaid draws in a hand-drawn style, in the current theme's colors. Redrawn when the theme changes.
-async function drawDiagram() {
+async function drawDiagram(target = $("diagram")) {
   if (!overview) return;
-  if (!window.mermaid) { $("diagram").innerHTML = `<pre>${escapeHtml(overview.diagram)}</pre>`; return; }
+  const view = $("map-view").value;
+  const text = view === "system" ? overview.system : overview.flows[view].diagram;
+  $("map-caption").textContent = CAPTIONS[view === "system" ? "system" : "flow"];
+  if (!window.mermaid) { target.innerHTML = `<pre>${escapeHtml(text)}</pre>`; return; }
   const css = getComputedStyle(document.documentElement), v = name => css.getPropertyValue(name).trim();
   mermaid.initialize({
     startOnLoad: false, look: "handDrawn", theme: "base",
@@ -233,10 +245,10 @@ async function drawDiagram() {
       lineColor: v("--ink-soft"), edgeLabelBackground: v("--surface"), tertiaryColor: v("--surface"),
     },
   });
-  const { svg } = await mermaid.render("map-" + Date.now(), overview.diagram);
-  $("diagram").innerHTML = svg;
+  const { svg } = await mermaid.render("map-" + Date.now(), text);
+  target.innerHTML = svg;
 }
-addEventListener("themechange", drawDiagram);
+addEventListener("themechange", () => { drawDiagram(); if ($("map-dialog").open) drawDiagram($("diagram-big")); });
 
 let criteriaText = {};
 

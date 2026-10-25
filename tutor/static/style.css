@@ -397,11 +397,17 @@ details pre, .clean-code { font-size: 15px; }
 .file-tree details { border: 0; margin: 0; overflow: visible; }
 .file-tree summary { padding: 2px 0; display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 14px; }
 .file-tree i { color: var(--accent); }
-.file-tree .about { flex-basis: 100%; padding-left: 26px; font-size: 13.5px; color: var(--ink-soft); }
 .file-tree li.you code { background: var(--marker); color: var(--on-marker); outline: 2px dashed var(--line); }
 .diagram { margin-top: 10px; overflow-x: auto; }
 .diagram svg { display: block; width: 100%; height: auto; max-width: 100% !important; }
 .diagram pre { font-size: 13px; }
+.map-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.map-bar select { min-height: 38px; padding: 0 12px; font: 600 14px var(--body); color: var(--ink); background: var(--surface); border: 2px solid var(--line); border-radius: 999px; }
+.map-dialog { width: min(1200px, 94vw); height: 90vh; padding: 20px; background: var(--surface); color: var(--ink); border: 2px solid var(--line); border-radius: 18px; box-shadow: 6px 6px 0 var(--shadow); }
+.map-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.map-dialog .close { position: absolute; top: 12px; right: 12px; }
+.map-dialog .diagram { height: 100%; overflow: auto; margin: 0; }
+.map-dialog .diagram svg { width: auto; min-width: 100%; max-width: none !important; height: auto; }
 
 /* Clean: the cleaner version, revealed on request. */
 .clean-code { margin: 0; padding: 12px 14px; background: var(--cm-bg); border: 2px dashed var(--line); border-radius: 14px; white-space: pre-wrap; overflow-x: auto; }

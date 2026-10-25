@@ -21,6 +21,15 @@ async def lifespan(app):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.middleware("http")
+async def always_fresh(request, call_next):
+    """Browsers must check for a newer page or script every time, so a new feature never hides behind an old cached file."""
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 # The store's asset pictures, so the catalog can show the real project.
 app.mount("/store-assets", StaticFiles(directory=Path(__file__).parent.parent / "store" / "static" / "assets"), name="store-assets")
@@ -157,9 +166,8 @@ def clean():
 @app.get("/api/overview")
 def project_overview():
     prog = progress.load()
-    current = PIECES[prog["current"]]["file"] if prog["current"] else None
-    current = current and f"store/pieces/{current}"
-    return {"tree": overview.tree(), "diagram": overview.diagram(current), "current": current}
+    current = f"store/pieces/{PIECES[prog['current']]['file']}" if prog["current"] else None
+    return {"tree": overview.tree(), "current": current, **overview.diagrams(current, prog["step"])}
 
 
 @app.post("/api/explain")

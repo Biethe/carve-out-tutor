@@ -149,12 +149,25 @@ Source: `scope.md > The POC Boundary`.
 - **A passed piece stays the learner's:** The AI's version runs only while a piece is unfinished. Once it passes, it's theirs for good, including fixing any bugs it causes later.
 - **"Bring your own idea" is visible but coming soon.**
 
+## Standalone, Bring Your Own (added in the final review)
+
+- **Open anywhere:** The tutor is a web page at a public address. It works on any laptop with a modern browser and needs no install. The first visit downloads browser Python once.
+- **Your AI provider:** Settings has a provider (Groq, OpenRouter, Google Gemini, or any OpenAI-compatible address), a model and the learner's key. The key stays in that browser. With no key set, everything but the tutor's replies still works, and the tutor says how to get a free key.
+- **First-launch interview:** A few spoken or typed questions about what the learner can already do and what they want to learn. The answers become their profile as claims, for example "I know how to hash passwords". The profile can be read and edited later.
+- **Voice:** A microphone button in the interview and the tutor window turns speech into text. Replies can be read out loud.
+- **Upload and download:** Upload a zip of a working Python project. The tutor lists every function, shows the Files and Map tabs for it, and runs it: live in the page if it's a web app (FastAPI or Flask) or a browser game (plain HTML and JavaScript), otherwise with its tests only. **Download** gives back a zip of the project with every passed function replaced by the learner's code.
+- **What to carve:** The learner's model suggests the key spots. Each function is marked "I'll write it" or "Keep the original". The profile fills in the starting marks, and "Write everything" marks them all. The ownership bar can reach 100%.
+- **Checking your code:** The project's own tests where they cover a function. Otherwise the model writes tests, and they're kept only if they pass on the original code. A function with no working test can't be carved, and the tutor says why.
+- **Spot checks:** Now and then the tutor carves a function the learner said they already know. The result is saved next to that claim (shown, or not yet shown).
+- **Saved in the browser:** Profile, projects, drafts and progress survive closing the tab. Clearing browser data loses them, which the page says next to the Download button.
+
 ## What We're Building
 - **Tutor screens:** The home/catalog page (one project plus a coming-soon card), the project page, and the learning workspace.
 - **The store:** The 3D asset store with log-in, browsing, cart, fake checkout, on-page download links and a profile, opened in a separate tab by **Run project**.
 - **The carve loop:** Carving, the focused task, hints, tests and swap-in, and the understanding check with hint retries.
 - **Two rounds:** Authentication, then cart behavior.
 - **The ownership percentage:** Always visible, measured in lines of code.
+- **Standalone and bring your own:** Everything in the section above.
 
 ## Deferred From the POC
 - **Sending download links by email:** Needs a mail service and credentials. The on-page link proves the flow.
@@ -171,7 +184,6 @@ Source: `scope.md > The POC Boundary`.
 
 ## Non-Goals
 - **Detecting or blocking outside AI tools:** The rule can't be reliably enforced. The understanding check does that job instead (`scope.md > Explicitly Cut`).
-- **Deployment for users worldwide:** Optional for the hackathon and not needed to prove the loop.
 - **A full IDE:** No in-browser terminal and no editing arbitrary files outside the carved piece.
 - **Generating the practice project live:** The store is prepared ahead of time.
 - **Reverting a passed piece to the AI's code:** Once a piece passes, it stays the learner's.

@@ -52,11 +52,16 @@
         </div>
         <div id="tab-files" role="tabpanel" hidden>
           <h2>What's in the project</h2>
+          <p class="muted small">Every folder and file, by name. You'll meet the code one function at a time.</p>
           <ul class="file-tree" id="file-tree"><li class="muted">Loading…</li></ul>
         </div>
         <div id="tab-map" role="tabpanel" hidden>
-          <h2>How the files connect</h2>
-          <p class="muted small">Arrows point from a file to what it uses, labelled with the functions it calls. Your file has the dashed outline.</p>
+          <h2>How data flows</h2>
+          <div class="map-bar">
+            <select id="map-view" aria-label="Diagram to show"><option value="system">The whole system</option></select>
+            <button class="btn small secondary" id="map-expand" type="button"><i class="ph-bold ph-arrows-out" aria-hidden="true"></i> Expand</button>
+          </div>
+          <p class="muted small" id="map-caption"></p>
           <div class="diagram" id="diagram"><p class="muted">Loading…</p></div>
         </div>
       </div>
@@ -77,6 +82,10 @@
       </div>
     </section>
   </main>
+  <dialog class="map-dialog" id="map-dialog">
+    <button class="close" id="map-close" aria-label="Close"><i class="ph-bold ph-x" aria-hidden="true"></i></button>
+    <div class="diagram" id="diagram-big"></div>
+  </dialog>
   <button class="tutor-fab" id="tutor-fab" title="Drag me anywhere. Click to open the tutor." aria-expanded="false" aria-controls="tutor-win">
     <i class="ph-bold ph-chat-teardrop-dots" aria-hidden="true"></i>
     <span>Tutor</span>
