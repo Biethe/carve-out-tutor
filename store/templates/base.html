@@ -3,27 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Polyvault | 3D asset store{% endblock %}</title>
+  <title>{% block title %}Polyvault | Real 3D models and environments{% endblock %}</title>
+  <meta name="description" content="Polyvault: real 3D models and 360° environments, CC0, ready for your next scene.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 28 9.5v13L16 29 4 22.5v-13z' fill='%23b4532a'/%3E%3Cpath d='M16 3 28 9.5 16 16 4 9.5z' fill='%23d9845a'/%3E%3Cpath d='M16 16v13L4 22.5v-13z' fill='%238e3f1f'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/store.css">
 </head>
 <body>
+  <a class="skip" href="#main">Skip to content</a>
   <header class="top">
-    <a class="brand" href="/">Polyvault</a>
-    <nav>
-      <a href="/">Browse</a>
-      <a href="/cart">Cart{% if cart_count %} <span class="badge">{{ cart_count }}</span>{% endif %}</a>
+    <a class="brand" href="/" aria-label="Polyvault home">
+      <svg class="cube" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 28 9.5v13L16 29 4 22.5v-13z"/><path class="lit" d="M16 3 28 9.5 16 16 4 9.5z"/><path class="dark" d="M16 16v13L4 22.5v-13z"/></svg>
+      Polyvault
+    </a>
+    <nav aria-label="Main">
+      <a class="nav-home" href="/" {% if active == "browse" %}aria-current="page"{% endif %}>Browse</a>
+      <a href="/cart" {% if active == "cart" %}aria-current="page"{% endif %}>Cart{% if cart_count %} <span class="count">{{ cart_count }}</span>{% endif %}</a>
       {% if logged_in %}
-        <a href="/profile">Profile</a>
+        <a href="/profile" {% if active == "profile" %}aria-current="page"{% endif %}>Your assets</a>
         <form method="post" action="/logout"><button class="link">Log out</button></form>
       {% else %}
-        <a href="/signup">Sign up</a>
+        <a href="/signup" {% if active == "signup" %}aria-current="page"{% endif %}>Sign up</a>
         <a class="btn small" href="/login">Log in</a>
       {% endif %}
     </nav>
   </header>
-  <main>
-    {% if message %}<p class="message">{{ message }}</p>{% endif %}
+  <main id="main">
+    {% if message %}<p class="message" role="status">{{ message }}</p>{% endif %}
     {% block content %}{% endblock %}
   </main>
+  <footer class="foot">
+    <span>Models and environments from <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a>, CC0.</span>
+    <span>Polyvault is a practice store: no real payments are taken.</span>
+  </footer>
 </body>
 </html>

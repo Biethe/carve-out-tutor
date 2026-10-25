@@ -90,6 +90,8 @@ This replaces **Stack** and **Where It Runs** above for the hosted product. The 
 - **Code from uploads:** It runs inside the browser's sandbox, not on anyone's computer, and the page has no secrets but the learner's own key. Uploaded web apps run on the tutor's own address, so a malicious upload could read that key from the page. The settings page says to upload only projects you trust.
 
 ## Look and Feel
+
+- **Polyvault (the practice store), redesigned in the final review:** a studio showcase for real 3D. CC0 renders from Poly Haven, Instrument Serif, Geist and Geist Mono, warm stone neutrals with grain, one ember accent, and every model on a spotlit backdrop. Its own identity, separate from the tutor's notebook look.
 Carried from `prd.md > Look and Feel`, then reworked in the final review at the learner's request ("fun, original, human-like writing, different fonts, italics, bold, sizes, dark and light mode").
 
 - **Idea:** a notebook you learn in. A mentor writes handwritten notes in the margin, you highlight what matters, and every surface feels like paper you can press.

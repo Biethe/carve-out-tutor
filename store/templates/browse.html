@@ -1,28 +1,52 @@
 {% extends "base.html" %}
+{% set active = "browse" %}
 {% block content %}
 <section class="hero">
-  <h1>Models, animations and worlds</h1>
-  <p>Hand-picked 3D assets, ready for your next game or scene.</p>
+  <div class="hero-copy">
+    <p class="eyebrow">CC0 · free for any project</p>
+    <h1>Real 3D, ready for <em>your</em> scene.</h1>
+    <p class="lead">Props built from real objects, and full 360° environments photographed on location. Buy once, download straight away.</p>
+    <a class="btn" href="#shop">Browse the vault</a>
+  </div>
+  <figure class="hero-stage">
+    <img src="/static/assets/chest.webp" alt="Treasure chest 3D model: dark wood bound with wrought-iron bands" width="800" height="600">
+    <figcaption><span>Treasure Chest</span><span class="mono">103,330 polys</span></figcaption>
+  </figure>
 </section>
-<div class="grid">
-  {% for a in assets %}
-  <article class="card">
-    <img src="/static/assets/{{ a.image }}" alt="{{ a.name }} preview">
-    <div class="card-body">
-      <div>
-        <h2>{{ a.name }}</h2>
-        <span class="kind kind-{{ a.kind }}">{{ a.kind }}</span>
-      </div>
-      <div class="buy">
-        <span class="price">${{ "%.2f"|format(a.price) }}</span>
-        {% if a.id in in_cart %}
-          <a class="btn ghost small" href="/cart">In cart</a>
-        {% else %}
-          <form method="post" action="/cart/add/{{ a.id }}"><button class="btn small">Add to cart</button></form>
-        {% endif %}
-      </div>
+
+{% set models = assets|selectattr("kind", "equalto", "model")|list %}
+<section class="shop" id="shop" aria-labelledby="shop-title">
+  <div class="shop-head">
+    <h2 id="shop-title">The vault</h2>
+    <!-- Filtering is pure CSS (:has), so it works with no script at all. -->
+    <div class="filters" role="radiogroup" aria-label="Show">
+      <input type="radio" name="show" id="show-all" checked><label for="show-all">All <span>{{ assets|length }}</span></label>
+      <input type="radio" name="show" id="show-model"><label for="show-model">Models <span>{{ models|length }}</span></label>
+      <input type="radio" name="show" id="show-world"><label for="show-world">Environments <span>{{ assets|length - models|length }}</span></label>
     </div>
-  </article>
-  {% endfor %}
-</div>
+  </div>
+  <div class="grid">
+    {% for a in assets %}
+    {% set d = details.get(a.image, ("", "")) %}
+    <article class="card kind-{{ a.kind }}{% if loop.first %} feature{% endif %}">
+      <div class="stage"><img src="/static/assets/{{ a.image }}" alt="{{ a.name }}, {{ 'a 360° environment' if a.kind == 'world' else 'a 3D model' }}" loading="lazy"></div>
+      <div class="info">
+        <div class="title">
+          <h3>{{ a.name }}</h3>
+          <span class="kind">{{ "Environment" if a.kind == "world" else "Model" }}</span>
+        </div>
+        {% if d[0] %}<p class="spec"><span class="mono">{{ d[0] }}</span> · by {{ d[1] }}</p>{% endif %}
+        <div class="buy">
+          <span class="price">${{ "%.2f"|format(a.price) }}</span>
+          {% if a.id in in_cart %}
+            <a class="btn small quiet" href="/cart">In your cart</a>
+          {% else %}
+            <form method="post" action="/cart/add/{{ a.id }}"><button class="btn small">Add to cart</button></form>
+          {% endif %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}

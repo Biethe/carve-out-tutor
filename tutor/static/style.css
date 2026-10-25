@@ -653,3 +653,6 @@ details pre, .clean-code { font-size: 15px; }
 .pick select { border: 0; background: transparent; color: var(--ink); font: 600 14px var(--body); max-width: 260px; cursor: pointer; }
 .pick select:focus { outline: none; }
 @media (max-width: 860px) { .pick select { max-width: 140px; } }
+
+/* Polyvault's model renders have transparent backgrounds: give them a studio backdrop, like in the store. */
+img.model { object-fit: contain !important; padding: 6%; background: radial-gradient(ellipse 75% 65% at 50% 38%, #fdfbf8, #e2dbcf 82%); }

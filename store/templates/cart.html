@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set active = "cart" %}
 {% block title %}Cart | Polyvault{% endblock %}
 {% block content %}
 <section class="panel">
@@ -7,8 +8,8 @@
     <ul class="rows">
       {% for a in items %}
       <li>
-        <img src="/static/assets/{{ a.image }}" alt="">
-        <span class="row-name">{{ a.name }} <span class="kind kind-{{ a.kind }}">{{ a.kind }}</span></span>
+        <span class="thumb kind-{{ a.kind }}"><img src="/static/assets/{{ a.image }}" alt=""></span>
+        <span class="row-name">{{ a.name }} <span class="kind">{{ "Environment" if a.kind == "world" else "Model" }}</span></span>
         <span class="price">${{ "%.2f"|format(a.price) }}</span>
         <form method="post" action="/cart/remove/{{ a.id }}"><button class="link">Remove</button></form>
       </li>
@@ -20,7 +21,10 @@
     </div>
     <p class="note">Checkout is pretend: no payment is taken.</p>
   {% else %}
-    <p class="empty">Your cart is empty. <a href="/">Browse assets</a></p>
+    <div class="empty">
+      <p>Your cart is empty.</p>
+      <a class="btn" href="/">Browse the vault</a>
+    </div>
   {% endif %}
 </section>
 {% endblock %}

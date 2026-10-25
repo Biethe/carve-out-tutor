@@ -1,22 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Profile | Polyvault{% endblock %}
+{% set active = "profile" %}
+{% block title %}Your assets | Polyvault{% endblock %}
 {% block content %}
 <section class="panel">
-  <h1>{{ username }}</h1>
-  <h2 class="sub">Your assets</h2>
+  <p class="eyebrow">Signed in as {{ username }}</p>
+  <h1>Your assets</h1>
   {% if purchases %}
     <ul class="rows">
       {% for p in purchases %}
       <li>
-        <img src="/static/assets/{{ p.image }}" alt="">
-        <span class="row-name">{{ p.name }} <span class="kind kind-{{ p.kind }}">{{ p.kind }}</span></span>
-        <span class="muted">{{ p.bought_at.replace("T", " ") }}</span>
+        <span class="thumb kind-{{ p.kind }}"><img src="/static/assets/{{ p.image }}" alt=""></span>
+        <span class="row-name">{{ p.name }} <span class="kind">{{ "Environment" if p.kind == "world" else "Model" }}</span></span>
+        <span class="muted mono">{{ p.bought_at.replace("T", " ") }}</span>
         <a class="btn small" href="/download/{{ p.id }}">Download</a>
       </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p class="empty">Nothing bought yet. <a href="/">Browse assets</a></p>
+    <div class="empty">
+      <p>Nothing here yet. Everything you buy shows up here, ready to download.</p>
+      <a class="btn" href="/">Browse the vault</a>
+    </div>
   {% endif %}
 </section>
 {% endblock %}
