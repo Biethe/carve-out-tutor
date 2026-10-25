@@ -8,8 +8,8 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// No pasting, anywhere: the learner types every line they own.
-const PASTE_ALLOWED = false;
+// Pasting is allowed only while building the tutor on your own machine. The public site always blocks it.
+const PASTE_ALLOWED = ["localhost", "127.0.0.1"].includes(location.hostname);
 
 // CodeMirror from the CDN, or the plain textarea if it didn't load (offline).
 let editor;
