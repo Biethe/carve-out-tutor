@@ -42,5 +42,15 @@
  "tutor/static/settings.js",
  "tutor/static/style.css",
  "tutor/static/theme.js",
- "tutor/static/voice.js"
+ "tutor/static/voice.js",
+ "tutor/static/voice/again.wav",
+ "tutor/static/voice/closing.wav",
+ "tutor/static/voice/data_easy.wav",
+ "tutor/static/voice/data_hard.wav",
+ "tutor/static/voice/intro.wav",
+ "tutor/static/voice/no.wav",
+ "tutor/static/voice/python.wav",
+ "tutor/static/voice/web_easy.wav",
+ "tutor/static/voice/web_hard.wav",
+ "tutor/static/voice/yes.wav"
 ]
