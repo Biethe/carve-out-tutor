@@ -24,7 +24,7 @@ class NoKey(Exception):
 
 # The published tutor's demo proxy (demo-proxy/worker.js): visitors without a key of their own, like judges, can still
 # use everything. The Groq key lives on Cloudflare, never in the site. Only used in the browser, never locally.
-DEMO_PROXY = ""
+DEMO_PROXY = "https://carve-out-demo.biethe.workers.dev"
 
 
 def provider() -> tuple[str, str, str, bool]:
