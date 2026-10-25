@@ -152,12 +152,16 @@ CLEAN_RULES = """A beginner's Python function already passes all its tests. Revi
 - shorter: fewer lines, no wasted variables or steps, idiomatic Python;
 - efficient: no needless loops, copies or repeated work;
 - robust: handles odd inputs (empty, missing, wrong type) the way its callers need;
-- secure: nothing an attacker could exploit (timing leaks, injection, trusting user input).
-Keep the behavior the tests check exactly the same.
+- secure: nothing an attacker could exploit (timing leaks, injection, trusting user input);
+- typed: type hints on every parameter and the return value, and on local variables whose type isn't obvious,
+  written with built-in types (list[int], dict[str, str], X | None), never typing.List or typing.Dict;
+Keep the behavior the tests check exactly the same, and keep the exact signature from the task.
+The shortest correct version wins: only guard against inputs the callers listed under "Where it's used" can really send,
+and never change what happens on bad input (an error stays an error) unless that is a security fix.
 Reply with JSON only, with these keys:
 "clean": true if it is already about as clean as it gets, else false,
 "hints": 1 to 3 points, the most important first, each ONE short sentence under 20 words that starts with its kind
-("Shorter:", "Faster:", "Robust:" or "Secure:") and says what the cleaner version changes and why it's better, no code ([] if clean),
+("Shorter:", "Faster:", "Robust:", "Secure:" or "Typed:") and says what the cleaner version changes and why it's better, no code ([] if clean),
 "code": the cleaner version of the whole function, same signature, plain Python, no markdown fences ("" if clean).
 If the code is already clean, say so: "clean": true, with no hints and no code. Don't invent changes."""
 
