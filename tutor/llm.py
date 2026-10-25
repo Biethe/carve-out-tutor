@@ -89,6 +89,8 @@ async def speech(text: str) -> bytes:
     model, voice = next((v for host, v in SPEECH.items() if host in base), (None, None))
     if not model:
         raise RuntimeError("Your AI provider has no natural voice here, so the browser's voice is used.")
+    if "orpheus" in model and not text.startswith("["):
+        text = "[cheerful] " + text  # Orpheus' delivery direction: upbeat, and it isn't read out
     body = {"model": model, "voice": voice, "input": text, "response_format": "wav"}
     return await _post_audio(base + "/audio/speech", {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, body)
 

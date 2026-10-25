@@ -296,11 +296,13 @@ def edit_profile(claims: list[dict] = Body(), gaps: list[str] = Body(), wants: l
 async def speak(text: str = Body(embed=True)):
     """The tutor's words in a natural AI voice (WAV). On an error the page falls back to the browser's own voice."""
     try:
-        return Response(await llm.speech(text[:600]), media_type="audio/wav")
+        return Response(await llm.speech(text[:480]), media_type="audio/wav")
     except llm.NoKey:
         return JSONResponse({"error": llm.NO_KEY}, status_code=400)
     except Exception as err:
         message = str(err)
+        if "rate_limit" in message:
+            return JSONResponse({"error": "busy", "busy": True}, status_code=429)  # the page uses the browser's voice this once
         if "terms" in message:
             message = "For the natural voice, accept Groq's terms for Orpheus once: https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english"
         return JSONResponse({"error": message[:300]}, status_code=502)

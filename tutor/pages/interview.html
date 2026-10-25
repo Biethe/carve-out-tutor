@@ -32,11 +32,11 @@
       </div>
       <!-- Chip's introduction: read out loud line by line, each line lit up as it's spoken. -->
       <ol class="script" id="script">
-        <li>I'm your coding tutor, and I'll be with you the whole way.</li>
-        <li>Here's how Carve-Out works. You start with an app that already works. I cut out one small piece, you write it back in, and the app keeps running with your code inside. Piece by piece, more of the app becomes yours.</li>
-        <li>Before we start, I'd like to get to know you. I'll ask a few quick questions about what you've already done with code. It takes about two minutes.</li>
-        <li>Be honest, there are no wrong answers. Your answers help me choose what you rebuild first, and how much help to give you.</li>
-        <li>You can talk to me, or type. So, are you ready?</li>
+        <li>Here's the deal: you get a real app that <strong>already works</strong>.</li>
+        <li>I snip out one piece, you code it back in, and <strong>boom</strong>, the app runs on your code!</li>
+        <li>Piece by piece, the whole thing becomes <strong>yours</strong>.</li>
+        <li>But first, a few quick questions to get to know you. No wrong answers.</li>
+        <li><strong>Ready? Let's go!</strong></li>
       </ol>
       <div class="actions">
         <button class="btn secondary" id="hear"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i> Hear Chip</button>
@@ -138,24 +138,35 @@
     $("answer").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("send").click(); } };
     // ---- Chip introduces itself, then asks if they're ready -----------------------
     const lines = [...document.querySelectorAll("#script li")];
+    // Chip's introduction is a recorded clip (tutor/record_intro.py): instant, never cut off, no AI call.
+    // Each line lights up while it's being said (timed by its share of the words).
+    let clip = null;
     async function introduce() {
+      clip?.pause();
+      clip = new Audio("static/chip-intro.wav");
+      clip.playbackRate = Voice.RATE;
+      const sizes = lines.map(l => l.textContent.length), total = sizes.reduce((a, b) => a + b);
+      clip.ontimeupdate = () => {
+        let at = (clip.currentTime / clip.duration) * total * 1.15 - total * 0.15;  // the first ~15% is "Hey, I'm Chip"
+        lines.forEach((l, i) => { l.classList.toggle("now", at >= 0 && at < sizes[i]); at -= sizes[i]; });
+      };
+      Voice.stopSpeaking();
       $("avatar").classList.add("talking");
-      for (const line of lines) {
-        lines.forEach(l => l.classList.toggle("now", l === line));
-        await Voice.speak(line.textContent);
-        if (!$("avatar").classList.contains("talking")) return;  // stopped: they've started
-      }
+      try {
+        await clip.play();
+        await new Promise(done => (clip.onended = clip.onerror = done));
+      } catch { $("avatar").classList.remove("talking"); return; }  // the browser blocked sound: they'll click "Hear Chip"
       lines.forEach(l => l.classList.remove("now"));
+      if (!$("avatar").classList.contains("talking")) return;  // they started already
       $("avatar").classList.remove("talking");
       if (!Voice.canListen) return;
-      $("ready-status").textContent = "Listening… say \"yes\" when you're ready.";
+      $("ready-status").textContent = "Listening… say \"yes\" when you're ready!";
       const said = await Voice.listen();
       if (/\b(yes|yeah|yep|ready|sure|ok|okay|let's|go|start)\b/i.test(said)) return $("start-voice").click();
       $("ready-status").textContent = "No rush. Tap a button when you're ready.";
-      Voice.speak("No rush. Tap a button when you're ready.");
     }
     $("hear").onclick = introduce;
-    const stopIntro = () => { $("avatar").classList.remove("talking"); Voice.stopSpeaking(); Voice.stopListening(); };
+    const stopIntro = () => { clip?.pause(); $("avatar").classList.remove("talking"); Voice.stopSpeaking(); Voice.stopListening(); };
 
     $("start-voice").onclick = () => { stopIntro(); $("hands-free").checked = true; show("chat"); next(); };
     $("start-type").onclick = () => { stopIntro(); $("hands-free").checked = false; show("chat"); next(); $("answer").focus(); };
@@ -188,7 +199,11 @@
     };
     $("redo").onclick = async () => { await api("POST", "api/interview/restart"); show("intro"); };
 
-    api("GET", "api/profile").then(p => (p.done ? showProfile(p) : show("intro")));
+    api("GET", "api/profile").then(p => {
+      if (p.done) return showProfile(p);
+      show("intro");
+      introduce();  // plays straight away if the browser allows sound; otherwise "Hear Chip" does
+    });
   </script>
 </body>
 </html>

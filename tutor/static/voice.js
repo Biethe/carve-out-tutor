@@ -11,10 +11,12 @@ const Voice = (() => {
     .replace(/→/g, " gives back ").replace(/\(\)/g, "").replace(/_/g, " ")
     .replace(/[`*•#★\[\]]/g, " ").replace(/\s+/g, " ").trim();
 
-  // Short pieces, so the first sentence starts playing quickly.
-  const pieces = text => (text.match(/[^.!?]+[.!?]*/g) || [text]).reduce((out, s) => {
+  // Few pieces (the voice allows 10 requests a minute): the first sentence alone so it starts quickly,
+  // then the rest in pieces of up to 450 characters.
+  const RATE = 1.1;  // a little faster than the voice's own pace: livelier
+  const pieces = text => (text.match(/[^.!?]+[.!?]*/g) || [text]).reduce((out, s, i) => {
     const last = out[out.length - 1];
-    if (last && (last + s).length < 180) out[out.length - 1] = last + s; else out.push(s.trim());
+    if (i > 1 && (last + s).length < 450) out[out.length - 1] = last + s; else out.push(s.trim());
     return out;
   }, []).filter(Boolean);
 
@@ -39,6 +41,7 @@ const Voice = (() => {
       if (!window.speechSynthesis) return done();
       const say = new SpeechSynthesisUtterance(text);
       say.voice = browserVoice() || null;
+      say.rate = RATE;
       say.onend = say.onerror = done;
       speechSynthesis.speak(say);
       setTimeout(done, 3000 + text.split(" ").length * 450);  // some browsers never say they've finished
@@ -52,6 +55,7 @@ const Voice = (() => {
     return new Promise(done => {
       if (id !== run) return done();
       playing = new Audio(url);
+      playing.playbackRate = RATE;  // keeps the pitch natural
       playing.onended = playing.onerror = done;
       playing.play().catch(done);
     });
@@ -59,6 +63,13 @@ const Voice = (() => {
 
   return {
     canListen: Boolean(Recognition),
+    RATE,
+
+    // A recorded clip (Chip's introduction): instant, no AI call. Resolves when it ends.
+    playClip(url) {
+      this.stopSpeaking();
+      return play(url, ++run);
+    },
 
     // Resolves when the tutor has finished speaking (or right away if there's nothing to say).
     async speak(text) {
@@ -76,8 +87,10 @@ const Voice = (() => {
           }
           return;
         } catch (err) {
-          natural = false;  // for the rest of this visit, use the browser's voice
-          if (err?.error) notice(err.error);
+          if (!err?.busy) {  // busy: just this once in the browser's voice. Otherwise, for the rest of the visit.
+            natural = false;
+            if (err?.error) notice(err.error);
+          }
         }
       }
       if (id === run) await sayInBrowser(words);
