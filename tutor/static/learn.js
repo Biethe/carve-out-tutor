@@ -45,13 +45,16 @@ function formatReply(text) {
 // "hint": while coding, each hint or question replaces the last one.
 // "check": after passing, the one question about this function and the replies to it.
 // "done": the question is answered; questions still welcome, one at a time.
+// "clean": the Clean result, in its own wider view. Closing it goes back to the view before.
 // Closing the window clears it.
-let mode = "hint", check = null;
+let mode = "hint", check = null, modeBeforeClean = null;
+const fab = $("tutor-fab"), win = $("tutor-win");
 
 function setMode(newMode) {
   mode = newMode;
   $("messages").innerHTML = "";
-  $("tutor-mode").textContent = { hint: "Hints & questions", check: "One question", done: "Questions" }[newMode];
+  win.classList.toggle("wide", newMode === "clean");
+  $("tutor-mode").textContent = { hint: "Hints & questions", check: "One question", done: "Questions", clean: "Clean code" }[newMode];
   $("explain").hidden = newMode !== "check";
   $("chat-input").placeholder = newMode === "check"
     ? "Answer in your own words…"
@@ -60,7 +63,7 @@ function setMode(newMode) {
 }
 
 function addMessage(html, cls = "tutor-msg") {
-  const el = document.createElement("p");
+  const el = document.createElement("div");  // a div, so a code block can sit inside it
   el.className = "msg " + cls;
   el.innerHTML = html;
   $("messages").appendChild(el);
@@ -126,8 +129,6 @@ $("explain").onclick = async () => {
   }
 };
 
-const fab = $("tutor-fab"), win = $("tutor-win");
-
 function placeWindow() {
   // Open beside the button on whichever side has room. The window is anchored on the button's side,
   // so when replies make it taller it grows away from the button instead of over it.
@@ -137,7 +138,8 @@ function placeWindow() {
   win.style.bottom = below ? "auto" : Math.min(innerHeight - b.top + gap, innerHeight - 200) + "px";
   win.style.left = leftSide ? Math.max(8, b.left) + "px" : "auto";
   win.style.right = leftSide ? "auto" : Math.max(8, innerWidth - b.right) + "px";
-  win.style.maxHeight = Math.min(520, below ? innerHeight - b.bottom - gap - 8 : b.top - gap - 8) + "px";
+  const room = below ? innerHeight - b.bottom - gap - 8 : b.top - gap - 8;
+  win.style.maxHeight = Math.max(320, Math.min(win.classList.contains("wide") ? innerHeight * .85 : 520, room)) + "px";
 }
 
 function openTutor() {
@@ -154,7 +156,7 @@ function openTutor() {
 function closeTutor() {
   win.hidden = true;
   fab.setAttribute("aria-expanded", "false");
-  setMode(mode);  // clears the window; the question comes back if it's still open
+  setMode(mode === "clean" ? modeBeforeClean : mode);  // clears the window; the question comes back if it's still open
 }
 
 function moveFab(x, y) {
@@ -325,21 +327,25 @@ $("next").onclick = async () => {
 let cleaning = false;
 
 $("clean").onclick = async () => {
-  openTutor();
-  startExchange();
+  if (mode !== "clean") modeBeforeClean = mode;
+  setMode("clean");  // its own view: the question waits until this one is closed
+  win.hidden ? openTutor() : placeWindow();
   $("clean").disabled = true;
   const { el, res } = await askTutor("api/clean", {});
   $("clean").disabled = false;
   if (res.error) { el.textContent = res.error; return; }
-  if (res.clean) { el.innerHTML = "Already clean. Nothing to cut here."; return; }
-  el.innerHTML = res.hints.map(h => "• " + formatReply(h)).join("<br>");
-  if (res.code) {
-    const show = document.createElement("button");
-    show.className = "btn small secondary";
-    show.textContent = "Show a cleaner version";
-    show.onclick = () => show.replaceWith(Object.assign(document.createElement("pre"), { className: "clean-code", textContent: res.code }));
-    el.after(show);
+  if (res.clean) { el.innerHTML = "<strong>Already clean.</strong> Nothing to cut or fix here."; return; }
+  const points = `<ul class="clean-points">${res.hints.map(h => `<li>${formatReply(h)}</li>`).join("")}</ul>`;
+  el.innerHTML = res.code
+    ? `<strong>A cleaner version</strong><pre class="clean-code"></pre><strong>What changed, and why</strong>${points}`
+    : `<strong>How to make it cleaner</strong>${points}`;
+  if (res.code) el.querySelector(".clean-code").textContent = res.code;
+  if (modeBeforeClean === "check") {
+    const back = Object.assign(document.createElement("button"), { className: "btn small secondary", textContent: "Back to the question" });
+    back.onclick = () => setMode("check");
+    el.after(back);
   }
+  placeWindow();
   cleaning = true;
   editor.setOption("readOnly", false);
   $("submit").disabled = false;

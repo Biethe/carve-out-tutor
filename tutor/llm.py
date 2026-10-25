@@ -156,9 +156,10 @@ CLEAN_RULES = """A beginner's Python function already passes all its tests. Revi
 Keep the behavior the tests check exactly the same.
 Reply with JSON only, with these keys:
 "clean": true if it is already about as clean as it gets, else false,
-"hints": 1 to 3 hints, the most important first, each ONE short sentence under 15 words that starts with its kind
-("Shorter:", "Faster:", "Robust:" or "Secure:") and points at one concrete improvement, no code ([] if clean),
-"code": the cleaner version of the whole function, same signature, plain Python, no markdown fences ("" if clean)."""
+"hints": 1 to 3 points, the most important first, each ONE short sentence under 20 words that starts with its kind
+("Shorter:", "Faster:", "Robust:" or "Secure:") and says what the cleaner version changes and why it's better, no code ([] if clean),
+"code": the cleaner version of the whole function, same signature, plain Python, no markdown fences ("" if clean).
+If the code is already clean, say so: "clean": true, with no hints and no code. Don't invent changes."""
 
 
 async def clean(piece: str, name: str, code: str) -> dict | None:

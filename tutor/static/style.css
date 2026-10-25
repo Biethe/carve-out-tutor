@@ -410,7 +410,10 @@ details pre, .clean-code { font-size: 15px; }
 .map-dialog .diagram svg { width: auto; min-width: 100%; max-width: none !important; height: auto; }
 
 /* Clean: the cleaner version, revealed on request. */
-.clean-code { margin: 0; padding: 12px 14px; background: var(--cm-bg); border: 2px dashed var(--line); border-radius: 14px; white-space: pre-wrap; overflow-x: auto; }
+.clean-code { margin: 8px 0 14px; padding: 14px 16px; background: var(--cm-bg); color: var(--ink); border: 2px dashed var(--line); border-radius: 14px; white-space: pre; overflow-x: auto; line-height: 1.6; }
+.tutor-win.wide { width: min(720px, calc(100vw - 16px)); }
+.clean-points { margin: 6px 0 0; padding-left: 20px; }
+.clean-points li { margin: 4px 0; }
 .tutor-win .messages > .btn { align-self: flex-start; }
 
 /* ---------- Floating tutor ---------------------------------------------------- */

@@ -142,6 +142,7 @@ Build mode: fast
 - [ ] Map is a UML-style data-flow view for a mental model of the system: a component diagram with what travels on each arrow (form fields, calls with inputs and outputs, session keys, tables), plus a sequence diagram that follows any one request, with an Expand view. (Built and checked in the browser; waiting for the learner to try it.)
 - [ ] Clean hints cover shorter, faster, more robust and more secure code, each hint labelled with its kind. (Checked live; waiting for the learner to try it after passing a function.)
 - [ ] Pages and scripts are never served from an old cached copy. The learner didn't see the Files tab or Clean because their browser kept the old script. (Built.)
+- [ ] Clean has its own view in the tutor window, separate from the question: a cleaner version (readable, wider window) together with what changed and why. Already-clean code gets "Already clean" and no alternative. **Back to the question** returns to the question. The code block had been broken apart because tutor messages were `<p>` elements, which can't hold a `<pre>`. (Built and checked in the browser with a live call; waiting for the learner to try it.)
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
