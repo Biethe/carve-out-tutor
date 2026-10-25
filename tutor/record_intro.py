@@ -11,11 +11,8 @@ from pathlib import Path
 from tutor import llm
 
 # Said the way a person talks: short sentences, a little hesitation, nothing salesy. Under Orpheus' 480 characters.
-INTRO = ("Hey, I'm Chip. So, here's how this works. You get an app that already runs. "
-         "I take out one small piece... you write it back in... and the app keeps working, on your code. "
-         "Bit by bit, more of it becomes yours. "
-         "But first, I'd like to get to know you a little. Just a few quick questions, and there are no wrong answers. "
-         "Whenever you're ready.")
+INTRO = ("Hey, I'm Chip. You'll rebuild small pieces of a real app... and it keeps running, on your code. "
+         "Three quick yes or no questions, and we're off.")
 VOICE = "hannah"
 OUT = Path(__file__).parent / "static" / "chip-intro.wav"
 

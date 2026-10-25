@@ -21,45 +21,41 @@
   </header>
 
   <main class="interview">
-    <!-- 1. Chip introduces itself: a voice and a wave, no text to read. -->
+    <!-- 1. Chip says hello: a few seconds, no text to read. -->
     <section id="intro" hidden>
       <div class="stage">
         <span class="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
         <span class="wave" id="intro-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
       </div>
       <h1 class="meet-title">Hi, I'm <span class="carved">Chip</span>.</h1>
-      <p class="sr-only">Chip says: Hey! I'm Chip, your coding sidekick. You get a real app that already works. I snip out one piece,
-        you code it back in, and the app runs on your code. Piece by piece, the whole thing becomes yours. But first, a few quick
-        questions to get to know you. No wrong answers. Ready? Let's go!</p>
+      <p class="lead center">Three quick yes-or-no questions, then you start building.</p>
       <div class="actions center">
-        <button class="btn secondary" id="hear"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i> Hear Chip</button>
-        <button class="btn" id="start-voice"><i class="ph-bold ph-microphone" aria-hidden="true"></i> I'm ready, let's talk</button>
-        <button class="btn secondary" id="start-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> I'd rather type</button>
+        <button class="btn" id="start"><i class="ph-bold ph-arrow-right" aria-hidden="true"></i> Start</button>
+        <button class="icon-btn" id="hear" title="Hear Chip" aria-label="Hear Chip again"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i></button>
       </div>
       <p class="muted small center" id="voice-note"></p>
     </section>
 
-    <!-- 2. The interview. Talking: just the wave, showing whose turn it is. Typing: the question and a box. -->
+    <!-- 2. The questions: Chip asks out loud, you say or click yes or no. -->
     <section id="chat" hidden>
-      <div class="stage" id="stage" title="Tap to talk">
+      <p class="step-count center" id="count"></p>
+      <div class="stage" id="stage">
         <span class="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
         <span class="wave" id="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         <span class="avatar you" aria-hidden="true"><i class="ph-bold ph-user"></i></span>
       </div>
       <p class="turn" id="turn" role="status"></p>
-      <div id="typed" hidden>
-        <div class="card ask">
-          <p class="feedback" id="feedback"></p>
-          <p id="question"></p>
-        </div>
-        <div class="answer">
-          <textarea id="answer" rows="3" placeholder="Your answer…"></textarea>
-          <div class="actions"><button class="btn" id="send">Send <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button></div>
-        </div>
+      <div class="card ask" id="typed" hidden>
+        <p class="feedback" id="feedback"></p>
+        <p id="question"></p>
+      </div>
+      <div class="yesno">
+        <button class="btn" data-answer="Yes">Yes</button>
+        <button class="btn secondary" data-answer="No">No</button>
       </div>
       <div class="actions center">
-        <button class="btn small secondary" id="to-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> Type instead</button>
-        <button class="btn small secondary" id="to-talk" hidden><i class="ph-bold ph-microphone" aria-hidden="true"></i> Talk instead</button>
+        <button class="link" id="to-read">Show the question</button>
+        <button class="link" id="to-talk" hidden>Talk instead</button>
       </div>
       <p class="status center" id="status" role="status"></p>
     </section>
@@ -78,8 +74,9 @@
       <h2>What you want to get better at</h2>
       <ul class="claims" id="p-wants"></ul>
       <div class="actions">
-        <a class="btn" href="/">Pick a project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
-        <button class="btn secondary" id="redo"><i class="ph-bold ph-arrow-counter-clockwise" aria-hidden="true"></i> Redo the interview</button>
+        <a class="btn" href="/">Back to projects <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
+        <button class="btn secondary" id="more"><i class="ph-bold ph-plus" aria-hidden="true"></i> Improve my profile</button>
+        <button class="link" id="redo">Start over</button>
       </div>
     </section>
   </main>
@@ -93,11 +90,7 @@
     const show = id => ["intro", "chat", "profile"].forEach(s => ($(s).hidden = s !== id));
     let profile;
 
-    $("voice-note").textContent = Voice.canListen
-      ? "Talking uses your browser's speech-to-text (in Chrome, the audio goes to Google to become text)."
-      : "This browser can't turn speech into text, so you'll type. Chip still talks.";
-    if (!Voice.canListen) $("start-voice").hidden = true;
-    Voice.warmUp();  // start downloading Chip's voice now, while the intro plays
+    $("voice-note").textContent = Voice.canListen ? "Answer out loud or with the buttons." : "Answer with the buttons.";
 
     // The wave shows whose turn it is: "chip" (Chip talking), "you" (listening to you), "thinking", or still.
     function turn(who, label = "") {
@@ -105,26 +98,27 @@
       $("turn").textContent = label;
     }
 
-    // ---- Talking or typing ------------------------------------------------------
+    // ---- Talking or reading -----------------------------------------------------
     let talking = true, last = null;  // last: the latest {feedback, question}
 
     function useTalking(on) {
-      talking = on && Voice.canListen;
+      talking = on;
       $("typed").hidden = talking;
-      $("to-type").hidden = !talking;
-      $("to-talk").hidden = talking || !Voice.canListen;
+      $("to-read").hidden = !talking;
+      $("to-talk").hidden = talking;
       if (talking) { if (last) converse(); }
-      else { Voice.stopListening(); Voice.stopSpeaking(); turn(""); $("answer").focus(); }
+      else { Voice.stopListening(); Voice.stopSpeaking(); turn(""); }
     }
-    $("to-type").onclick = () => useTalking(false);
+    $("to-read").onclick = () => useTalking(false);
     $("to-talk").onclick = () => useTalking(true);
 
-    // ---- The conversation -------------------------------------------------------
+    // ---- The questions ------------------------------------------------------------
     async function next(answer = "") {
-      $("send").disabled = true;
+      Voice.stopListening();
+      document.querySelectorAll("[data-answer]").forEach(b => (b.disabled = true));
       turn("thinking", "Chip is thinking…");
       const res = await api("POST", "api/interview", { answer });
-      $("send").disabled = false;
+      document.querySelectorAll("[data-answer]").forEach(b => (b.disabled = false));
       turn("");
       if (res.error) {
         $("status").innerHTML = res.no_key
@@ -134,57 +128,50 @@
         return;
       }
       if (res.done) {
-        if (talking && res.closing) await Voice.speak(res.closing, () => turn("chip"));
-        return showProfile(res.profile);
+        // Straight to work: Chip's last line, then the projects. The profile can be improved later from the top bar.
+        document.querySelector(".yesno").hidden = true;
+        $("question").textContent = res.closing || "That's all I need. Let's build.";
+        $("feedback").textContent = "";
+        if (talking) await Voice.speak(res.closing || "That's all I need. Let's build.", () => turn("chip"));
+        else await new Promise(r => setTimeout(r, 900));
+        location.href = "/";
+        return;
       }
       last = res;
+      $("count").textContent = `Question ${res.number} of ${res.of}`;
       $("feedback").textContent = res.feedback || "";
       $("question").textContent = res.question;
-      $("answer").value = "";
       if (talking) converse();
     }
 
-    // Chip reacts to the last answer and asks the next question, out loud; then it's your turn.
+    // Chip says its reaction and the question; then it listens. A yes or a no (or anything else) is the answer.
     async function converse(retry = true) {
       turn("thinking");
       await Voice.speak([last.feedback, last.question].filter(Boolean).join(" "), () => turn("chip", "Chip"));
-      if (!talking) return;
-      turn("you", "Your turn");
+      if (!talking || !Voice.canListen) return turn("", "Yes or no?");
+      turn("you", "Yes or no?");
       const said = await Voice.listen();
       if (!talking) return;
       if (said) return next(said);
       if (retry) return converse(false);  // didn't catch anything: ask again, once
-      turn("", "Tap the wave to answer");
+      turn("", "Click Yes or No");
     }
-    $("stage").onclick = () => { if (talking && !Voice.listening && last) converse(false); };
+    document.querySelectorAll("[data-answer]").forEach(b => (b.onclick = () => next(b.dataset.answer)));
 
-    $("send").onclick = () => { const a = $("answer").value.trim(); if (a) next(a); };
-    $("answer").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("send").click(); } };
-
-    // ---- Chip introduces itself (a recorded clip: instant, no AI call), then asks if they're ready ----
+    // ---- Chip says hello (a recorded clip: instant, no AI call) --------------------------------------
     let clip = null;
-    async function introduce() {
+    async function hello() {
       clip?.pause();
       clip = new Audio("static/chip-intro.wav");
-      // Natural speed: a sped-up voice sounds processed.
-      Voice.stopSpeaking();
       turn("chip");
       try {
         await clip.play();
         await new Promise(done => (clip.onended = clip.onerror = done));
-      } catch { turn(""); return; }  // the browser blocked sound: "Hear Chip" plays it
-      if (!$("intro").hidden && Voice.canListen) {
-        turn("you");
-        const said = await Voice.listen();
-        if (!$("intro").hidden && /\b(yes|yeah|yep|ready|sure|ok|okay|let's|go|start)\b/i.test(said)) return $("start-voice").click();
-      }
+      } catch {}  // the browser blocked sound until a click: the speaker button plays it
       turn("");
     }
-    $("hear").onclick = introduce;
-    const stopIntro = () => { clip?.pause(); Voice.stopSpeaking(); Voice.stopListening(); turn(""); };
-
-    $("start-voice").onclick = () => { stopIntro(); show("chat"); useTalking(true); next(); };
-    $("start-type").onclick = () => { stopIntro(); show("chat"); useTalking(false); next(); };
+    $("hear").onclick = hello;
+    $("start").onclick = () => { clip?.pause(); show("chat"); useTalking(true); next(); };
 
     // ---- The profile ------------------------------------------------------------
     function showProfile(p) {
@@ -212,12 +199,14 @@
       profile[list].splice(+b.dataset[kind], 1);
       showProfile(await api("PUT", "api/profile", { claims: profile.claims, gaps: profile.gaps || [], wants: profile.wants }));
     };
-    $("redo").onclick = async () => { await api("POST", "api/interview/restart"); show("intro"); };
+    $("redo").onclick = async () => { await api("POST", "api/interview/restart"); show("intro"); hello(); };
+    // A few more questions on top of the first ones: Chip sees all the earlier answers.
+    $("more").onclick = async () => { await api("POST", "api/interview/more"); show("chat"); useTalking(true); next(); };
 
     api("GET", "api/profile").then(p => {
       if (p.done) return showProfile(p);
       show("intro");
-      introduce();  // plays straight away if the browser allows sound; otherwise "Hear Chip" does
+      hello();  // plays straight away if the browser allows sound; otherwise the speaker button does
     });
   </script>
 </body>

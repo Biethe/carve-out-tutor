@@ -290,7 +290,8 @@ def put_settings(base_url: str = Body(), model: str = Body(), api_key: str = Bod
     return get_settings()
 
 
-MAX_QUESTIONS = 7
+ONBOARDING_QUESTIONS = 3  # first launch: three quick yes/no questions, then straight to work
+MORE_QUESTIONS = 4        # each "Improve my profile" adds up to this many
 
 
 @app.get("/api/profile")
@@ -307,7 +308,7 @@ async def interview(answer: str = Body("", embed=True)):
     if profile["pending"] and answer.strip():
         profile["interview"].append({"q": profile["pending"], "a": answer.strip()})
     try:
-        step = await llm.interview(profile["interview"], finish=len(profile["interview"]) >= MAX_QUESTIONS)
+        step = await llm.interview(profile["interview"], finish=len(profile["interview"]) >= profile.get("limit", ONBOARDING_QUESTIONS))
     except llm.NoKey:
         return {"error": llm.NO_KEY, "no_key": True}
     if step is None:
@@ -318,13 +319,22 @@ async def interview(answer: str = Body("", embed=True)):
         profile["pending"] = step["question"]
     progress.save_profile(profile)
     return {"done": step["done"], "question": profile["pending"], "feedback": step.get("feedback", ""),
-            "closing": step.get("closing", ""), "number": len(profile["interview"]) + 1, "profile": profile}
+            "closing": step.get("closing", ""), "number": len(profile["interview"]) + 1,
+            "of": profile.get("limit", ONBOARDING_QUESTIONS), "profile": profile}
 
 
 @app.post("/api/interview/restart")
 def restart_interview():
-    progress.save_profile({**progress.load_profile(), "done": False, "pending": None, "interview": []})
+    progress.save_profile({**progress.load_profile(), "done": False, "pending": None, "interview": [], "limit": ONBOARDING_QUESTIONS})
     return {"restarted": True}
+
+
+@app.post("/api/interview/more")
+def more_questions():
+    """Improve the profile: a few more questions, building on the earlier answers (Chip sees them all)."""
+    profile = progress.load_profile()
+    progress.save_profile({**profile, "done": False, "pending": None, "limit": len(profile["interview"]) + MORE_QUESTIONS})
+    return {"more": True}
 
 
 @app.put("/api/profile")

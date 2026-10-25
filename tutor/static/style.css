@@ -656,3 +656,7 @@ details pre, .clean-code { font-size: 15px; }
 
 /* Polyvault's model renders have transparent backgrounds: give them a studio backdrop, like in the store. */
 img.model { object-fit: contain !important; padding: 6%; background: radial-gradient(ellipse 75% 65% at 50% 38%, #fdfbf8, #e2dbcf 82%); }
+/* Yes / No answers in the interview. */
+.yesno { display: flex; justify-content: center; gap: 16px; margin: 18px 0 8px; }
+.yesno .btn { min-width: 132px; min-height: 56px; font-size: 20px; }
+.interview .lead.center { margin-left: auto; margin-right: auto; text-align: center; }
