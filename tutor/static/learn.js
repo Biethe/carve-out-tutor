@@ -8,8 +8,8 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Pasting is allowed only while building the tutor on your own machine. The public site always blocks it.
-const PASTE_ALLOWED = ["localhost", "127.0.0.1"].includes(location.hostname);
+// No pasting, anywhere: the learner types every line they own.
+const PASTE_ALLOWED = false;
 
 // CodeMirror from the CDN, or the plain textarea if it didn't load (offline).
 let editor;
@@ -312,7 +312,7 @@ let criteriaText = {};
 function showTask(s) {
   const t = s.task;
   $("round").textContent = t.piece;
-  $("step-label").textContent = `Function ${s.step} of ${s.total_steps} in your plan · ${t.file}`;
+  $("step-label").innerHTML = `Function ${s.step} of ${s.total_steps} in your plan · ${escapeHtml(t.file)} · <a href="project">pick another</a>`;
   $("fn-signature").textContent = t.signature;
   $("fn-description").textContent = t.description;
   $("criteria").innerHTML = t.criteria

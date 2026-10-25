@@ -386,7 +386,7 @@ async def suggest_plan():
     if not suggestion or not suggestion["order"]:
         return {"error": llm.BUSY}
     passed = [f"{piece}.{name}" for piece, fns in prog["pieces"].items() for name, f in fns.items() if f["status"] == "passed"]
-    order = passed + [k for k in suggestion["order"] if k not in passed]  # what they've written stays theirs
+    order = overview.roadmap(list(dict.fromkeys(passed + suggestion["order"])))  # what they've written stays theirs
     prog["plan"] = {"order": order, "marks": {f["key"]: "write" if f["key"] in order else "keep" for f in _functions()},
                     "reasons": suggestion["reasons"], "spots": {s["function"]: s["claim"] for s in suggestion["spot_checks"]}}
     progress.save(prog)
@@ -395,15 +395,13 @@ async def suggest_plan():
 
 @app.put("/api/plan")
 def edit_plan(marks: dict[str, str] = Body(embed=True)):
-    """Mark functions "write" or "keep". A newly written-in function joins the end of the order."""
+    """Mark functions "write" or "keep". The order is Chip's roadmap: roots first, then what builds on them."""
     prog = progress.load()
     plan = _plan(prog)
     for key, mark in marks.items():
-        if mark not in ("write", "keep"):
-            continue
-        plan["marks"][key] = mark
-        if mark == "write" and key not in plan["order"]:
-            plan["order"].append(key)
+        if mark in ("write", "keep"):
+            plan["marks"][key] = mark
+    plan["order"] = overview.roadmap([key for key, mark in plan["marks"].items() if mark == "write"])
     prog["plan"] = plan
     progress.save(prog)
     return get_plan()
@@ -460,3 +458,28 @@ def delete_project(name: str):
 def download_project():
     name, data = projects.download()
     return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@app.post("/api/open")
+async def open_function(key: str = Body(embed=True)):
+    """Open any function, in any order: the roadmap is only a suggestion. A half-written one keeps its draft."""
+    prog = progress.load()
+    piece, name = key.rsplit(".", 1)
+    if piece not in PIECES or name not in prog["pieces"][piece]:
+        return {"error": "That function isn't in this project."}
+    if function(piece, name).get("auto"):
+        try:
+            problem = await cards.prepare(piece, name)
+        except llm.NoKey:
+            return {"error": llm.NO_KEY}
+        if problem:
+            return {"error": problem}
+    plan = _plan(prog)
+    plan["marks"][key] = "write"
+    plan["order"] = overview.roadmap([k for k, m in plan["marks"].items() if m == "write"])
+    prog["plan"] = plan
+    prog["current"], prog["step"] = piece, name
+    if prog["pieces"][piece][name]["status"] != "passed":
+        prog["pieces"][piece][name]["status"] = "in_progress"
+    progress.save(prog)
+    return state()

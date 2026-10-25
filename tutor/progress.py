@@ -52,8 +52,10 @@ def plan(progress: dict) -> list[tuple[str, str]]:
     hand-made rounds; an uploaded project: everything)."""
     if progress.get("plan"):
         return [tuple(key.rsplit(".", 1)) for key in progress["plan"]["order"] if progress["plan"]["marks"].get(key) == "write"]
+    from tutor import overview
     builtin = pieces.STORE == pieces.BUILTIN  # an uploaded project starts with every function to write
-    return [(piece, f["name"]) for piece in PIECES if piece in HAND or not builtin for f in PIECES[piece]["functions"]]
+    keys = [f"{piece}.{f['name']}" for piece in PIECES if piece in HAND or not builtin for f in PIECES[piece]["functions"]]
+    return [tuple(key.rsplit(".", 1)) for key in overview.roadmap(keys)]
 
 
 def all_done(progress: dict) -> bool:

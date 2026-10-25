@@ -639,3 +639,12 @@ details pre, .clean-code { font-size: 15px; }
 .p-mine .remove { position: absolute; top: 14px; right: 14px; }
 .p-mine .btn { margin-top: auto; align-self: flex-start; }
 .p-mine.blocked { background: var(--fail-soft); }
+.roadmap-title { font-family: var(--heading); font-size: 20px; margin: 18px 0 6px; display: grid; gap: 2px; }
+.roadmap-title .muted { font-family: var(--body); font-weight: 400; }
+.roadmap { list-style: none; padding: 0; margin: 0 0 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+.roadmap .step { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer; font: 600 14px var(--body); }
+.roadmap .step .n { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 800; }
+.roadmap .step:hover { transform: translateY(-1px); box-shadow: 2px 2px 0 var(--shadow); }
+.roadmap .step.next { background: var(--marker); color: var(--on-marker); border-style: dashed; }
+.roadmap .step.done .n { background: var(--pass); color: var(--surface); }
+.roadmap .step.done { opacity: .75; }

@@ -206,7 +206,10 @@ def function(piece: str, name: str) -> dict:
     if not base.get("auto"):
         return base
     from tutor import cards  # imported here: cards needs this module
-    return {**base, **(cards.load(piece, name) or {})}
+    card = {**base, **(cards.load(piece, name) or {})}
+    if not card["references"]:  # also for cards written before "what it uses" was added
+        card["references"] = cards.facts(piece, name)["references"]
+    return card
 
 
 def _function_spans(source: str, decorators: bool = True) -> dict[str, tuple[int, int]]:

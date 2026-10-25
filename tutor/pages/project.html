@@ -35,6 +35,8 @@
         <button class="btn small secondary" id="all"><i class="ph-bold ph-checks" aria-hidden="true"></i> Write everything</button>
       </div>
       <p class="status" id="plan-status" role="status"></p>
+      <h3 class="roadmap-title">Roadmap <span class="muted small">Chip's suggested order: the simplest functions first, then the ones built on them. Click any one to start there.</span></h3>
+      <ol class="roadmap" id="roadmap"></ol>
       <div class="plan" id="plan"></div>
 
       <div class="built" id="p-built"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">Jinja2 templates</span><span class="chip">SQLite</span></div>
@@ -141,7 +143,24 @@
               ${f.reason ? `<span class="why">${esc(f.reason)}</span>` : ""}</span></li>`).join("")}</ul></details>`;
       }).join("");
       $("suggest").hidden = !data.profile;
+      const steps = writing.filter(f => f.rank !== null).sort((a, b) => a.rank - b.rank);
+      const next = steps.find(f => f.status !== "passed");
+      $("roadmap").innerHTML = steps.map((f, i) => `<li><button class="step${f.status === "passed" ? " done" : ""}${f === next ? " next" : ""}"
+        data-open="${f.key}" title="Open ${esc(f.file)} · ${esc(f.name)}"><span class="n">${f.status === "passed" ? "✓" : i + 1}</span>
+        <code>${esc(f.name)}</code><span class="muted small">${esc(f.file)}</span></button></li>`).join("")
+        || `<li class="muted small">Nothing to write yet: switch some functions to "I'll write it" below.</li>`;
     }
+
+    // Any step, any order: the roadmap is only a suggestion.
+    $("roadmap").onclick = async e => {
+      const b = e.target.closest("[data-open]");
+      if (!b) return;
+      b.disabled = true;
+      planStatus("Chip is getting that function ready…");
+      const s = await api("POST", "api/open", { key: b.dataset.open });
+      if (s.error) { b.disabled = false; return planStatus(s.error); }
+      location.href = "learn";
+    };
 
     const api = (method, url, body) =>
       fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then(r => r.json());
@@ -153,10 +172,12 @@
     $("all").onclick = async () =>
       showPlan(await api("PUT", "api/plan", { marks: Object.fromEntries(plan.functions.map(f => [f.key, "write"])) }));
     $("suggest").onclick = async () => {
-      $("suggest").disabled = true;
+      // While Chip is suggesting, the plan can't change: its answer would overwrite the change.
+      const busy = on => [$("suggest"), $("all"), ...document.querySelectorAll("#plan .switch, #roadmap .step")].forEach(el => (el.disabled = on));
+      busy(true);
       planStatus("Chip is reading your profile and the code…");
       const res = await api("POST", "api/plan/suggest");
-      $("suggest").disabled = false;
+      busy(false);
       if (res.error) return planStatus(res.error);
       planStatus("Here's Chip's plan for you. Change anything you like.");
       showPlan(res);

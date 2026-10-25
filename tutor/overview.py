@@ -306,6 +306,28 @@ def flow(verb: str, path: str, current: tuple[str, str] | None = None, project: 
     return "\n".join(head + ["  " + _safe(s, 90) for s in steps]), reached
 
 
+def roadmap(keys: list[str]) -> list[str]:
+    """Chip's suggested order for "piece.function" keys: roots first (functions that call nothing else in the
+    project), then the ones built on them; within a level, the shortest first."""
+    p = Project()
+    module = {key: ".".join(Path(pieces.PIECES[key.rsplit(".", 1)[0]]["file"]).with_suffix("").parts) for key in keys}
+    depth: dict[tuple[str, str], int] = {}
+
+    def level(f: tuple[str, str], seen: frozenset = frozenset()) -> int:
+        if f not in depth:
+            callees = {(cm, cn) for cm, cn, _ in p.calls(f[0], p.funcs[f])} - {f} - seen
+            depth[f] = 1 + max((level(c, seen | {f}) for c in callees if c in p.funcs), default=-1)
+        return depth[f]
+
+    def size(f: tuple[str, str]) -> int:
+        node = p.funcs[f]
+        return node.end_lineno - node.lineno
+
+    found = {key: (module[key], key.rsplit(".", 1)[1]) for key in keys}
+    known = [k for k in keys if found[k] in p.funcs]
+    return sorted(known, key=lambda k: (level(found[k]), size(found[k]))) + [k for k in keys if k not in known]
+
+
 def diagrams(current_file: str | None = None, current_fn: str | None = None) -> dict:
     """The system map, plus only the requests that matter to the learner now: those that reach their function,
     else those that reach their file. With nothing to work on, every request."""

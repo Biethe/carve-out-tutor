@@ -34,8 +34,11 @@ def facts(piece: str, name: str) -> dict:
     call_sites = [f"{p.path(m)} ({n}) calls it." for m, n in callers]
     if route:
         call_sites.insert(0, f"It runs when the browser sends {route}.")
+    # Code to read: who calls it; if nothing does (a route the browser triggers), what it uses instead.
+    uses = [(cm, cn) for cm, cn, _ in p.calls(module, p.funcs[(module, name)]) if (cm, cn) != (module, name)]
+    reads = callers or list(dict.fromkeys(uses))
     return {"call_sites": call_sites or ["Nothing else in the project calls it directly."],
-            "references": [(p.path(m), n) for m, n in callers[:3]], "route": route}
+            "references": [(p.path(m), n) for m, n in reads[:3]], "route": route}
 
 
 async def prepare(piece: str, name: str) -> str | None:
