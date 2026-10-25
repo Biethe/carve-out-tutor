@@ -10,7 +10,8 @@ async function boot(data) {
   role = data.role;
   py = await loadPyodide();
   // Both need the store's libraries: tests can import the store's web app and database too.
-  await py.loadPackage(["micropip", "jinja2", "sqlite3", "pydantic", ...(role === "tests" ? ["pytest"] : [])]);
+  // "hashlib" is the full, OpenSSL-backed one: without it there's no scrypt or pbkdf2, and Flask apps can't hash passwords.
+  await py.loadPackage(["micropip", "jinja2", "sqlite3", "pydantic", "hashlib", ...(role === "tests" ? ["pytest"] : [])]);
   await py.pyimport("micropip").install(["fastapi", "python-multipart", "itsdangerous"]);
   const files = await (await fetch(data.root + "web/files.json")).json();
   await Promise.all(files.map(async path => {

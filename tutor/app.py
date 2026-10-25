@@ -107,6 +107,8 @@ async def next_step():
                 return {**state(), "error": llm.NO_KEY}
             if problem == llm.BUSY:
                 return {**state(), "error": "Chip is busy preparing your next function. Try again in a minute."}
+            prog = progress.load()  # re-read after the wait
+            f = prog["pieces"][piece][name]
             if problem:
                 plan = _plan(prog)
                 plan["marks"][f"{piece}.{name}"] = "keep"
@@ -141,6 +143,8 @@ async def submit(code: str = Body(embed=True)):
         return {"error": "No open step to submit to."}
     cleaning = fn["status"] == "passed"
     results = await runner.run_tests(piece, name, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
+    prog = progress.load()  # re-read after the wait: anything saved meanwhile (a draft, a plan) must not be lost
+    fn = prog["pieces"][piece][name]
     all_passed = all(r["passed"] for r in results)
     if all_passed or not cleaning:
         fn["draft"], fn["last_results"] = code, results
@@ -228,6 +232,8 @@ async def explain(explanation: str = Body(embed=True)):
         return {"error": llm.NO_KEY}
     if result is None:
         return {"error": llm.BUSY}
+    prog = progress.load()  # re-read after the wait
+    check = prog["pieces"][piece][name]["check"]
     check["explanations"].append(explanation)
     check["attempts"] += 1
     # Answers build on each other, so the score never goes down.
@@ -385,6 +391,7 @@ async def suggest_plan():
         return {"error": llm.NO_KEY}
     if not suggestion or not suggestion["order"]:
         return {"error": llm.BUSY}
+    prog = progress.load()  # re-read after the wait: the learner may have opened or saved something meanwhile
     passed = [f"{piece}.{name}" for piece, fns in prog["pieces"].items() for name, f in fns.items() if f["status"] == "passed"]
     order = overview.roadmap(list(dict.fromkeys(passed + suggestion["order"])))  # what they've written stays theirs
     prog["plan"] = {"order": order, "marks": {f["key"]: "write" if f["key"] in order else "keep" for f in _functions()},
@@ -474,6 +481,7 @@ async def open_function(key: str = Body(embed=True)):
             return {"error": llm.NO_KEY}
         if problem:
             return {"error": problem}
+    prog = progress.load()  # re-read after the wait
     plan = _plan(prog)
     plan["marks"][key] = "write"
     plan["order"] = overview.roadmap([k for k, m in plan["marks"].items() if m == "write"])

@@ -350,6 +350,32 @@ function showResults(results, passed) {
         ${r.message ? `<pre>${escapeHtml(r.message)}</pre>` : ""}</li>`).join("")}</ul>`;
 }
 
+// ---- Choose any function, any time -------------------------------------------------
+// The roadmap is Chip's suggestion; the learner can jump to any function. A half-written one keeps its draft.
+async function fillPicker(current) {
+  const plan = await api("GET", "api/plan");
+  const option = f => `<option value="${f.key}" ${f.key === current ? "selected" : ""}>${
+    f.status === "passed" ? "✓" : f.status === "in_progress" ? "✎" : "·"} ${escapeHtml(f.name)}  (${escapeHtml(f.file)})</option>`;
+  const roadmap = plan.functions.filter(f => f.mark === "write").sort((a, b) => a.rank - b.rank);
+  const others = plan.functions.filter(f => f.mark !== "write");
+  $("pick").innerHTML = `<optgroup label="Your roadmap">${roadmap.map(option).join("")}</optgroup>`
+    + (others.length ? `<optgroup label="Keep the original (pick one to write it)">${others.map(option).join("")}</optgroup>` : "");
+}
+$("pick").onchange = async () => {
+  $("pick").disabled = true;
+  $("save-state").textContent = "Chip is getting it ready…";
+  clearTimeout(saveTimer);
+  if (!$("submit").disabled) await api("PUT", "api/code", { code: editor.getValue() });  // keep the draft you're leaving
+  const s = await api("POST", "api/open", { key: $("pick").value });
+  if (s.error) {
+    $("pick").disabled = false;
+    $("save-state").textContent = "";
+    $("results").insertAdjacentHTML("beforeend", `<p class="summary fail">${escapeHtml(s.error)}</p>`);
+    return;
+  }
+  location.reload();
+};
+
 // ---- Editor and steps ----------------------------------------------------------
 let allDone = false;
 
@@ -491,6 +517,7 @@ function celebrate() {
   check = s.check;
   allDone = s.all_done;
   showTask(s);
+  fillPicker(`${s.current}.${s.task.name}`);
   editor.setValue(s.code);
   loaded = true;
   setOwnership(s.ownership);

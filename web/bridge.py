@@ -200,7 +200,11 @@ def _remember_cookies(jar: dict, headers: list[tuple[str, str]]):
             jar[key] = val
 
 
-_LINK = re.compile(r"""((?:href|src|action)=["'])/(?!/)""")
+# Addresses starting with / would leave the page's own path on the host, so they're moved under the mount.
+# In HTML that's any quoted root path ("/move/1/2", or '/reset' inside an onclick), not just href/src/action,
+# plus a bare root link (href="/"). A lone "/" in a script, like split("/"), is left alone.
+_QUOTED_PATH = re.compile(r"""(["'])/(?=[\w\-.~%])""")
+_ROOT_LINK = re.compile(r"""(=\s*["'])/(["'])""")
 _CSS_URL = re.compile(r"""(url\(["']?)/(?!/)""")
 
 
@@ -258,7 +262,9 @@ def _finish(sent: dict, jar: dict, prefix: str) -> dict:
         out_headers.append((k, v))
     kind = dict((k.lower(), v) for k, v in out_headers).get("content-type", "")
     if "text/html" in kind or "text/css" in kind:
-        text = body.decode("utf-8", "replace")
-        body = _CSS_URL.sub(rf"\1{prefix}/", _LINK.sub(rf"\1{prefix}/", text)).encode()
+        text = _CSS_URL.sub(rf"\1{prefix}/", body.decode("utf-8", "replace"))
+        if "text/html" in kind:
+            text = _ROOT_LINK.sub(rf"\1{prefix}/\2", _QUOTED_PATH.sub(rf"\1{prefix}/", text))
+        body = text.encode()
         out_headers = [(k, v) for k, v in out_headers if k.lower() != "content-length"]
     return {"status": sent["status"], "headers": out_headers, "body": body}

@@ -648,3 +648,8 @@ details pre, .clean-code { font-size: 15px; }
 .roadmap .step.next { background: var(--marker); color: var(--on-marker); border-style: dashed; }
 .roadmap .step.done .n { background: var(--pass); color: var(--surface); }
 .roadmap .step.done { opacity: .75; }
+/* The function picker in the workspace header. */
+.pick { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 12px; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); }
+.pick select { border: 0; background: transparent; color: var(--ink); font: 600 14px var(--body); max-width: 260px; cursor: pointer; }
+.pick select:focus { outline: none; }
+@media (max-width: 860px) { .pick select { max-width: 140px; } }
