@@ -8,7 +8,7 @@ Built for the Devpost *Build With AI: Basics* hackathon as a proof of concept: o
 
 ## Use it in your browser
 
-Open the published site (GitHub Pages) in any modern browser. Nothing to install: Python, the tests and the store all run inside the page with [Pyodide](https://pyodide.org/), and your progress is saved in that browser. Click the gear to add your own AI key: [Groq](https://console.groq.com/keys), [OpenRouter](https://openrouter.ai/settings/keys) and [Google Gemini](https://aistudio.google.com/apikey) all have free tiers. The key stays in your browser and goes only to that provider.
+Open the published site (GitHub Pages) in any modern browser. Nothing to install: Python, the tests and the store all run inside the page with [Pyodide](https://pyodide.org/), and your progress is saved in that browser. No key is needed to try it: visitors without one use a shared demo through a small proxy (`demo-proxy/`, a Cloudflare Worker that keeps the key secret and only serves this site). For unlimited use, click the gear to add your own AI key: [Groq](https://console.groq.com/keys), [OpenRouter](https://openrouter.ai/settings/keys) and [Google Gemini](https://aistudio.google.com/apikey) all have free tiers. The key stays in your browser and goes only to that provider.
 
 To try the browser version locally: `python web/files.py && python -m http.server 8020`, then open http://localhost:8020/web/.
 
