@@ -169,7 +169,7 @@
 
     // If they've started, say how much of Polyvault is already theirs.
     fetch("api/state").then(r => r.json()).then(s => {
-      if (s.ownership > 0) {
+      if (s.builtin && s.ownership > 0) {  // only when Polyvault is the open project: the % belongs to it
         const el = document.getElementById("mine");
         el.textContent = `${s.ownership}% of it is yours`;
         el.hidden = false;

@@ -149,7 +149,7 @@ def _strip_code(text: str) -> str:
     return re.sub(r"```.*?(```|$)", "", text, flags=re.S).strip()
 
 
-HINT_RULES = """You are a coding tutor for a beginner who is rebuilding one function of a working Python web app.
+HINT_RULES = """You are a coding tutor for a beginner who is rebuilding one function of a working Python project.
 Nudge, don't solve. Rules:
 - Give 1 to 3 hints, one per line, each starting with "- ". Each hint is ONE short sentence, under 15 words.
 - Straight to the point: no greeting, no praise, no restating the task, no summary at the end.
@@ -272,7 +272,7 @@ async def answer(piece: str, name: str, question: str, code: str) -> str:
 
 
 INTERVIEW_RULES = """You are Chip, a friendly coding tutor. You interview a learner to find their real level before they
-rebuild parts of a working Python web app: password hashing, login checks, sessions, a shopping cart, a SQLite database.
+rebuild parts of a working Python project, such as a web app with logins, sessions and a database.
 Every question is a YES-OR-NO question, short (under 15 words), plain, read aloud. One concrete skill each.
 Good: "Have you written a Python function that returns a dictionary?" Bad: "How good are you at Python?"
 The first three questions each cover a DIFFERENT area, in this order: 1) Python itself, 2) web apps (forms, logins,
@@ -314,24 +314,20 @@ async def interview(history: list[dict], finish: bool) -> dict | None:
     return None
 
 
-CARD_RULES = """A learner will rewrite ONE function of a small, working Python web app (FastAPI, Jinja2 templates, SQLite)
-from an empty stub. Write their task card and the pytest tests their version must pass.
+CARD_RULES = """A learner will rewrite ONE function of a small, working Python project from an empty stub. Write their task card and the pytest tests their version must pass.
 Card, in plain words for a beginner, never giving away the code:
 - "description": 2-3 sentences: what the function receives, what it must do and give back. No implementation steps.
-- "breaks": one sentence: what goes wrong in the app if this function is wrong.
+- "breaks": one sentence: what goes wrong in the project if this function is wrong.
 - "question": ONE narrow question about why it's written this way (asked after they pass). "answer": 2-3 sentences.
 - "criteria": one {"test": "<test function name>", "text": "..."} per test. The text says what the FUNCTION must do,
   like "Returns every user with their password hash" or "A wrong password shows the login page again", never how
   the test does it (not "Calls db.init(), then...").
 Tests ("tests": a complete pytest file as a string), 2 to 4 small test functions:
-- The store's folder is already on sys.path: just import modules by name (import db, import app, from cart import add_item).
-  Never change sys.path, os.environ or STORE_DB, and never open the database file yourself: use the db module's functions.
-- Every test starts with an empty database. Call db.init() first if the database is needed;
-  init() creates the tables and the demo user "learner" with password "carve123" and 8 assets.
-- No server, no network, no TestClient, no async. Call the function directly.
-  A route gets a fake request: types.SimpleNamespace(session={}) (put keys in session as needed).
-  Check what it returns: .status_code, .headers["location"], .template.name, .context["..."], or the session dict.
-- Test the behaviour the app relies on (see "Where it's used"), not private details.
+- The project's folder is already on sys.path: import its modules by name, as the project itself does.
+  Never change sys.path or os.environ.
+- No server, no network, no async. Call the function directly and check what it returns or changes.
+- Follow "About this project" (at the start of the message) for how this particular project is tested.
+- Test the behaviour the project relies on (see "Where it's used"), not private details.
 - They must PASS on the original function and FAIL if the function just raises NotImplementedError.
   Never write a test about the stub itself (no test that expects NotImplementedError).
 Reply in exactly this format, nothing else:
@@ -342,10 +338,20 @@ TESTS:
 <the complete pytest file>
 ```"""
 
+# Polyvault's specifics (the built-in project); uploaded projects get notes from their kind (tutor/cards.py).
+STORE_NOTES = """- Modules: db, app, and the pieces (from auth import ..., from cart import ...).
+- Never set STORE_DB or open the database file yourself: use the db module's functions.
+- Every test starts with an empty database. Call db.init() first if the database is needed; init() creates the tables
+  and the demo user "learner" with password "carve123" and 8 assets.
+- No TestClient. A route gets a fake request: types.SimpleNamespace(session={}) (put keys in session as needed).
+  Check what it returns: .status_code, .headers["location"], .template.name, .context["..."], or the session dict."""
+
+
 
 async def card(piece: str, name: str, context: dict, problem: str = "") -> dict | None:
     """A card and tests for one function. None if the AI is unavailable or keeps replying badly."""
-    user = (f"The file {context['file']}:\n{context['source']}\n\nThe function to rewrite:\n{context['function']}\n\n"
+    user = (f"About this project:\n{context['notes']}\n\n"
+            f"The file {context['file']}:\n{context['source']}\n\nThe function to rewrite:\n{context['function']}\n\n"
             "Where it's used:\n" + "\n".join(f"- {c}" for c in context["call_sites"])
             + (f"\n\nThe code that calls it:\n{context['callers']}" if context["callers"] else ""))
     if problem:
@@ -371,9 +377,9 @@ async def card(piece: str, name: str, context: dict, problem: str = "") -> dict 
     return None
 
 
-PLAN_RULES = """You plan which functions of a small Python web app a learner rewrites, from their profile.
-Mark "write" for what's worth learning for them: their gaps and goals first, then the key spots of the app
-(login, password hashing, sessions, the cart, the database). Mark "keep" for plain glue or things they clearly know.
+PLAN_RULES = """You plan which functions of a small Python project a learner rewrites, from their profile.
+Mark "write" for what's worth learning for them: their gaps and goals first, then the project's key spots
+(its core logic, the parts everything else relies on). Mark "keep" for plain glue or things they clearly know.
 Pick 1 or 2 functions that test a skill they CLAIMED as "spot_checks", marked "write" too, to check the claim.
 Order the "write" ones from most useful to least. Aim for about a third of the functions for a beginner,
 half for an intermediate learner, and most for an advanced one.

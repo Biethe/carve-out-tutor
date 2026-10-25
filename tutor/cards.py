@@ -41,6 +41,23 @@ def facts(piece: str, name: str) -> dict:
             "references": [(p.path(m), n) for m, n in reads[:3]], "route": route}
 
 
+def notes() -> str:
+    """How this project is tested, for the AI writing the tests: Polyvault's specifics, or what kind of upload it is."""
+    if pieces.STORE == pieces.BUILTIN:
+        return llm.STORE_NOTES
+    from tutor import projects
+    kind = projects.kind(pieces.STORE)
+    return {
+        "wsgi": f"- A Flask app (the app object is `{kind.get('var')}` in module `{kind.get('module')}`).\n"
+                "- Plain functions: call them directly. A route: call it inside "
+                f"`with {kind.get('var')}.test_request_context(path, method=..., data={{...}}):` and check the response.",
+        "asgi": "- A FastAPI/Starlette app. Plain functions: call them directly. For a route, prefer testing the plain "
+                "functions it relies on; if you must call the route, pass simple fake arguments.",
+        "static": "- A web page: Python files here are helpers. Call their functions directly.",
+        "tests": "- A Python library or script: call its functions directly.",
+    }[kind["kind"]] + "\n- Files the project reads or writes are relative to its folder; tests run from a copy of it."
+
+
 async def prepare(piece: str, name: str) -> str | None:
     """Writes the card and tests if they aren't there yet. Returns None when ready, or why it couldn't be done."""
     if load(piece, name):
@@ -48,7 +65,7 @@ async def prepare(piece: str, name: str) -> str | None:
     file = PIECES[piece]["file"]
     base = next(f for f in PIECES[piece]["functions"] if f["name"] == name)
     known = facts(piece, name)
-    context = {"file": file, "source": (pieces.STORE / file).read_text(), "function": reference_code(file, name),
+    context = {"notes": notes(), "file": file, "source": (pieces.STORE / file).read_text(), "function": reference_code(file, name),
                "call_sites": known["call_sites"],
                "callers": "\n\n".join(reference_code(f, n) for f, n in known["references"])}
     original = (pieces.STORE / file).read_text()

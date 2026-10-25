@@ -71,7 +71,10 @@ def _current(prog: dict) -> tuple[str | None, str | None, dict | None]:
 def state():
     prog = progress.load()
     piece, name, fn = _current(prog)
-    result = {"current": piece, "ownership": progress.ownership(prog), "all_done": progress.all_done(prog)}
+    builtin = pieces.STORE == pieces.BUILTIN
+    result = {"current": piece, "ownership": progress.ownership(prog), "all_done": progress.all_done(prog),
+              "project": "Polyvault" if builtin else projects.active(), "builtin": builtin,
+              "runs": projects.kind(pieces.STORE)["kind"] != "tests"}
     if piece:
         plan = progress.plan(prog)
         f = function(piece, name)
@@ -212,7 +215,7 @@ async def clean():
 def project_overview():
     prog = progress.load()
     current = f"{pieces.STORE.name}/{PIECES[prog['current']]['file']}" if prog["current"] else None
-    return {"tree": overview.tree(), "current": current, **overview.diagrams(current, prog["step"])}
+    return {"tree": overview.tree(), "root": pieces.STORE.name, "current": current, **overview.diagrams(current, prog["step"])}
 
 
 @app.post("/api/explain")

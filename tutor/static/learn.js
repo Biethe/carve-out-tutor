@@ -275,7 +275,7 @@ async function loadOverview() {
     ? `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>${escapeHtml(i.name)}/</summary><ul>${render(i.children)}</ul></details></li>`
     : `<li class="${i.path === overview.current ? "you" : ""}"><i class="ph-bold ph-file" aria-hidden="true"></i><code>${escapeHtml(i.name)}</code>` +
       (i.path === overview.current ? ` <span class="chip">you're here</span>` : "") + `</li>`).join("");
-  $("file-tree").innerHTML = `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>store/</summary><ul>${render(overview.tree)}</ul></details></li>`;
+  $("file-tree").innerHTML = `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>${escapeHtml(overview.root)}/</summary><ul>${render(overview.tree)}</ul></details></li>`;
   $("map-view").insertAdjacentHTML("beforeend", `<optgroup label="Requests that reach your code">${
     overview.flows.map((f, i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join("")}</optgroup>`);
   drawDiagram();
@@ -350,7 +350,7 @@ function showResults(results, passed) {
   const failing = mine.length ? mine : all;
   $("results").innerHTML =
     `<p class="summary ${passed ? "pass" : "fail"}">${passed
-      ? `<i class="ph-bold ph-confetti" aria-hidden="true"></i> It works! Your function is running inside the store now.`
+      ? `<i class="ph-bold ph-confetti" aria-hidden="true"></i> It works! Your function is part of ${escapeHtml(project)} now.`
       : `<i class="ph-bold ph-wrench" aria-hidden="true"></i> Not quite yet. Here's what to look at:`}</p>` +
     `<ul class="tests">${failing.map(r => `<li class="fail">
         <span class="mark">✗</span><span>${escapeHtml(criteriaText[r.name] || r.name.replace(/^test_/, "").replaceAll("_", " "))}</span>
@@ -384,7 +384,7 @@ $("pick").onchange = async () => {
 };
 
 // ---- Editor and steps ----------------------------------------------------------
-let allDone = false;
+let allDone = false, project = "your project";  // the open project's name, for messages
 
 function afterPass() {
   cleaning = false;
@@ -395,7 +395,7 @@ function afterPass() {
   $("save-state").textContent = "This function is yours now.";
   if (allDone) {
     $("results").insertAdjacentHTML("beforeend",
-      `<p class="done-note">That's every function in your plan. Click <strong>Run project</strong> to see the store running on your code, or add more functions to your plan on the project page.</p>`);
+      `<p class="done-note">That's every function in your plan. Click <strong>Run project</strong> to see ${escapeHtml(project)} running on your code, or add more functions to your plan on the project page.</p>`);
   } else {
     $("next").hidden = false;
   }
@@ -521,6 +521,8 @@ function celebrate() {
 (async () => {
   const s = await api("GET", "api/state");
   if (!s.current) { location.href = "project"; return; }
+  project = s.project;
+  $("run").hidden = !s.runs;  // a tests-only project has nothing to run
   check = s.check;
   allDone = s.all_done;
   showTask(s);
