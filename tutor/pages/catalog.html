@@ -119,6 +119,8 @@
   </main>
 
   <script>
+    // First launch: the interview comes first, so the tutor knows who it's teaching.
+    fetch("api/profile").then(r => r.json()).then(p => { if (!p.done) location.replace("interview"); }).catch(() => {});
     // If they've started, say how much of Polyvault is already theirs.
     fetch("api/state").then(r => r.json()).then(s => {
       if (s.ownership > 0) {

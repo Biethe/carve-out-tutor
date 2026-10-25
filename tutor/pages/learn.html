@@ -98,6 +98,7 @@
     <header>
       <strong>Tutor</strong>
       <span class="tutor-mode" id="tutor-mode">Hints</span>
+      <button class="close" id="speak-toggle" aria-pressed="false" title="Read the tutor's replies out loud" aria-label="Read replies out loud"><i class="ph-bold ph-speaker-slash" aria-hidden="true"></i></button>
       <button class="close" id="tutor-close" aria-label="Close tutor"><i class="ph-bold ph-x" aria-hidden="true"></i></button>
     </header>
     <div class="messages" id="messages"></div>
@@ -106,6 +107,7 @@
       <div class="chat-buttons">
         <button class="btn" id="explain" type="button" hidden>Send answer</button>
         <button class="btn secondary" id="ask" type="button">Ask</button>
+        <button class="icon-btn" id="tutor-mic" type="button" aria-pressed="false" title="Talk: your words go in the box and are sent when you pause" aria-label="Talk to the tutor"><i class="ph-bold ph-microphone" aria-hidden="true"></i></button>
       </div>
     </form>
   </section>
@@ -113,6 +115,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js" defer></script>
+  <script src="/static/voice.js"></script>
   <script src="/static/run.js"></script>
   <script src="/static/learn.js"></script>
 </body>

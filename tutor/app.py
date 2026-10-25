@@ -51,6 +51,11 @@ def learn():
     return FileResponse(PAGES / "learn.html")
 
 
+@app.get("/interview")
+def interview_page():
+    return FileResponse(PAGES / "interview.html")
+
+
 def _current(prog: dict) -> tuple[str | None, str | None, dict | None]:
     """(piece, function name, that function's progress) for the open step, or Nones."""
     piece, name = prog["current"], prog["step"]
@@ -240,3 +245,48 @@ def put_settings(base_url: str = Body(), model: str = Body(), api_key: str = Bod
     progress.DATA.mkdir(parents=True, exist_ok=True)
     llm.SETTINGS.write_text(json.dumps(saved))
     return get_settings()
+
+
+MAX_QUESTIONS = 7
+
+
+@app.get("/api/profile")
+def get_profile():
+    return progress.load_profile()
+
+
+@app.post("/api/interview")
+async def interview(answer: str = Body("", embed=True)):
+    """Saves the answer to the open question, then returns the next question or the finished profile."""
+    profile = progress.load_profile()
+    if profile["done"]:
+        return {"done": True, "profile": profile}
+    if profile["pending"] and answer.strip():
+        profile["interview"].append({"q": profile["pending"], "a": answer.strip()})
+    try:
+        step = await llm.interview(profile["interview"], finish=len(profile["interview"]) >= MAX_QUESTIONS)
+    except llm.NoKey:
+        return {"error": llm.NO_KEY, "no_key": True}
+    if step is None:
+        return {"error": llm.BUSY}
+    if step["done"]:
+        profile.update({k: v for k, v in step.items()}, pending=None)
+    else:
+        profile["pending"] = step["question"]
+    progress.save_profile(profile)
+    return {"done": step["done"], "question": profile["pending"], "number": len(profile["interview"]) + 1, "profile": profile}
+
+
+@app.post("/api/interview/restart")
+def restart_interview():
+    progress.save_profile({**progress.load_profile(), "done": False, "pending": None, "interview": []})
+    return {"restarted": True}
+
+
+@app.put("/api/profile")
+def edit_profile(claims: list[dict] = Body(), gaps: list[str] = Body(), wants: list[str] = Body()):
+    """The learner can remove claims, gaps or goals that aren't right."""
+    profile = progress.load_profile()
+    profile.update(claims=claims, gaps=gaps, wants=wants)
+    progress.save_profile(profile)
+    return profile

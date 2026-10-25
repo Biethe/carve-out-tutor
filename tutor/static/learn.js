@@ -74,8 +74,38 @@ function setMode(newMode) {
   $("chat-input").placeholder = newMode === "check"
     ? "Answer in your own words…"
     : "Ask about a library, a method, or a concept…";
-  if (newMode === "check") addMessage(`Nice, it works! One quick question: <strong>${escapeHtml(check.question)}</strong>`);
+  if (newMode === "check") say(addMessage(`Nice, it works! One quick question: <strong>${escapeHtml(check.question)}</strong>`));
 }
+
+// ---- Voice: talk to the tutor, and have its replies read out loud --------------------
+let speakOn = false;
+try { speakOn = localStorage.getItem("tutorSpeaks") === "1"; } catch {}
+
+function say(el) {
+  if (speakOn && el) Voice.speak((el.querySelector(".clean-points") || el).innerText);
+  return el;
+}
+
+function setSpeak(on) {
+  speakOn = on;
+  try { localStorage.setItem("tutorSpeaks", on ? "1" : "0"); } catch {}
+  $("speak-toggle").setAttribute("aria-pressed", on);
+  $("speak-toggle").firstElementChild.className = "ph-bold " + (on ? "ph-speaker-high" : "ph-speaker-slash");
+  if (!on) Voice.stopSpeaking();
+}
+$("speak-toggle").onclick = () => setSpeak(!speakOn);
+setSpeak(speakOn);
+
+// The mic fills the box as you talk and sends when you pause: an answer to the question, or a question to the tutor.
+$("tutor-mic").hidden = !Voice.canListen;
+$("tutor-mic").onclick = async () => {
+  if (Voice.listening) return Voice.stopListening();
+  Voice.stopSpeaking();
+  $("tutor-mic").setAttribute("aria-pressed", "true");
+  const said = await Voice.listen(text => ($("chat-input").value = text));
+  $("tutor-mic").setAttribute("aria-pressed", "false");
+  if (said) (mode === "check" ? $("explain") : $("ask")).click();
+};
 
 function addMessage(html, cls = "tutor-msg") {
   const el = document.createElement("div");  // a div, so a code block can sit inside it
@@ -105,6 +135,7 @@ async function getHint(afterSubmit) {
   $("hint").disabled = true;
   const { el, res } = await askTutor("api/hint", { code: editor.getValue(), after_submit: afterSubmit });
   el.innerHTML = formatReply(res.hint);
+  say(el);
   $("hint").disabled = false;
 }
 
@@ -118,6 +149,7 @@ $("ask").onclick = async () => {
   const { el, res } = await askTutor("api/ask", { question: text, code: editor.getValue() });
   $("ask").disabled = false;
   el.innerHTML = formatReply(res.answer);
+  say(el);
 };
 
 $("explain").onclick = async () => {
@@ -135,6 +167,7 @@ $("explain").onclick = async () => {
   if (res.final_explanation) html += `<br><br>Here's the full answer: ${formatReply(res.final_explanation)}`;
   if (res.extra) html += `<br><br><em>Good to know:</em> ${formatReply(res.extra)}`;
   el.innerHTML = html;
+  say(el);
   if (res.done) {
     check.done = true;
     mode = "done";
@@ -359,6 +392,7 @@ $("clean").onclick = async () => {
     ? `<strong>A cleaner version</strong><pre class="clean-code"></pre><strong>What changed, and why</strong>${points}`
     : `<strong>How to make it cleaner</strong>${points}`;
   if (res.code) el.querySelector(".clean-code").textContent = res.code;
+  say(el);
   if (modeBeforeClean === "check") {
     const back = Object.assign(document.createElement("button"), { className: "btn small secondary", textContent: "Back to the question" });
     back.onclick = () => setMode("check");

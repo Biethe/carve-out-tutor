@@ -70,3 +70,19 @@ def ownership(progress: dict) -> float:
         else:
             total += count_lines(path.read_text())
     return round(100 * mine / total, 1) if total else 0.0
+
+
+# ---- The learner's profile, from the first-launch interview -----------------------
+PROFILE = DATA / "profile.json"
+
+
+def load_profile() -> dict:
+    """What the learner said about themselves. Claims are "claimed" until a spot check shows them."""
+    if PROFILE.exists():
+        return json.loads(PROFILE.read_text())
+    return {"done": False, "pending": None, "interview": [], "level": None, "summary": "", "claims": [], "gaps": [], "wants": []}
+
+
+def save_profile(profile: dict):
+    DATA.mkdir(parents=True, exist_ok=True)
+    PROFILE.write_text(json.dumps(profile, indent=2))

@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 
 from tutor.pieces import PIECES, function
-from tutor.progress import DATA
+from tutor.progress import DATA, load_profile
 
 BUSY = "The tutor is busy, try again in a minute."
 NO_KEY = "Add your AI key in Settings (the gear at the top). Groq gives free keys at console.groq.com."
@@ -76,8 +76,10 @@ async def _chat(system: str, user: str, json_mode: bool = False) -> str:
 def _task_text(piece: str, name: str) -> str:
     f = function(piece, name)
     calls = "\n".join(f"- {c}" for c in f["call_sites"])
+    profile = load_profile()
+    about = f"\n\nAbout the learner ({profile['level']}): {profile['summary']} Pitch your reply at their level." if profile["done"] else ""
     return (f"The learner is writing ONE function of the {PIECES[piece]['title']} piece ({PIECES[piece]['file']}):\n"
-            f"{f['signature']}: {f['description']}\n\nWhere it's used:\n{calls}")
+            f"{f['signature']}: {f['description']}\n\nWhere it's used:\n{calls}{about}")
 
 
 def _strip_code(text: str) -> str:
@@ -205,3 +207,45 @@ async def answer(piece: str, name: str, question: str, code: str) -> str:
         return NO_KEY
     except Exception:
         return BUSY
+
+
+INTERVIEW_RULES = """You interview a new learner for a coding tutor, to find their real level before they rebuild parts of a
+working Python web app: password hashing, login checks, sessions, a shopping cart, a SQLite database, and tests.
+Ask ONE short, narrow question at a time, easy to answer out loud in one sentence: no code, no lists of options.
+Each question pins down one concrete skill. Good: "Have you written a Python function that returns a dictionary?"
+Bad: "How good are you at Python?" Adapt to their answers: skip what they've already shown, go one step deeper where
+they claim experience, go easier if they're new. Cover, in about 5 questions: Python basics (functions, lists, dicts),
+how websites handle forms and logins, databases and SQL, security ideas like hashing, testing, and what they want to get
+better at. The question is read aloud, so keep it warm, plain and under 25 words.
+Reply with JSON only. While asking: {"done": false, "question": "..."}
+When you know enough: {"done": true, "level": "beginner" or "intermediate" or "advanced",
+"summary": "one sentence describing them, for a tutor",
+"claims": [{"skill": "short skill name", "said": "what they said, short"}] (only things they say they CAN do),
+"gaps": ["short skill name"] (things they said they haven't done or don't know),
+"wants": ["what they want to focus on"]}"""
+
+
+async def interview(history: list[dict], finish: bool) -> dict | None:
+    """The next interview question, or the finished profile. None if the AI is unavailable; NoKey if there's no key."""
+    talk = "\n".join(f"Tutor: {h['q']}\nLearner: {h['a']}" for h in history)
+    user = (f"The interview so far:\n{talk}\n\n" if history else "Start: greet them in a few words and ask the first question.\n\n")
+    if finish:
+        user += "You have enough now. Finish: reply with the done JSON."
+    for _ in range(2):  # one retry if the reply isn't valid JSON
+        try:
+            data = json.loads(await _chat(INTERVIEW_RULES, user, json_mode=True))
+            if data.get("done"):
+                return {"done": True, "level": str(data.get("level") or "beginner"), "summary": str(data.get("summary") or ""),
+                        "claims": [{"skill": str(c.get("skill", "")), "said": str(c.get("said", "")), "status": "claimed"}
+                                   for c in data.get("claims") or [] if isinstance(c, dict)],
+                        "gaps": [str(g) for g in data.get("gaps") or []],
+                        "wants": [str(w) for w in data.get("wants") or []]}
+            if data.get("question"):
+                return {"done": False, "question": _strip_code(str(data["question"]))}
+        except (ValueError, KeyError, TypeError, AttributeError):
+            continue
+        except NoKey:
+            raise
+        except Exception:
+            return None
+    return None

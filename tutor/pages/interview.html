@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Get to know you | Carve-Out Tutor</title>
+  <script src="/static/theme.js"></script>
+  <script src="/static/settings.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/" aria-label="Carve-Out tutor"><span class="brand-word">Carve</span><span class="brand-piece"><i class="ph-bold ph-scissors" aria-hidden="true"></i>out</span><span class="brand-hand">tutor</span></a>
+    <span class="top-spacer"></span>
+    <div class="theme-switch" role="radiogroup" aria-label="Theme">
+      <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
+      <button role="radio" data-theme-choice="night" title="Blueprint" aria-label="Blueprint theme"><i class="ph-bold ph-ruler" aria-hidden="true"></i></button>
+      <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
+    </div>
+  </header>
+
+  <main class="interview">
+    <!-- 1. Before starting -->
+    <section id="intro" hidden>
+      <p class="hero-note"><i class="ph-bold ph-scissors" aria-hidden="true"></i>before we cut anything</p>
+      <h1>Let's see what you <span class="carved">already know</span>.</h1>
+      <p class="lead">A few quick questions, about two minutes. Be honest: the tutor uses your answers to pick what you rebuild and how much help you get. Talk or type, whichever is faster.</p>
+      <div class="actions">
+        <button class="btn" id="start-voice"><i class="ph-bold ph-microphone" aria-hidden="true"></i> Start, out loud</button>
+        <button class="btn secondary" id="start-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> Start, typing</button>
+      </div>
+      <p class="muted small" id="voice-note"></p>
+    </section>
+
+    <!-- 2. The interview: one question at a time -->
+    <section id="chat" hidden>
+      <p class="step-count" id="count"></p>
+      <div class="card ask">
+        <span class="who">Tutor</span>
+        <p id="question" aria-live="polite"></p>
+        <button class="icon-btn" id="replay" title="Say it again" aria-label="Say the question again"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i></button>
+      </div>
+      <div class="answer">
+        <button class="mic" id="mic" aria-pressed="false" title="Talk"><i class="ph-bold ph-microphone" aria-hidden="true"></i><span>Tap to talk</span></button>
+        <textarea id="answer" rows="3" placeholder="Your answer…"></textarea>
+        <div class="actions">
+          <button class="btn" id="send">Send <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button>
+          <label class="toggle"><input type="checkbox" id="hands-free" checked> Hands-free: the tutor talks, then listens, and sends when you pause</label>
+        </div>
+      </div>
+      <p class="status" id="status" role="status"></p>
+    </section>
+
+    <!-- 3. The profile it made -->
+    <section id="profile" hidden>
+      <p class="hero-note"><i class="ph-bold ph-scissors" aria-hidden="true"></i>your profile</p>
+      <h1 id="p-level"></h1>
+      <p class="lead" id="p-summary"></p>
+      <h2>What you said you can do</h2>
+      <p class="muted small">These are claims for now. As you work, the tutor will sometimes ask you to rebuild one of them, and mark it shown. Remove anything that isn't right.</p>
+      <ul class="claims" id="p-claims"></ul>
+      <h2>New to you</h2>
+      <p class="muted small">Good candidates for the parts you rebuild first.</p>
+      <ul class="claims" id="p-gaps"></ul>
+      <h2>What you want to get better at</h2>
+      <ul class="claims" id="p-wants"></ul>
+      <div class="actions">
+        <a class="btn" href="/">Pick a project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
+        <button class="btn secondary" id="redo"><i class="ph-bold ph-arrow-counter-clockwise" aria-hidden="true"></i> Redo the interview</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/voice.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const api = (method, url, body) =>
+      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then(r => r.json());
+    const esc = t => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
+    const show = id => ["intro", "chat", "profile"].forEach(s => ($(s).hidden = s !== id));
+    let profile;
+
+    $("voice-note").textContent = Voice.canListen
+      ? "Talking uses your browser's speech-to-text (in Chrome, the audio goes to Google to become text)."
+      : "This browser can't turn speech into text, so you'll type. The tutor can still read the questions out loud.";
+    if (!Voice.canListen) { $("start-voice").hidden = true; $("mic").hidden = true; $("hands-free").checked = false; }
+
+    // ---- Asking -----------------------------------------------------------------
+    async function next(answer = "") {
+      $("send").disabled = true;
+      $("status").textContent = "The tutor is thinking…";
+      const res = await api("POST", "api/interview", { answer });
+      $("send").disabled = false;
+      $("status").textContent = "";
+      if (res.error) {
+        $("status").innerHTML = res.no_key
+          ? `First, add your AI key: click the <strong>gear</strong> at the top, then <button class="link" id="retry">try again</button>.`
+          : esc(res.error) + ` <button class="link" id="retry">Try again</button>`;
+        $("retry").onclick = () => next(answer);
+        return;
+      }
+      if (res.done) return showProfile(res.profile);
+      $("count").textContent = `Question ${res.number}`;
+      $("question").textContent = res.question;
+      $("answer").value = "";
+      if ($("hands-free").checked) { await Voice.speak(res.question); talk(); }
+    }
+
+    async function talk() {
+      if (Voice.listening) return Voice.stopListening();
+      Voice.stopSpeaking();
+      $("mic").setAttribute("aria-pressed", "true");
+      $("mic").lastElementChild.textContent = "Listening… tap to stop";
+      const said = await Voice.listen(text => ($("answer").value = text));
+      $("mic").setAttribute("aria-pressed", "false");
+      $("mic").lastElementChild.textContent = "Tap to talk";
+      if (said && $("hands-free").checked) next(said);
+    }
+
+    $("mic").onclick = talk;
+    $("replay").onclick = () => Voice.speak($("question").textContent);
+    $("send").onclick = () => { Voice.stopListening(); const a = $("answer").value.trim(); if (a) next(a); };
+    $("answer").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("send").click(); } };
+    $("start-voice").onclick = () => { $("hands-free").checked = true; show("chat"); next(); };
+    $("start-type").onclick = () => { $("hands-free").checked = false; show("chat"); next(); $("answer").focus(); };
+
+    // ---- The profile ------------------------------------------------------------
+    function showProfile(p) {
+      profile = p;
+      show("profile");
+      $("p-level").innerHTML = `You're <span class="carved">${esc(p.level)}</span>.`;
+      $("p-summary").textContent = p.summary;
+      $("p-claims").innerHTML = p.claims.map((c, i) => `<li><span><strong>${esc(c.skill)}</strong>
+        <span class="muted">“${esc(c.said)}”</span></span>
+        <span class="chip">${c.status === "shown" ? "✓ shown" : "claimed"}</span>
+        <button class="icon-btn" data-claim="${i}" aria-label="Remove this claim"><i class="ph-bold ph-x" aria-hidden="true"></i></button></li>`).join("")
+        || `<li class="muted">Nothing yet.</li>`;
+      const list = (items, kind) => items.map((w, i) => `<li><span>${esc(w)}</span>
+        <button class="icon-btn" data-${kind}="${i}" aria-label="Remove"><i class="ph-bold ph-x" aria-hidden="true"></i></button></li>`).join("")
+        || `<li class="muted">Nothing yet.</li>`;
+      $("p-gaps").innerHTML = list(p.gaps || [], "gap");
+      $("p-wants").innerHTML = list(p.wants, "want");
+    }
+
+    $("profile").onclick = async e => {
+      const b = e.target.closest("[data-claim], [data-gap], [data-want]");
+      if (!b) return;
+      const [kind, list] = b.dataset.claim ? ["claim", "claims"] : b.dataset.gap ? ["gap", "gaps"] : ["want", "wants"];
+      profile[list] = profile[list] || [];
+      profile[list].splice(+b.dataset[kind], 1);
+      showProfile(await api("PUT", "api/profile", { claims: profile.claims, gaps: profile.gaps || [], wants: profile.wants }));
+    };
+    $("redo").onclick = async () => { await api("POST", "api/interview/restart"); show("intro"); };
+
+    api("GET", "api/profile").then(p => (p.done ? showProfile(p) : show("intro")));
+  </script>
+</body>
+</html>

@@ -12,6 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
   gear.title = gear.ariaLabel = "Settings: your AI provider";
   gear.innerHTML = `<i class="ph-bold ph-gear-six" aria-hidden="true"></i>`;
   document.querySelector(".theme-switch")?.before(gear);
+  const me = Object.assign(document.createElement("a"), { className: "gear", href: "interview", title: "Your profile" });
+  me.innerHTML = `<i class="ph-bold ph-user-circle" aria-hidden="true"></i>`;
+  gear.before(me);
 
   const dialog = document.createElement("dialog");
   dialog.className = "settings-dialog";

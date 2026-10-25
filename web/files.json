@@ -26,6 +26,7 @@
  "tutor/llm.py",
  "tutor/overview.py",
  "tutor/pages/catalog.html",
+ "tutor/pages/interview.html",
  "tutor/pages/learn.html",
  "tutor/pages/project.html",
  "tutor/pieces.py",
@@ -35,5 +36,6 @@
  "tutor/static/run.js",
  "tutor/static/settings.js",
  "tutor/static/style.css",
- "tutor/static/theme.js"
+ "tutor/static/theme.js",
+ "tutor/static/voice.js"
 ]
