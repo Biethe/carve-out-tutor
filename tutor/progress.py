@@ -54,7 +54,9 @@ def plan(progress: dict) -> list[tuple[str, str]]:
         return [tuple(key.rsplit(".", 1)) for key in progress["plan"]["order"] if progress["plan"]["marks"].get(key) == "write"]
     from tutor import overview
     builtin = pieces.STORE == pieces.BUILTIN  # an uploaded project starts with every function to write
-    keys = [f"{piece}.{f['name']}" for piece in PIECES if piece in HAND or not builtin for f in PIECES[piece]["functions"]]
+    from tutor import compat
+    keys = [f"{piece}.{f['name']}" for piece in PIECES if (piece in HAND or not builtin) and not compat.blocked_file(PIECES[piece]["file"])
+            for f in PIECES[piece]["functions"]]
     return [tuple(key.rsplit(".", 1)) for key in overview.roadmap(keys)]
 
 

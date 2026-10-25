@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 import inspect
 import shutil
 
-from tutor import cards, llm, onboarding, overview, pieces, progress, projects, runner, safety
+from tutor import cards, compat, llm, onboarding, overview, pieces, progress, projects, runner, safety
 from tutor.pieces import PIECES, assemble, function, task
 
 PAGES = Path(__file__).parent / "pages"
@@ -101,7 +101,7 @@ async def next_step():
         return state()
     for piece, name in progress.plan(prog):
         f = prog["pieces"][piece][name]
-        if f["status"] == "passed":
+        if f["status"] == "passed" or compat.blocked_file(PIECES[piece]["file"]):
             continue
         if function(piece, name).get("auto"):
             try:
@@ -396,8 +396,9 @@ def _plan(prog: dict) -> dict:
 
 
 def _functions() -> list[dict]:
-    return [{"key": f"{piece}.{f['name']}", "piece": piece, "name": f["name"], "file": p["file"], "signature": f["signature"]}
-            for piece, p in PIECES.items() for f in p["functions"]]
+    """Every function, with why it can't be rebuilt here if a library it needs can't run in the browser."""
+    return [{"key": f"{piece}.{f['name']}", "piece": piece, "name": f["name"], "file": p["file"], "signature": f["signature"],
+             "blocked": compat.why_blocked(p["file"])} for piece, p in PIECES.items() for f in p["functions"]]
 
 
 @app.get("/api/plan")
@@ -420,7 +421,7 @@ async def suggest_plan():
     if not profile["done"]:
         return {"error": "Do the interview first, so Chip knows what to suggest."}
     try:
-        suggestion = await llm.plan(profile, _functions())
+        suggestion = await llm.plan(profile, [f for f in _functions() if not f["blocked"]])
     except llm.NoKey:
         return {"error": llm.NO_KEY}
     if not suggestion or not suggestion["order"]:
@@ -428,7 +429,7 @@ async def suggest_plan():
     prog = progress.load()  # re-read after the wait: the learner may have opened or saved something meanwhile
     passed = [f"{piece}.{name}" for piece, fns in prog["pieces"].items() for name, f in fns.items() if f["status"] == "passed"]
     order = overview.roadmap(list(dict.fromkeys(passed + suggestion["order"])))  # what they've written stays theirs
-    prog["plan"] = {"order": order, "marks": {f["key"]: "write" if f["key"] in order else "keep" for f in _functions()},
+    prog["plan"] = {"order": order, "marks": {f["key"]: "write" if f["key"] in order and not f["blocked"] else "keep" for f in _functions()},
                     "reasons": suggestion["reasons"], "spots": {s["function"]: s["claim"] for s in suggestion["spot_checks"]}}
     progress.save(prog)
     return get_plan()
@@ -439,8 +440,9 @@ def edit_plan(marks: dict[str, str] = Body(embed=True)):
     """Mark functions "write" or "keep". The order is Chip's roadmap: roots first, then what builds on them."""
     prog = progress.load()
     plan = _plan(prog)
+    blocked = {f["key"] for f in _functions() if f["blocked"]}
     for key, mark in marks.items():
-        if mark in ("write", "keep"):
+        if mark in ("write", "keep") and not (mark == "write" and key in blocked):
             plan["marks"][key] = mark
     plan["order"] = overview.roadmap([key for key, mark in plan["marks"].items() if mark == "write"])
     prog["plan"] = plan
@@ -460,7 +462,8 @@ def project_info():
                   if block.strip() and not block.lstrip().startswith(("#", "!", "[", "<", "```"))), "")
     return {"name": projects.active(), "builtin": root == pieces.BUILTIN, "kind": projects.kind(root)["kind"],
             "functions": sum(len(p["functions"]) for p in PIECES.values()), "files": len(PIECES), "intro": intro[:400],
-            "safety": None if root == pieces.BUILTIN else projects.report(root.name)}
+            "safety": None if root == pieces.BUILTIN else projects.report(root.name),
+            "compat": None if root == pieces.BUILTIN else compat.load(root.name), "in_browser": compat.in_browser()}
 
 
 @app.get("/api/projects")
@@ -475,7 +478,8 @@ async def upload_project(file: UploadFile = File(...)):
     if problem:
         return {"error": problem}
     result = await safety.check(name, projects.UPLOADS / name)
-    return {"name": name, "kind": projects.kind(projects.UPLOADS / name)["kind"], **result}
+    fit = None if result["blocked"] else await compat.check(name, projects.UPLOADS / name)
+    return {"name": name, "kind": projects.kind(projects.UPLOADS / name)["kind"], **result, "compat": fit}
 
 
 @app.post("/api/projects/{name}/open")
@@ -508,6 +512,8 @@ async def open_function(key: str = Body(embed=True)):
     piece, name = key.rsplit(".", 1)
     if piece not in PIECES or name not in prog["pieces"][piece]:
         return {"error": "That function isn't in this project."}
+    if why := compat.why_blocked(PIECES[piece]["file"]):
+        return {"error": why}
     if function(piece, name).get("auto"):
         try:
             problem = await cards.prepare(piece, name)

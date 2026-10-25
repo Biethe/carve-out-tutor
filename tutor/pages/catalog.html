@@ -128,6 +128,7 @@
     </footer>
   </main>
 
+  <script src="/static/compat.js"></script>
   <script>
     // First launch: the interview comes first, so the tutor knows who it's teaching.
     fetch("api/profile").then(r => r.json()).then(p => { if (!p.done) location.replace("interview"); }).catch(() => {});
@@ -162,6 +163,7 @@
       out.innerHTML = res.blocked
         ? `<p class="bad"><strong>Blocked.</strong> It won't run:</p><ul class="small">${res.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>`
         : `<p class="good"><strong>${esc(res.name)}</strong> passed the check (${KIND[res.kind]}).</p>`
+          + (res.compat ? `<p class="small">${esc(Compat.verdict(res.compat))}</p>` : "")
           + (res.warnings.length ? `<p class="small muted">Worth knowing:</p><ul class="small">${res.warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "")
           + `<a class="btn small" href="project?open=${encodeURIComponent(res.name)}">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>`;
       fetch("api/projects").then(r => r.json()).then(showUploads);

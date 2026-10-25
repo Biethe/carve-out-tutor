@@ -118,9 +118,13 @@ async def _browser_store(passed: list[str]) -> dict:
     """Run project, in the browser: the active project starts in this worker and is served at run/."""
     from tutor import pieces, progress, projects
     from tutor.pieces import PIECES
+    from tutor import compat
     how = projects.kind(pieces.STORE)
     if how["kind"] == "tests":
         return {"error": "This project isn't a web app or a web page, so it's checked with tests only."}
+    app_file = how.get("module", "").replace(".", "/") + ".py"
+    if why := compat.why_blocked(app_file):
+        return {"error": "This project can't run in the browser. " + why}
     try:
         needs = projects.requirements(pieces.STORE)
         if needs:

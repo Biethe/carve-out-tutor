@@ -26,6 +26,7 @@
       <h1 class="rise-in" id="p-name">Polyvault</h1>
       <p class="tagline rise-in" style="--i:1" id="p-tagline">a 3D asset store, already working</p>
       <ul class="small warnings" id="p-warnings" hidden></ul>
+      <div class="compat" id="p-compat" hidden></div>
       <p class="lead rise-in" style="--i:2" id="p-lead">A small but <em>complete</em> online store written in Python. Browse real 3D models and 360° environments, fill a cart, check out with a pretend payment, and download what you bought.</p>
 
       <h2>Your plan</h2>
@@ -67,6 +68,7 @@
   </main>
 
   <script src="/static/run.js"></script>
+  <script src="/static/compat.js"></script>
   <script>
     // ?open=<name> switches the project being learned (Polyvault is "store"), then the page describes it.
     const opening = new URLSearchParams(location.search).get("open");
@@ -78,11 +80,24 @@
         const kinds = { asgi: "a Python web app, running in your browser", wsgi: "a Flask web app, running in your browser",
                         static: "a web page, running in your browser", tests: "Python code, checked with tests" };
         document.getElementById("p-name").textContent = info.name;
-        document.getElementById("p-tagline").textContent = kinds[info.kind];
+        const partly = info.compat && Object.keys(info.compat.blocked).length;  // some files can't load in the browser
+        document.getElementById("p-tagline").textContent = partly ? kinds[info.kind].replace("running in your browser", "parts of it run in your browser")
+                                                                  : kinds[info.kind];
         document.getElementById("p-lead").textContent = info.intro || `Your own project: ${info.functions} functions in ${info.files} files, all of them yours to rebuild.`;
         document.querySelector(".project-side").hidden = true;
         document.getElementById("p-built").hidden = true;
         if (info.kind === "tests") document.getElementById("run").hidden = true;
+        // Can it run in the browser? Which libraries are fine, which aren't, and how to rebuild everything locally.
+        if (info.compat && (info.compat.verdict !== "full" || info.compat.libraries.length)) {
+          const box = document.getElementById("p-compat");
+          box.innerHTML = `<p><strong>${info.compat.verdict === "full" ? "✅" : info.compat.verdict === "none" ? "❌" : "⚠️"}</strong> ${Compat.verdict(info.compat)}</p>`
+            + Compat.libraries(info.compat)
+            + (info.compat.verdict !== "full" ? `<p class="small muted">To rebuild every part: run the tutor on your own computer
+               (<a href="https://github.com/Biethe/carve-out-tutor#run-it-locally-with-a-server" target="_blank" rel="noopener">how</a>),
+               then in this project's folder: <code>pip install -r requirements.txt</code>.</p>` : "");
+          box.className = "compat " + info.compat.verdict;
+          box.hidden = false;
+        }
         const warn = info.safety?.warnings || [];
         if (warn.length) {
           const ul = document.getElementById("p-warnings");
@@ -136,11 +151,11 @@
         return `<details class="plan-file" ${mine ? "open" : ""}><summary><code>${esc(file)}</code>
           <span class="muted small">${mine} of ${fns.length} to write</span></summary><ul>${
           fns.map(f => `<li class="${f.mark}${f.status === "passed" ? " passed" : ""}">
-            <button class="switch" data-key="${f.key}" aria-pressed="${f.mark === "write"}" ${f.status === "passed" ? "disabled" : ""}
+            <button class="switch${f.blocked ? " local" : ""}" data-key="${f.key}" aria-pressed="${f.mark === "write"}" ${f.status === "passed" || f.blocked ? "disabled" : ""}
               title="${f.status === "passed" ? "Already yours" : f.mark === "write" ? "You'll write it. Click to keep the original" : "Keeps the original. Click to write it"}">
-              ${f.status === "passed" ? "✓" : f.mark === "write" ? "I'll write it" : "Keep"}</button>
+              ${f.status === "passed" ? "✓" : f.blocked ? "Local only" : f.mark === "write" ? "I'll write it" : "Keep"}</button>
             <span><code>${esc(f.name)}</code>${f.spot ? ` <span class="chip spot">★ spot check: ${esc(f.spot)}</span>` : ""}
-              ${f.reason ? `<span class="why">${esc(f.reason)}</span>` : ""}</span></li>`).join("")}</ul></details>`;
+              ${f.blocked ? `<span class="why">${esc(f.blocked)}</span>` : f.reason ? `<span class="why">${esc(f.reason)}</span>` : ""}</span></li>`).join("")}</ul></details>`;
       }).join("");
       $("suggest").hidden = !data.profile;
       const steps = writing.filter(f => f.rank !== null).sort((a, b) => a.rank - b.rank);

@@ -672,3 +672,11 @@ img.model { object-fit: contain !important; padding: 6%; background: radial-grad
 .editor-font span { font: 700 15px var(--display); }
 .editor-font select { border: 0; background: transparent; color: var(--ink); font: 600 13px var(--body); cursor: pointer; }
 .editor-font select:focus { outline: none; }
+
+/* Can this uploaded project run in the browser? (project page) */
+.compat { margin: 0 0 22px; padding: 14px 18px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
+.compat.partial { background: var(--note); color: var(--on-note); }
+.compat.none { background: var(--fail-soft); }
+.compat p { margin: 0 0 6px; }
+.compat .libs { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
+.switch.local:disabled { background: var(--surface-2); color: var(--ink-soft); border-color: var(--hairline); border-style: dashed; }
