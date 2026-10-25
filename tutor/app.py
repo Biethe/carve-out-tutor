@@ -6,7 +6,7 @@ from fastapi import Body, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from tutor import llm, progress, runner
+from tutor import llm, overview, progress, runner
 from tutor.pieces import PIECES, assemble, function, task
 
 PAGES = Path(__file__).parent / "pages"
@@ -101,15 +101,17 @@ def save_code(code: str = Body(embed=True)):
 
 @app.post("/api/submit")
 def submit(code: str = Body(embed=True)):
-    """Test the learner's function inside the piece's file. On pass, it runs in the store from now on."""
+    """Test the learner's function inside the piece's file. On pass, it runs in the store from now on.
+    A passed function can be resubmitted (a cleaner version); it only replaces the old one if it passes too."""
     prog = progress.load()
     piece, name, fn = _current(prog)
-    if not fn or fn["status"] != "in_progress":
+    if not fn or fn["status"] not in ("in_progress", "passed"):
         return {"error": "No open step to submit to."}
-    fn["draft"] = code
+    cleaning = fn["status"] == "passed"
     results = runner.run_tests(piece, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
-    fn["last_results"] = results
     all_passed = all(r["passed"] for r in results)
+    if all_passed or not cleaning:
+        fn["draft"], fn["last_results"] = code, results
     if all_passed:
         # Once a function passes it is the learner's for good: Run project uses it from now on.
         fn["status"] = "passed"
@@ -133,6 +135,31 @@ def get_hint(code: str = Body(), after_submit: bool = Body(False)):
         if any(not r["passed"] for r in results if r["name"] in mine):
             results = [r for r in results if r["name"] in mine]
     return {"hint": llm.hint(piece, name, code, results)}
+
+
+@app.post("/api/clean")
+def clean():
+    """Short hints for a cleaner version of the passed function, plus a cleaner version that passes the same tests."""
+    prog = progress.load()
+    piece, name, fn = _current(prog)
+    if not fn or fn["status"] != "passed":
+        return {"error": "Pass the tests first, then clean it up."}
+    result = llm.clean(piece, name, fn["draft"])
+    if result is None:
+        return {"error": llm.BUSY}
+    if result["code"]:  # never show a "cleaner" answer that breaks the tests
+        snippets = {**progress.passed_snippets(prog, piece), name: result["code"]}
+        if not all(r["passed"] for r in runner.run_tests(piece, assemble(piece, snippets))):
+            result["code"] = ""
+    return result
+
+
+@app.get("/api/overview")
+def project_overview():
+    prog = progress.load()
+    current = PIECES[prog["current"]]["file"] if prog["current"] else None
+    current = current and f"store/pieces/{current}"
+    return {"tree": overview.tree(), "diagram": overview.diagram(current), "current": current}
 
 
 @app.post("/api/explain")

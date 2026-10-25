@@ -11,7 +11,7 @@
 </head>
 <body class="workspace-body">
   <header class="top">
-    <a class="brand" href="/"><span class="brand-word">Carve-Out</span><span class="brand-hand">tutor</span></a>
+    <a class="brand" href="/" aria-label="Carve-Out tutor"><span class="brand-word">Carve</span><span class="brand-piece"><i class="ph-bold ph-scissors" aria-hidden="true"></i>out</span><span class="brand-hand">tutor</span></a>
     <span class="round" id="round"></span>
     <span class="top-spacer"></span>
     <div class="ownership" title="Share of the project's lines of code you wrote">
@@ -21,7 +21,7 @@
     </div>
     <div class="theme-switch" role="radiogroup" aria-label="Theme">
       <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="night" title="Night" aria-label="Night theme"><i class="ph-bold ph-moon-stars" aria-hidden="true"></i></button>
+      <button role="radio" data-theme-choice="night" title="Blueprint" aria-label="Blueprint theme"><i class="ph-bold ph-ruler" aria-hidden="true"></i></button>
       <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
     </div>
   </header>
@@ -31,6 +31,8 @@
         <div class="tabs" role="tablist">
           <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-task" id="tab-btn-task">Your task</button>
           <button class="tab" role="tab" aria-selected="false" aria-controls="tab-read" id="tab-btn-read">Read first</button>
+          <button class="tab" role="tab" aria-selected="false" aria-controls="tab-files" id="tab-btn-files">Files</button>
+          <button class="tab" role="tab" aria-selected="false" aria-controls="tab-map" id="tab-btn-map">Map</button>
         </div>
         <div id="tab-task" role="tabpanel">
           <p class="step-label" id="step-label"></p>
@@ -48,6 +50,15 @@
           <h2>Code to read</h2>
           <div id="task-refs"></div>
         </div>
+        <div id="tab-files" role="tabpanel" hidden>
+          <h2>What's in the project</h2>
+          <ul class="file-tree" id="file-tree"><li class="muted">Loading…</li></ul>
+        </div>
+        <div id="tab-map" role="tabpanel" hidden>
+          <h2>How the files connect</h2>
+          <p class="muted small">Arrows point from a file to what it uses, labelled with the functions it calls. Your file has the dashed outline.</p>
+          <div class="diagram" id="diagram"><p class="muted">Loading…</p></div>
+        </div>
       </div>
     </section>
     <section class="right">
@@ -55,6 +66,7 @@
       <div class="toolbar">
         <button class="btn" id="submit"><i class="ph-bold ph-check-fat" aria-hidden="true"></i> Submit</button>
         <button class="btn secondary" id="hint"><i class="ph-bold ph-lightbulb" aria-hidden="true"></i> Hint</button>
+        <button class="btn secondary" id="clean" hidden><i class="ph-bold ph-broom" aria-hidden="true"></i> Clean</button>
         <button class="btn secondary" id="run"><i class="ph-bold ph-play" aria-hidden="true"></i> Run project</button>
         <button class="btn" id="next" hidden>Next function →</button>
         <span class="save-state" id="save-state"></span>
@@ -87,6 +99,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js" defer></script>
   <script src="/static/run.js"></script>
   <script src="/static/learn.js"></script>
 </body>

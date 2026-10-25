@@ -52,13 +52,13 @@ def _strip_code(text: str) -> str:
     return re.sub(r"```.*?(```|$)", "", text, flags=re.S).strip()
 
 
-HINT_RULES = """You are a patient coding tutor for a beginner who is rebuilding one piece of a working Python web app.
-Your job is to nudge, not to solve. Rules:
-- Give exactly ONE idea: the single next thing to think about, in 1-2 sentences, ideally as a question.
-- Never list several steps, and never describe the whole approach, even for a short function.
+HINT_RULES = """You are a coding tutor for a beginner who is rebuilding one function of a working Python web app.
+Nudge, don't solve. Rules:
+- Give 1 to 3 hints, one per line, each starting with "- ". Each hint is ONE short sentence, under 15 words.
+- Straight to the point: no greeting, no praise, no restating the task, no summary at the end.
+- Each hint names one concrete thing to check or try. Together they must not spell out the whole approach.
 - Never write code: no code blocks, no lines of the solution, no calls with arguments, no chained calls like a.b(...).c().
-- You may name at most one module, function or concept (for example "the hashlib module") without showing how to call it.
-- Be warm and plain. Don't repeat the task back."""
+- You may name a module, function or concept (for example "the hashlib module") without showing how to call it."""
 
 
 def hint(piece: str, name: str, code: str, results: list[dict] | None = None) -> str:
@@ -105,6 +105,31 @@ def grade(piece: str, name: str, explanation: str, code: str, earlier: list[str]
                 "hint": _strip_code(str(data.get("hint") or "")),
             }
         except (ValueError, KeyError, TypeError):
+            continue
+        except Exception:
+            return None
+    return None
+
+
+CLEAN_RULES = """A beginner's Python function already passes all its tests. Review it for cleanliness only:
+fewer lines, simpler logic, clearer names, idiomatic Python, no wasted work. Behavior must stay exactly the same.
+Reply with JSON only, with these keys:
+"clean": true if it is already about as clean as it gets, else false,
+"hints": 1 to 3 hints, each ONE short sentence under 15 words, pointing at one concrete improvement, no code ([] if clean),
+"code": the cleaner version of the whole function, same signature, plain Python, no markdown fences ("" if clean)."""
+
+
+def clean(piece: str, name: str, code: str) -> dict | None:
+    """{clean, hints, code} for a passing function. None if the AI is unavailable."""
+    for _ in range(2):  # one retry if the reply isn't valid JSON
+        try:
+            data = json.loads(_chat(CLEAN_RULES, f"{_task_text(piece, name)}\n\nTheir passing code:\n{code}", json_mode=True))
+            return {
+                "clean": bool(data.get("clean")),
+                "hints": [_strip_code(str(h)) for h in data.get("hints") or []][:3],
+                "code": re.sub(r"^```\w*\n|```\s*$", "", str(data.get("code") or "")).strip(),
+            }
+        except (ValueError, KeyError, TypeError, AttributeError):
             continue
         except Exception:
             return None

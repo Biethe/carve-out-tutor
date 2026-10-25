@@ -12,12 +12,21 @@ function escapeHtml(text) {
 let editor;
 if (window.CodeMirror) {
   editor = CodeMirror.fromTextArea($("editor"), {
-    mode: "python", lineNumbers: true, indentUnit: 4,
+    mode: "python", lineNumbers: true, indentUnit: 4, dragDrop: false,
     extraKeys: { Tab: cm => cm.execCommand(cm.somethingSelected() ? "indentMore" : "insertSoftTab") },
+  });
+  // Typing only: pasted or dropped text never reaches the editor.
+  editor.on("beforeChange", (_, change) => {
+    if (change.origin === "paste" || change.origin === "drop") { change.cancel(); noPaste(); }
   });
 } else {
   const ta = $("editor");
+  for (const ev of ["paste", "drop"]) ta.addEventListener(ev, e => { e.preventDefault(); noPaste(); });
   editor = { getValue: () => ta.value, setValue: v => (ta.value = v), on: (_, fn) => ta.addEventListener("input", fn), setOption() {} };
+}
+
+function noPaste() {
+  $("save-state").textContent = "No pasting here. Type it out!";
 }
 
 // Light formatting for tutor replies: `code`, **bold**, line breaks. Everything else is escaped.
@@ -25,7 +34,8 @@ function formatReply(text) {
   return escapeHtml(text)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\n/g, "<br>");
+    .replace(/^\s*[-*] /gm, "• ")
+    .replace(/\n+/g, "<br>");
 }
 
 // ---- Tutor window --------------------------------------------------------------
@@ -183,15 +193,50 @@ try {
 } catch {}
 
 // ---- Task panel ----------------------------------------------------------------
+const TABS = ["task", "read", "files", "map"];
+
 function showTab(name) {
-  for (const tab of ["task", "read"]) {
+  for (const tab of TABS) {
     $("tab-" + tab).hidden = tab !== name;
     $("tab-btn-" + tab).classList.toggle("active", tab === name);
     $("tab-btn-" + tab).setAttribute("aria-selected", tab === name);
   }
+  if (name === "files" || name === "map") loadOverview();
 }
-$("tab-btn-task").onclick = () => showTab("task");
-$("tab-btn-read").onclick = () => showTab("read");
+for (const tab of TABS) $("tab-btn-" + tab).onclick = () => showTab(tab);
+
+// ---- Files and Map tabs: fetched once, the first time either opens -------------
+let overview = null;
+
+async function loadOverview() {
+  if (overview) return;
+  overview = await api("GET", "/api/overview");
+  const render = items => items.map(i => i.dir
+    ? `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>${escapeHtml(i.name)}/</summary><ul>${render(i.children)}</ul></details></li>`
+    : `<li class="${i.path === overview.current ? "you" : ""}"><i class="ph-bold ph-file" aria-hidden="true"></i><code>${escapeHtml(i.name)}</code>` +
+      (i.path === overview.current ? ` <span class="chip">you're here</span>` : "") +
+      (i.about ? `<span class="about">${escapeHtml(i.about)}</span>` : "") + `</li>`).join("");
+  $("file-tree").innerHTML = `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>store/</summary><ul>${render(overview.tree)}</ul></details></li>`;
+  drawDiagram();
+}
+
+// Mermaid draws in a hand-drawn style, in the current theme's colors. Redrawn when the theme changes.
+async function drawDiagram() {
+  if (!overview) return;
+  if (!window.mermaid) { $("diagram").innerHTML = `<pre>${escapeHtml(overview.diagram)}</pre>`; return; }
+  const css = getComputedStyle(document.documentElement), v = name => css.getPropertyValue(name).trim();
+  mermaid.initialize({
+    startOnLoad: false, look: "handDrawn", theme: "base",
+    themeVariables: {
+      fontFamily: v("--code-hand"), fontSize: "15px", background: v("--surface"),
+      primaryColor: v("--surface-2"), primaryTextColor: v("--ink"), primaryBorderColor: v("--ink"),
+      lineColor: v("--ink-soft"), edgeLabelBackground: v("--surface"), tertiaryColor: v("--surface"),
+    },
+  });
+  const { svg } = await mermaid.render("map-" + Date.now(), overview.diagram);
+  $("diagram").innerHTML = svg;
+}
+addEventListener("themechange", drawDiagram);
 
 let criteriaText = {};
 
@@ -240,7 +285,10 @@ function showResults(results, passed) {
 let allDone = false;
 
 function afterPass() {
+  cleaning = false;
   $("submit").disabled = $("hint").disabled = true;
+  $("clean").hidden = false;
+  $("submit").lastChild.textContent = " Submit";
   editor.setOption("readOnly", true);
   $("save-state").textContent = "This function is yours now.";
   if (allDone) {
@@ -257,10 +305,38 @@ $("next").onclick = async () => {
   location.reload();
 };
 
+// ---- Clean: after passing, short hints toward a smaller, cleaner version -------
+// The editor unlocks so they can try it; a cleaner version only replaces theirs if it passes too.
+let cleaning = false;
+
+$("clean").onclick = async () => {
+  openTutor();
+  startExchange();
+  $("clean").disabled = true;
+  const { el, res } = await askTutor("/api/clean", {});
+  $("clean").disabled = false;
+  if (res.error) { el.textContent = res.error; return; }
+  if (res.clean) { el.innerHTML = "Already clean. Nothing to cut here."; return; }
+  el.innerHTML = res.hints.map(h => "• " + formatReply(h)).join("<br>");
+  if (res.code) {
+    const show = document.createElement("button");
+    show.className = "btn small secondary";
+    show.textContent = "Show a cleaner version";
+    show.onclick = () => show.replaceWith(Object.assign(document.createElement("pre"), { className: "clean-code", textContent: res.code }));
+    el.after(show);
+  }
+  cleaning = true;
+  editor.setOption("readOnly", false);
+  $("submit").disabled = false;
+  $("submit").lastChild.textContent = " Submit cleaner version";
+  $("save-state").textContent = "Try a cleaner version";
+};
+
 // Autosave a moment after typing stops.
 let saveTimer, loaded = false;
 editor.on("change", () => {
   if (!loaded) return;
+  if (cleaning) { $("save-state").textContent = "Submit to keep this version"; return; }
   $("save-state").textContent = "Editing…";
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
@@ -278,6 +354,11 @@ $("submit").onclick = async () => {
   if (res.error) { $("results").innerHTML = `<p class="summary fail">${escapeHtml(res.error)}</p>`; return; }
   showResults(res.results, res.passed);
   setOwnership(res.ownership);
+  if (cleaning) {
+    if (res.passed) { celebrate(); afterPass(); $("save-state").textContent = "Cleaner, and still yours."; }
+    else $("results").insertAdjacentHTML("beforeend", `<p class="muted small">Your earlier passing version is still the one that runs.</p>`);
+    return;
+  }
   if (res.passed) {
     allDone = res.all_done;
     celebrate();

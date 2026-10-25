@@ -1,9 +1,10 @@
 /* Carve-Out Tutor: a notebook you learn in.
-   Type: Bricolage Grotesque (display), Figtree (body, real italics), Caveat (the tutor's handwriting),
-   JetBrains Mono (code). Shapes: cards 18px, inputs and editor 14px, buttons and chips fully round.
+   Type: Fraunces, soft and wonky (display), Figtree (body, real italics), Caveat (the tutor's handwriting),
+   Shantell Sans at full informality (code you write, handwritten), JetBrains Mono (small code labels).
+   The identity is the cut: a dashed outline and scissors around the piece you rebuild. Shapes: cards 18px, inputs and editor 14px, buttons and chips fully round.
    Every surface gets a 2px ink border and a hard offset shadow, so things feel like paper you can press. */
 
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Caveat:wght@500..700&family=Figtree:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..900,0..100,0..1;1,9..144,400..900,0..100,0..1&family=Shantell+Sans:ital,wght,BNCE,INFM@0,300..800,-100..100,0..100;1,300..800,-100..100,0..100&family=Caveat:wght@500..700&family=Figtree:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;600&display=swap");
 
 /* ---------- Themes ---------------------------------------------------------- */
 :root, [data-theme="paper"] {
@@ -35,44 +36,50 @@
   --cm-comment: #7a7d86;
   --cm-number: #c2410c;
   --cm-builtin: #7c3aed;
-  --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --display: "Fraunces", ui-serif, Georgia, serif;
   --heading: var(--display);
   --body: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --code-hand: "Shantell Sans", "Comic Sans MS", var(--hand);
   color-scheme: light;
 }
 
+/* Blueprint: drafting paper. White ink lines on deep blue, a yellow pencil for accents. */
 [data-theme="night"] {
-  --bg: #111216;
-  --dots: rgba(237, 238, 242, .06);
-  --surface: #1b1d23;
-  --surface-2: #25282f;
-  --ink: #edeef2;
-  --ink-soft: #aeb2bd;
-  --line: #474c58;
-  --hairline: rgba(237, 238, 242, .12);
-  --shadow: #050507;
-  --accent: #8e9cff;
-  --on-accent: #10121a;
-  --accent-soft: #252a4d;
-  --marker: #ffd84d;
-  --on-marker: #15130a;
-  --pass: #5bd890;
-  --pass-soft: #163324;
-  --fail: #ff8278;
-  --fail-soft: #3b1c1b;
-  --note: #f3d35b;
-  --on-note: #1c1a0c;
-  --cm-bg: #16181d;
-  --cm-gutter: #1b1d23;
-  --cm-keyword: #f28ad8;
-  --cm-def: #8e9cff;
-  --cm-string: #7fe0a6;
-  --cm-comment: #7d8290;
-  --cm-number: #ffb07a;
-  --cm-builtin: #c4a8ff;
+  --bg: #163a60;
+  --dots: rgba(214, 232, 255, .10);
+  --surface: #1b4570;
+  --surface-2: #22517f;
+  --ink: #f3f7fc;
+  --ink-soft: #b9cde3;
+  --line: #e4eefa;
+  --hairline: rgba(228, 238, 250, .22);
+  --shadow: #0b2238;
+  --accent: #ffd166;
+  --on-accent: #163a60;
+  --accent-soft: #2b5d90;
+  --marker: #ff9a76;
+  --on-marker: #1a1410;
+  --pass: #96f0bd;
+  --pass-soft: #1e5a5a;
+  --fail: #ffa596;
+  --fail-soft: #5a3c55;
+  --note: #ffd166;
+  --on-note: #163a60;
+  --cm-bg: #18406a;
+  --cm-gutter: #1b4570;
+  --cm-keyword: #ffd166;
+  --cm-def: #ffffff;
+  --cm-string: #96f0bd;
+  --cm-comment: #93b3d6;
+  --cm-number: #ffab85;
+  --cm-builtin: #a8dcff;
   color-scheme: dark;
+}
+/* Blueprints have a grid, not dots. */
+[data-theme="night"] body {
+  background-image: linear-gradient(var(--dots) 1px, transparent 1px), linear-gradient(90deg, var(--dots) 1px, transparent 1px);
 }
 
 /* The extra mode: a green chalkboard, headings written in chalk. */
@@ -127,6 +134,7 @@ a { color: var(--accent); text-underline-offset: .2em; }
 ::selection { background: var(--marker); color: var(--on-marker); }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 code, pre { font-family: var(--mono); }
+h1, h2, h3, .brand-word, .summary { font-variation-settings: "SOFT" 100, "WONK" 1; }
 code { font-size: .9em; background: var(--surface-2); padding: .1em .45em; border-radius: 6px; }
 em { font-style: italic; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
@@ -156,9 +164,21 @@ em { font-style: italic; }
   backdrop-filter: blur(10px);
   border-bottom: 2px solid var(--line);
 }
-.brand { display: inline-flex; align-items: baseline; gap: 6px; color: var(--ink); text-decoration: none; }
-.brand-word { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -.03em; }
-.brand-hand { font-family: var(--hand); font-weight: 700; font-size: 24px; color: var(--accent); transform: rotate(-6deg) translateY(2px); display: inline-block; }
+/* The wordmark: "out" is the piece cut from the word, lifted off the page along a dashed line. */
+.brand { display: inline-flex; align-items: center; color: var(--ink); text-decoration: none; }
+.brand-word { font-family: var(--display); font-weight: 900; font-size: 25px; letter-spacing: -.035em; }
+.brand-piece {
+  position: relative; display: inline-block; margin: 0 6px 0 3px; padding: 0 9px 2px;
+  font: italic 900 25px/1.15 var(--display); font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -.03em;
+  background: var(--marker); color: var(--on-marker);
+  border: 2px dashed var(--line); border-radius: 9px;
+  box-shadow: 3px 3px 0 var(--shadow);
+  transform: rotate(-7deg) translate(1px, 4px);
+  transition: transform .2s cubic-bezier(.2, 1.4, .4, 1);
+}
+.brand-piece i { position: absolute; left: -11px; top: -10px; font-size: 16px; color: var(--ink); background: var(--bg); border-radius: 999px; transform: rotate(-30deg); }
+.brand:hover .brand-piece { transform: rotate(4deg) translate(2px, 6px); }
+.brand-hand { font-family: var(--hand); font-weight: 700; font-size: 25px; color: var(--accent); transform: rotate(-4deg) translateY(3px); display: inline-block; }
 .top-spacer { flex: 1; }
 
 .theme-switch { display: inline-flex; gap: 2px; padding: 3px; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); }
@@ -197,8 +217,19 @@ em { font-style: italic; }
 .home { max-width: 1240px; margin: 0 auto; padding: 0 28px 72px; }
 
 .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding: 64px 0 32px; }
-.hero-note { font-family: var(--hand); font-weight: 600; font-size: 28px; color: var(--accent); margin: 0 0 6px; transform: rotate(-2deg); transform-origin: left; display: inline-block; }
-.hero h1 { font-family: var(--heading); font-weight: 800; font-size: clamp(42px, 5.6vw, 76px); line-height: 1.02; letter-spacing: -.035em; margin: 0 0 22px; max-width: 13ch; }
+/* The line above the headline is a cut line: scissors, then dashes running off. */
+.hero-note { display: flex; align-items: center; gap: 12px; font-family: var(--hand); font-weight: 600; font-size: 28px; color: var(--accent); margin: 0 0 14px; }
+.hero-note i { font-size: 24px; color: var(--ink); transform: rotate(-90deg); }
+.hero-note::after { content: ""; flex: 0 1 140px; border-top: 2.5px dashed var(--ink-soft); }
+.hero h1 { font-family: var(--heading); font-weight: 900; font-size: clamp(44px, 6vw, 84px); line-height: 1; letter-spacing: -.04em; margin: 0 0 26px; max-width: 13ch; }
+/* The phrase that matters, cut out of the headline and pressed back on slightly crooked. */
+.carved {
+  display: inline-block; padding: 0 .16em .06em; margin-top: .1em;
+  font-style: italic; background: var(--marker); color: var(--on-marker);
+  border: 3px dashed var(--line); border-radius: .18em;
+  box-shadow: 6px 6px 0 var(--shadow);
+  transform: rotate(-2.5deg);
+}
 .hero .lead { font-size: clamp(18px, 1.6vw, 21px); color: var(--ink-soft); max-width: 34ch; margin: 0 0 30px; }
 .hero .lead em { color: var(--ink); }
 
@@ -334,7 +365,13 @@ summary { cursor: pointer; padding: 9px 14px; font-size: 15px; font-weight: 600;
 details pre { margin: 0; padding: 14px; background: var(--cm-bg); border-top: 2px solid var(--hairline); overflow-x: auto; font-size: 13px; line-height: 1.55; }
 
 .editor-wrap { flex: 1; min-height: 260px; border: 2px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--cm-bg); box-shadow: 5px 5px 0 var(--shadow); }
-.editor-wrap .CodeMirror, .editor-wrap textarea { height: 100%; width: 100%; font: 14.5px/1.7 var(--mono); }
+/* The code you write is handwritten. Colors and weights still tell keywords, names and types apart. */
+.editor-wrap .CodeMirror, .editor-wrap textarea, details pre, .clean-code {
+  font-family: var(--code-hand); font-variation-settings: "INFM" 100, "BNCE" 25;
+}
+.editor-wrap .CodeMirror, .editor-wrap textarea { height: 100%; width: 100%; font-size: 17px; line-height: 1.7; }
+details pre, .clean-code { font-size: 15px; }
+.CodeMirror-linenumber { font-family: var(--hand); font-size: 18px; }
 .editor-wrap textarea { border: 0; padding: 14px; resize: none; background: var(--cm-bg); color: var(--ink); }
 .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .save-state { margin-left: auto; font-family: var(--hand); font-size: 21px; font-weight: 600; color: var(--ink-soft); }
@@ -351,6 +388,24 @@ details pre { margin: 0; padding: 14px; background: var(--cm-bg); border-top: 2p
 .tests pre { grid-column: 2; margin: 2px 0 8px; padding: 10px 12px; background: var(--fail-soft); border-radius: 10px; font-size: 12.5px; white-space: pre-wrap; overflow-x: auto; }
 .results .empty { margin: 0; color: var(--ink-soft); }
 .done-note { margin: 12px 0 0; padding: 12px 16px; background: var(--pass-soft); border: 2px solid var(--pass); border-radius: 14px; }
+
+/* Files and Map tabs. */
+.file-tree, .file-tree ul { list-style: none; padding-left: 0; margin: 0; }
+.file-tree ul { padding-left: 18px; border-left: 2px dashed var(--hairline); margin-left: 9px; }
+#task .file-tree li { margin: 4px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+#task .file-tree li.dir { display: block; }
+.file-tree details { border: 0; margin: 0; overflow: visible; }
+.file-tree summary { padding: 2px 0; display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 14px; }
+.file-tree i { color: var(--accent); }
+.file-tree .about { flex-basis: 100%; padding-left: 26px; font-size: 13.5px; color: var(--ink-soft); }
+.file-tree li.you code { background: var(--marker); color: var(--on-marker); outline: 2px dashed var(--line); }
+.diagram { margin-top: 10px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; height: auto; max-width: 100% !important; }
+.diagram pre { font-size: 13px; }
+
+/* Clean: the cleaner version, revealed on request. */
+.clean-code { margin: 0; padding: 12px 14px; background: var(--cm-bg); border: 2px dashed var(--line); border-radius: 14px; white-space: pre-wrap; overflow-x: auto; }
+.tutor-win .messages > .btn { align-self: flex-start; }
 
 /* ---------- Floating tutor ---------------------------------------------------- */
 .tutor-fab {

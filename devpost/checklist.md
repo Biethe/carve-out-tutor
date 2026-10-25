@@ -79,6 +79,14 @@ Build mode: fast
 - [ ] Ask the tutor about libraries, methods and concepts at any time. The window clears when closed.
 - [ ] Store sign-up so the learner can create users and check they can log in. Each user sees only their own purchases. (Built; waiting for the learner to retry.)
 - [ ] Decide on the locked "download at 60%" button (cost explained; learner hasn't answered yet). The catalog part is built as coming-soon cards.
+- [ ] The editor blocks paste and drag-drop, so code can only be typed. (Built and verified in the browser; waiting for the learner to try it.)
+- [ ] **Files** tab: the project's folder tree, with each Python file's one-line description and the current file marked. (Built; waiting for the learner to try it.)
+- [ ] **Map** tab: a hand-drawn diagram of how the files depend on each other and how data flows (browser, routes, pieces, database, templates), labelled with the functions called. (Built; waiting for the learner to try it.)
+- [ ] Handwritten-looking code in the editor, still colored by syntax. (Built; waiting for the learner to try it.)
+- [ ] **Clean** button after passing: short hints toward smaller, cleaner code, a "Show a cleaner version" answer, and a resubmit that only replaces the passing code if it still passes. (Built; endpoint tested on a copy of the progress file; waiting for the learner to try it.)
+- [ ] Replace the dark mode, which felt generic. (Replaced with Blueprint; waiting for the learner to try it.)
+- [ ] A more distinctive wordmark and headline that carry the site's identity. (Cut-out "out" piece, scissors cut line, Fraunces headlines; waiting for the learner to try it.)
+- [ ] Hints shorter and straight to the point, possibly several. (1 to 3 bullets under 15 words; checked live; waiting for the learner to try it.)
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
@@ -108,3 +116,4 @@ Activity mode:
 - The store gained sign-up and per-user purchases, at the learner's request in the final review. This reverses the PRD's one-user decision. The build found that purchases were global, so with several accounts every user would see everyone's purchases and download links. The `purchases` table got a `username` column, with a small upgrade for existing databases.
 - Visual redesign at the learner's request (fun, original, human-like writing, mixed fonts, dark and light mode, no em dashes): notebook style with Bricolage Grotesque, Figtree, Caveat and JetBrains Mono, Phosphor icons, Paper/Night/Chalkboard themes, and motion that respects reduced-motion settings. The home page gained a "three moves" section and a catalog with coming-soon projects. The store got Manrope and a system dark mode. The tutor serves the store's asset pictures at `/store-assets`. PRD and spec Look and Feel were updated. Screenshot checks found that the project card's pictures overflowed their grid (rows sized to the images), the hero illustration overlapped itself, and light text on the highlighter was unreadable in dark themes; all three were fixed.
 - `TUTOR_DATA` can point the tutor at another data folder. While the learner's own tutor was running, test runs that write progress kept clashing with their real `data/` (and twice deleted it). Tests now run in a scratch folder.
+- Second design and feature round at the learner's request in the final review: no paste in the editor, Files and Map tabs (`tutor/overview.py` reads the tree and the import graph live with `ast`; Mermaid 11 draws it in hand-drawn style), handwritten code font, a Clean button with hints and a test-verified cleaner version, Blueprint instead of Night, a cut-out wordmark, and shorter hints. Resubmitting after a pass is now allowed: the new code replaces the old only if it passes, so a failed cleanup never takes away a passing function. A browser check typed into the learner's real draft through autosave; the text was removed and the draft restored.

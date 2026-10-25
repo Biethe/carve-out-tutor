@@ -79,9 +79,10 @@ PRD ref: `prd.md > The Core Journey`.
 Carried from `prd.md > Look and Feel`, then reworked in the final review at the learner's request ("fun, original, human-like writing, different fonts, italics, bold, sizes, dark and light mode").
 
 - **Idea:** a notebook you learn in. A mentor writes handwritten notes in the margin, you highlight what matters, and every surface feels like paper you can press.
-- **Type:** *Bricolage Grotesque* for headlines, *Figtree* for body text (with real italics), *Caveat* handwriting for the tutor's voice and small notes, *JetBrains Mono* for code. Loaded from Google Fonts.
+- **Type:** *Fraunces* (soft, slightly wonky serif) for headlines, *Figtree* for body text (with real italics), *Caveat* handwriting for the tutor's voice and small notes, *Shantell Sans* (handwritten, still syntax-colored) for the code the learner writes and reads, *JetBrains Mono* for small code labels. Loaded from Google Fonts.
+- **Identity:** the cut. The wordmark's "out" is a dashed, lifted-off piece with scissors; the home headline's key phrase and the line above it use the same dashed cut.
 - **Color and shape:** cobalt accent plus a yellow highlighter on dot-grid paper. Cards and panels have 2px ink borders and a hard offset shadow; buttons are pills that press down when clicked. Icons come from Phosphor (CDN).
-- **Themes:** **Paper** (light), **Night** (dark) and **Chalkboard** (green board, headings in chalk-style handwriting). The switch is in the header. The tutor follows the system setting until a theme is picked, and remembers the choice in the browser.
+- **Themes:** **Paper** (light), **Blueprint** (dark: white lines and a grid on deep blue, yellow pencil accents; stored as `night`) and **Chalkboard** (green board, headings in chalk-style handwriting). The switch is in the header. The tutor follows the system setting until a theme is picked, and remembers the choice in the browser.
 - **Motion:** headlines rise in, the highlighter draws itself, criteria tick green, the ownership number bumps, confetti bursts from Submit when a function passes. All of it is off under reduced motion.
 - **Home:** hero, "three moves" (run it, rebuild one piece, watch it still work), and a catalog: Polyvault plus *coming soon* cards (Recipe Box, Habit Tracker, Pixel Pong, Your own idea).
 - **Workspace:** two columns like Programiz. Left: *Your task* and *Read first* tabs. Right: editor, toolbar, results. A draggable **Tutor** button opens the tutor window.
