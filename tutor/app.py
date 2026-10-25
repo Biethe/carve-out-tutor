@@ -7,7 +7,7 @@ from fastapi import Body, FastAPI
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from tutor import llm, overview, progress, runner
+from tutor import cards, llm, overview, progress, runner
 from tutor.pieces import PIECES, assemble, function, task
 
 PAGES = Path(__file__).parent / "pages"
@@ -70,13 +70,11 @@ def state():
     piece, name, fn = _current(prog)
     result = {"current": piece, "ownership": progress.ownership(prog), "all_done": progress.all_done(prog)}
     if piece:
-        names = [f["name"] for f in PIECES[piece]["functions"]]
+        plan = progress.plan(prog)
         f = function(piece, name)
         result.update(
-            round=list(PIECES).index(piece) + 1,
-            total_rounds=len(PIECES),
-            step=names.index(name) + 1,
-            total_steps=len(names),
+            step=plan.index((piece, name)) + 1 if (piece, name) in plan else 1,
+            total_steps=len(plan),
             task=task(piece, name),
             code=fn["draft"] if fn["draft"] is not None else f["stub"],
             status=fn["status"],
@@ -87,20 +85,36 @@ def state():
 
 
 @app.post("/api/next")
-def next_step():
-    """Open the next function that hasn't passed (the rest of this piece first, then the next piece).
-    Ignored while the current function is still in progress."""
+async def next_step():
+    """Open the next function in the learner's plan that hasn't passed. Ignored while the current one is in progress.
+    A function without a hand-written card gets its card and tests written first (tutor/cards.py); one that can't
+    get reliable tests is moved to "keep the original", with the reason."""
     prog = progress.load()
     piece, name, fn = _current(prog)
     if fn and fn["status"] != "passed":
         return state()
-    for piece in PIECES:
-        for f in PIECES[piece]["functions"]:
-            if prog["pieces"][piece][f["name"]]["status"] != "passed":
-                prog["current"], prog["step"] = piece, f["name"]
-                prog["pieces"][piece][f["name"]]["status"] = "in_progress"
-                progress.save(prog)
-                return state()
+    for piece, name in progress.plan(prog):
+        f = prog["pieces"][piece][name]
+        if f["status"] == "passed":
+            continue
+        if function(piece, name).get("auto"):
+            try:
+                problem = await cards.prepare(piece, name)
+            except llm.NoKey:
+                return {**state(), "error": llm.NO_KEY}
+            if problem == llm.BUSY:
+                return {**state(), "error": "Chip is busy preparing your next function. Try again in a minute."}
+            if problem:
+                plan = _plan(prog)
+                plan["marks"][f"{piece}.{name}"] = "keep"
+                plan["reasons"][f"{piece}.{name}"] = problem
+                prog["plan"] = plan
+                continue
+        prog["current"], prog["step"] = piece, name
+        f["status"] = "in_progress"
+        progress.save(prog)
+        return state()
+    progress.save(prog)
     return state()
 
 
@@ -123,17 +137,32 @@ async def submit(code: str = Body(embed=True)):
     if not fn or fn["status"] not in ("in_progress", "passed"):
         return {"error": "No open step to submit to."}
     cleaning = fn["status"] == "passed"
-    results = await runner.run_tests(piece, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
+    results = await runner.run_tests(piece, name, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
     all_passed = all(r["passed"] for r in results)
     if all_passed or not cleaning:
         fn["draft"], fn["last_results"] = code, results
+    shown = None
     if all_passed:
         # Once a function passes it is the learner's for good: Run project uses it from now on.
         fn["status"] = "passed"
         progress.write_learner_file(prog, piece)
+        shown = _spot_check_passed(prog, piece, name)
     progress.save(prog)
     return {"results": results, "passed": all_passed, "ownership": progress.ownership(prog),
-            "all_done": progress.all_done(prog)}
+            "all_done": progress.all_done(prog), "shown_claim": shown}
+
+
+def _spot_check_passed(prog: dict, piece: str, name: str) -> str | None:
+    """If this function was a spot check for a claimed skill, the claim is now shown. Returns the skill."""
+    claim = _plan(prog)["spots"].get(f"{piece}.{name}")
+    if not claim:
+        return None
+    profile = progress.load_profile()
+    for c in profile["claims"]:
+        if c["skill"].lower() == claim.lower() or claim.lower() in c["skill"].lower():
+            c["status"] = "shown"
+    progress.save_profile(profile)
+    return claim
 
 
 @app.post("/api/hint")
@@ -167,7 +196,7 @@ async def clean():
         return {"error": llm.BUSY}
     if result["code"]:  # never show a "cleaner" answer that breaks the tests
         snippets = {**progress.passed_snippets(prog, piece), name: result["code"]}
-        if not all(r["passed"] for r in await runner.run_tests(piece, assemble(piece, snippets))):
+        if not all(r["passed"] for r in await runner.run_tests(piece, name, assemble(piece, snippets))):
             result["code"] = ""
     return result
 
@@ -175,7 +204,7 @@ async def clean():
 @app.get("/api/overview")
 def project_overview():
     prog = progress.load()
-    current = f"store/pieces/{PIECES[prog['current']]['file']}" if prog["current"] else None
+    current = f"store/{PIECES[prog['current']]['file']}" if prog["current"] else None
     return {"tree": overview.tree(), "current": current, **overview.diagrams(current, prog["step"])}
 
 
@@ -224,7 +253,11 @@ async def ask(question: str = Body(), code: str = Body("")):
 
 @app.post("/api/run")
 def run():
-    return runner.run_store(passed=progress.swapped(progress.load()))
+    prog = progress.load()
+    passed = progress.swapped(prog)
+    for piece in passed:  # rewritten each time, so the files always match the latest passed code
+        progress.write_learner_file(prog, piece)
+    return runner.run_store(passed=passed)
 
 
 @app.get("/api/settings")
@@ -307,3 +340,66 @@ async def speak(text: str = Body(embed=True)):
         if "terms" in message:
             message = "For Chip's best voice, accept Groq's terms for Orpheus once: https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english"
         return JSONResponse({"error": message[:300]}, status_code=502)
+
+
+# ---- The learner's plan: which functions they write, which keep the original ---------------------
+def _plan(prog: dict) -> dict:
+    """The saved plan, or the default: the six hand-made functions, in round order."""
+    if prog.get("plan"):
+        return prog["plan"]
+    keys = [f"{piece}.{name}" for piece, name in progress.plan(prog)]
+    return {"order": keys, "marks": dict.fromkeys(keys, "write"), "reasons": {}, "spots": {}}
+
+
+def _functions() -> list[dict]:
+    return [{"key": f"{piece}.{f['name']}", "piece": piece, "name": f["name"], "file": p["file"], "signature": f["signature"]}
+            for piece, p in PIECES.items() for f in p["functions"]]
+
+
+@app.get("/api/plan")
+def get_plan():
+    prog = progress.load()
+    plan = _plan(prog)
+    rank = {key: i for i, key in enumerate(plan["order"])}
+    rows = [{**f, "mark": plan["marks"].get(f["key"], "keep"), "reason": plan["reasons"].get(f["key"], ""),
+             "spot": plan["spots"].get(f["key"]), "status": prog["pieces"][f["piece"]][f["name"]]["status"],
+             "rank": rank.get(f["key"])} for f in _functions()]
+    return {"functions": rows, "suggested": bool(prog.get("plan")), "ownership": progress.ownership(prog),
+            "profile": progress.load_profile()["done"]}
+
+
+@app.post("/api/plan/suggest")
+async def suggest_plan():
+    """Chip's plan from the learner's profile: what to write (most useful first), spot checks for their claims."""
+    prog = progress.load()
+    profile = progress.load_profile()
+    if not profile["done"]:
+        return {"error": "Do the interview first, so Chip knows what to suggest."}
+    try:
+        suggestion = await llm.plan(profile, _functions())
+    except llm.NoKey:
+        return {"error": llm.NO_KEY}
+    if not suggestion or not suggestion["order"]:
+        return {"error": llm.BUSY}
+    passed = [f"{piece}.{name}" for piece, fns in prog["pieces"].items() for name, f in fns.items() if f["status"] == "passed"]
+    order = passed + [k for k in suggestion["order"] if k not in passed]  # what they've written stays theirs
+    prog["plan"] = {"order": order, "marks": {f["key"]: "write" if f["key"] in order else "keep" for f in _functions()},
+                    "reasons": suggestion["reasons"], "spots": {s["function"]: s["claim"] for s in suggestion["spot_checks"]}}
+    progress.save(prog)
+    return get_plan()
+
+
+@app.put("/api/plan")
+def edit_plan(marks: dict[str, str] = Body(embed=True)):
+    """Mark functions "write" or "keep". A newly written-in function joins the end of the order."""
+    prog = progress.load()
+    plan = _plan(prog)
+    for key, mark in marks.items():
+        if mark not in ("write", "keep"):
+            continue
+        plan["marks"][key] = mark
+        if mark == "write" and key not in plan["order"]:
+            plan["order"].append(key)
+    prog["plan"] = plan
+    progress.save(prog)
+    return get_plan()

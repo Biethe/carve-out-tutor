@@ -23,6 +23,7 @@
  "tests/test_cart.py",
  "tests/test_pieces.py",
  "tutor/app.py",
+ "tutor/cards.py",
  "tutor/llm.py",
  "tutor/overview.py",
  "tutor/pages/catalog.html",

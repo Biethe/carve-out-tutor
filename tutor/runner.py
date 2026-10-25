@@ -23,21 +23,39 @@ _store_proc: subprocess.Popen | None = None
 TEST_TIMEOUT = 15
 
 
-async def run_tests(piece: str, code: str) -> list[dict]:
+def test_source(piece: str, name: str) -> tuple[str, str]:
+    """(file name, code) of the tests for one function: the piece's hand-written tests, or the AI-written ones."""
+    if PIECES[piece]["test"]:
+        path = ROOT / PIECES[piece]["test"]
+        return path.name, path.read_text()
+    from tutor import cards
+    return cards.test_file(piece, name)
+
+
+async def run_tests(piece: str, name: str, code: str) -> list[dict]:
     """Run the piece's tests against the learner's code in a separate process. Returns [{name, passed, message}].
     In the browser, web/bridge.py swaps this for a browser-Python worker."""
-    return await asyncio.to_thread(_run_tests, piece, code)
+    return await run_test_code(PIECES[piece]["file"], *test_source(piece, name), code)
 
 
-def _run_tests(piece: str, code: str) -> list[dict]:
-    p = PIECES[piece]
+async def run_test_code(file: str, test_name: str, test_code: str, code: str) -> list[dict]:
+    """Run one test file against the store with `file` replaced by `code`. In the browser, web/bridge.py swaps this."""
+    return await asyncio.to_thread(_run_tests, file, test_name, test_code, code)
+
+
+def _run_tests(file: str, test_name: str, test_code: str, code: str) -> list[dict]:
+    """The tests run against a copy of the whole store with `file` (e.g. pieces/auth.py) replaced by `code`."""
     with tempfile.TemporaryDirectory() as tmp:
-        Path(tmp, p["file"]).write_text(code)
+        store = Path(tmp, "store")
+        shutil.copytree(ROOT / "store", store, ignore=shutil.ignore_patterns("__pycache__", "*.db"))
+        (store / file).write_text(code)
+        Path(tmp, "tests").mkdir()
+        shutil.copy(ROOT / "tests" / "conftest.py", Path(tmp, "tests"))
+        Path(tmp, "tests", test_name).write_text(test_code)
         report = Path(tmp, "report.xml")
-        cmd = [sys.executable, "-m", "pytest", str(ROOT / p["test"]), f"--junitxml={report}", "-q", "-p", "no:cacheprovider"]
+        cmd = [sys.executable, "-m", "pytest", str(Path(tmp, "tests", test_name)), f"--junitxml={report}", "-q", "-p", "no:cacheprovider"]
         try:
-            # The temp folder comes first on PYTHONPATH, so the tests import the learner's file.
-            out = subprocess.run(cmd, cwd=tmp, env={**os.environ, "PYTHONPATH": tmp},
+            out = subprocess.run(cmd, cwd=tmp, env={**os.environ, "STORE_DIR": str(store), "STORE_DB": str(Path(tmp, "store.db"))},
                                  capture_output=True, text=True, timeout=TEST_TIMEOUT)
         except subprocess.TimeoutExpired:
             return [{"name": "time limit", "passed": False,
@@ -89,7 +107,7 @@ def run_store(passed: list[str]) -> dict:
     shutil.rmtree(RUN_DIR, ignore_errors=True)
     shutil.copytree(ROOT / "store", RUN_DIR, ignore=shutil.ignore_patterns("__pycache__", "*.db"))
     for piece in passed:
-        shutil.copy(DATA / "learner" / f"{piece}.py", RUN_DIR / "pieces" / f"{piece}.py")
+        shutil.copy(DATA / "learner" / PIECES[piece]["file"], RUN_DIR / PIECES[piece]["file"])
 
     DATA.mkdir(exist_ok=True)
     log_path = RUN_DIR.parent / "store.log"

@@ -32,24 +32,30 @@ def _short(text: str, lines: int = 12, last: bool = False) -> str:
     return "\n".join(text_lines[-lines:] if last else text_lines[:lines])
 
 
-def run_tests(test_file: str, overrides_json: str) -> str:
-    """Run one test file with some files replaced. Same result shape as tutor/runner.py, as JSON."""
+def run_tests(file: str, test_name: str, test_code: str, code: str) -> str:
+    """Run one test file against a copy of the store with `file` replaced by `code`, as tutor/runner.py does locally.
+    Returns the results as JSON."""
     import pytest
 
     with tempfile.TemporaryDirectory() as tmp:
-        for path, code in json.loads(overrides_json).items():
-            Path(tmp, Path(path).name).write_text(code)  # tests import pieces by bare name, like the local runner
+        store = Path(tmp, "store")
+        shutil.copytree(ROOT / "store", store, ignore=shutil.ignore_patterns("__pycache__", "*.db"))
+        (store / file).write_text(code)
+        Path(tmp, "tests").mkdir()
+        shutil.copy(ROOT / "tests" / "conftest.py", Path(tmp, "tests"))
+        Path(tmp, "tests", test_name).write_text(test_code)
         report = Path(tmp, "report.xml")
-        sys.path.insert(0, tmp)
+        os.environ.update(STORE_DIR=str(store), STORE_DB=str(Path(tmp, "store.db")))
         folders = (str(ROOT), tmp)
         _forget(folders)
+        saved_path = list(sys.path)
         cwd = os.getcwd()
         os.chdir(tmp)
         try:
-            pytest.main([str(ROOT / test_file), f"--junitxml={report}", "-q", "-p", "no:cacheprovider"])
+            pytest.main([str(Path(tmp, "tests", test_name)), f"--junitxml={report}", "-q", "-p", "no:cacheprovider"])
         finally:
             os.chdir(cwd)
-            sys.path.remove(tmp)
+            sys.path[:] = saved_path
             _forget(folders)
         cases = ET.parse(report).getroot().iter("testcase") if report.exists() else []
         results = []
@@ -86,22 +92,21 @@ def setup_apps(base: str, data: str):
 def start_tutor():
     import tutor.app
     from tutor import runner
-    runner.run_tests, runner.run_store, runner.stop_store = _browser_tests, _browser_store, lambda: None
+    runner.run_test_code, runner.run_store, runner.stop_store = _browser_tests, _browser_store, lambda: None
     _apps["tutor"] = tutor.app.app
 
 
-async def _browser_tests(piece: str, code: str) -> list[dict]:
+async def _browser_tests(file: str, test_name: str, test_code: str, code: str) -> list[dict]:
     """The tutor's runner, in the browser: the page runs the tests in the separate tests worker."""
     from js import runTests
-    from tutor.pieces import PIECES
-    p = PIECES[piece]
-    return json.loads(await runTests(p["test"], json.dumps({f"store/pieces/{p['file']}": code})))
+    return json.loads(await runTests(json.dumps({"file": file, "test_name": test_name, "test_code": test_code, "code": code})))
 
 
 def _browser_store(passed: list[str]) -> dict:
+    from tutor.pieces import PIECES
     from tutor.progress import DATA
     try:
-        start_app("run", "store", {f"store/pieces/{piece}.py": (DATA / "learner" / f"{piece}.py").read_text() for piece in passed})
+        start_app("run", "store", {f"store/{PIECES[p]['file']}": (DATA / "learner" / PIECES[p]["file"]).read_text() for p in passed})
     except Exception as err:
         return {"error": "The store couldn't start.", "output": _short(repr(err), last=True)}
     return {"url": f"{BASE}/run/"}

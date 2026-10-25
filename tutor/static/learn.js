@@ -311,8 +311,8 @@ let criteriaText = {};
 
 function showTask(s) {
   const t = s.task;
-  $("round").textContent = `Round ${s.round} of ${s.total_rounds} · ${t.piece}`;
-  $("step-label").textContent = `Function ${s.step} of ${s.total_steps} · ${t.file}`;
+  $("round").textContent = t.piece;
+  $("step-label").textContent = `Function ${s.step} of ${s.total_steps} in your plan · ${t.file}`;
   $("fn-signature").textContent = t.signature;
   $("fn-description").textContent = t.description;
   $("criteria").innerHTML = t.criteria
@@ -322,7 +322,7 @@ function showTask(s) {
   $("task-breaks").textContent = t.breaks;
   $("task-refs").innerHTML = t.references
     .map(r => `<details open><summary><code>${escapeHtml(r.name)}</code> in ${escapeHtml(r.file)}</summary><pre>${escapeHtml(r.code)}</pre></details>`).join("");
-  $("next").textContent = s.step < s.total_steps ? "Next function →" : "Next piece →";
+  $("next").textContent = "Next function →";
 }
 
 // Marks each criterion ✓ or ✗ from the latest test run.
@@ -362,7 +362,7 @@ function afterPass() {
   $("save-state").textContent = "This function is yours now.";
   if (allDone) {
     $("results").insertAdjacentHTML("beforeend",
-      `<p class="done-note">That's every function. The login and the cart are your code now. Click <strong>Run project</strong> to see your store working end to end.</p>`);
+      `<p class="done-note">That's every function in your plan. Click <strong>Run project</strong> to see the store running on your code, or add more functions to your plan on the project page.</p>`);
   } else {
     $("next").hidden = false;
   }
@@ -370,7 +370,14 @@ function afterPass() {
 
 $("next").onclick = async () => {
   $("next").disabled = true;
-  await api("POST", "api/next");
+  $("next").textContent = "Chip is preparing it…";  // a function without a hand-made card gets its card and tests written
+  const s = await api("POST", "api/next");
+  if (s.error) {
+    $("next").disabled = false;
+    $("next").textContent = "Next function →";
+    $("results").insertAdjacentHTML("beforeend", `<p class="summary fail">${escapeHtml(s.error)}</p>`);
+    return;
+  }
   location.reload();
 };
 
@@ -438,6 +445,10 @@ $("submit").onclick = async () => {
     allDone = res.all_done;
     celebrate();
     afterPass();
+    if (res.shown_claim) {
+      $("results").insertAdjacentHTML("beforeend",
+        `<p class="done-note">★ Spot check passed: you've <strong>shown</strong> "${escapeHtml(res.shown_claim)}". It's marked in your profile.</p>`);
+    }
     setMode("check");
     openTutor();
   } else getHint(true);

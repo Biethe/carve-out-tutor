@@ -9,8 +9,9 @@ const DATA = "/persist/data";
 async function boot(data) {
   role = data.role;
   py = await loadPyodide();
-  await py.loadPackage(role === "tests" ? ["pytest"] : ["micropip", "jinja2", "sqlite3", "pydantic"]);
-  if (role === "apps") await py.pyimport("micropip").install(["fastapi", "python-multipart", "itsdangerous"]);
+  // Both need the store's libraries: tests can import the store's web app and database too.
+  await py.loadPackage(["micropip", "jinja2", "sqlite3", "pydantic", ...(role === "tests" ? ["pytest"] : [])]);
+  await py.pyimport("micropip").install(["fastapi", "python-multipart", "itsdangerous"]);
   const files = await (await fetch(data.root + "web/files.json")).json();
   await Promise.all(files.map(async path => {
     const bytes = new Uint8Array(await (await fetch(data.root + path)).arrayBuffer());
@@ -37,15 +38,15 @@ const sync = load => new Promise((ok, fail) => py.FS.syncfs(load, err => (err ? 
 // The tutor asks for tests through the page, which owns the tests worker and its time limit.
 let nextTest = 0;
 const testReplies = new Map();
-self.runTests = (test, overrides) => new Promise(resolve => {
+self.runTests = job => new Promise(resolve => {
   const id = ++nextTest;
   testReplies.set(id, resolve);
-  postMessage({ type: "run-tests", id, test, overrides });
+  postMessage({ type: "run-tests", id, job });
 });
 
 const handlers = {
   init: data => boot(data).then(() => ({ ready: true })),
-  tests: ({ test, overrides }) => JSON.parse(bridge.run_tests(test, JSON.stringify(overrides || {}))),
+  tests: ({ job }) => JSON.parse(bridge.run_tests(job.file, job.test_name, job.test_code, job.code)),
   "tests-done": ({ testId, results }) => { testReplies.get(testId)?.(results); testReplies.delete(testId); },
   http: async ({ req }) => {
     const res = await bridge.handle(req.mount, req.method, req.path, req.query, JSON.stringify(req.headers), new Uint8Array(req.body));

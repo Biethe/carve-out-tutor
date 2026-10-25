@@ -35,11 +35,11 @@ const Python = (() => {
 
   const apps = worker("apps"), tests = worker("tests");
 
-  async function runTestsFor({ id, test, overrides }) {
+  async function runTestsFor({ id, job }) {
     let results;
     try {
       await tests.ready;
-      results = await tests.send("tests", { test, overrides: JSON.parse(overrides) }, TEST_LIMIT);
+      results = await tests.send("tests", { job: JSON.parse(job) }, TEST_LIMIT);
     } catch (err) {
       results = [{ name: "time limit", passed: false, message: err.message === "timeout"
         ? `Your code ran for more than ${TEST_LIMIT / 1000} seconds. Is there a loop that never ends?`

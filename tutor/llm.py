@@ -52,8 +52,11 @@ async def _post(url: str, headers: dict, body: dict) -> dict:
 
     def send():
         request = urllib.request.Request(url, json.dumps(body).encode(), {**headers, "User-Agent": "carve-out-tutor"})
-        with urllib.request.urlopen(request, timeout=30) as reply:
-            return json.load(reply)
+        try:
+            with urllib.request.urlopen(request, timeout=60) as reply:
+                return json.load(reply)
+        except urllib.error.HTTPError as err:
+            raise RuntimeError(f"{err.code}: {err.read().decode('utf-8', 'replace')}") from None
     return await asyncio.to_thread(send)
 
 
@@ -107,7 +110,15 @@ async def _chat(system: str, user: str, json_mode: bool = False) -> str:
     if json_mode:
         body["response_format"] = {"type": "json_object"}
     url = _env("LLM_BASE_URL", DEFAULTS["LLM_BASE_URL"]).rstrip("/") + "/chat/completions"
-    reply = await _post(url, {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, body)
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    try:
+        reply = await _post(url, headers, body)
+    except Exception as err:  # free plans limit tokens per minute: wait as long as asked (up to 20 s), once
+        wait = re.search(r"try again in (?:(\d+)m)?([\d.]+)s", str(err))
+        if not ("429" in str(err) or "rate_limit" in str(err) or "Too Many" in str(err)):
+            raise
+        await asyncio.sleep(min(20.0, (int(wait[1] or 0) * 60 + float(wait[2]) + 0.5) if wait else 10.0))
+        reply = await _post(url, headers, body)
     text = reply["choices"][0]["message"]["content"] or ""
     # House style: no em or en dashes in anything the learner reads.
     return text.replace(" — ", ", ").replace("—", ", ").replace(" – ", " - ").replace("–", "-")
@@ -287,6 +298,94 @@ async def interview(history: list[dict], finish: bool) -> dict | None:
             if data.get("question"):
                 return {"done": False, "question": _strip_code(str(data["question"])), "feedback": str(data.get("feedback") or "")}
         except (ValueError, KeyError, TypeError, AttributeError):
+            continue
+        except NoKey:
+            raise
+        except Exception:
+            return None
+    return None
+
+
+CARD_RULES = """A learner will rewrite ONE function of a small, working Python web app (FastAPI, Jinja2 templates, SQLite)
+from an empty stub. Write their task card and the pytest tests their version must pass.
+Card, in plain words for a beginner, never giving away the code:
+- "description": 2-3 sentences: what the function receives, what it must do and give back. No implementation steps.
+- "breaks": one sentence: what goes wrong in the app if this function is wrong.
+- "question": ONE narrow question about why it's written this way (asked after they pass). "answer": 2-3 sentences.
+- "criteria": one {"test": "<test function name>", "text": "..."} per test. The text says what the FUNCTION must do,
+  like "Returns every user with their password hash" or "A wrong password shows the login page again", never how
+  the test does it (not "Calls db.init(), then...").
+Tests ("tests": a complete pytest file as a string), 2 to 4 small test functions:
+- The store's folder is already on sys.path: just import modules by name (import db, import app, from cart import add_item).
+  Never change sys.path, os.environ or STORE_DB, and never open the database file yourself: use the db module's functions.
+- Every test starts with an empty database. Call db.init() first if the database is needed;
+  init() creates the tables and the demo user "learner" with password "carve123" and 8 assets.
+- No server, no network, no TestClient, no async. Call the function directly.
+  A route gets a fake request: types.SimpleNamespace(session={}) (put keys in session as needed).
+  Check what it returns: .status_code, .headers["location"], .template.name, .context["..."], or the session dict.
+- Test the behaviour the app relies on (see "Where it's used"), not private details.
+- They must PASS on the original function and FAIL if the function just raises NotImplementedError.
+  Never write a test about the stub itself (no test that expects NotImplementedError).
+Reply in exactly this format, nothing else:
+CARD:
+{"description": "...", "breaks": "...", "question": "...", "answer": "...", "criteria": [...]}
+TESTS:
+```python
+<the complete pytest file>
+```"""
+
+
+async def card(piece: str, name: str, context: dict, problem: str = "") -> dict | None:
+    """A card and tests for one function. None if the AI is unavailable or keeps replying badly."""
+    user = (f"The file {context['file']}:\n{context['source']}\n\nThe function to rewrite:\n{context['function']}\n\n"
+            "Where it's used:\n" + "\n".join(f"- {c}" for c in context["call_sites"])
+            + (f"\n\nThe code that calls it:\n{context['callers']}" if context["callers"] else ""))
+    if problem:
+        user += f"\n\nYour previous tests had a problem. Fix it:\n{problem}"
+    for _ in range(3):
+        try:
+            # Not JSON mode: escaping a whole test file inside JSON often fails. The card is JSON, the tests a code block.
+            reply = await _chat(CARD_RULES, user)
+            data = json.loads(reply[reply.index("{"):reply.index("TESTS:")].strip().rstrip("`").strip())
+            tests = re.search(r"```(?:python)?\n(.*?)```", reply, re.S)[1].strip() + "\n"
+            return {"description": str(data["description"]), "breaks": str(data.get("breaks") or ""),
+                    "question": str(data["question"]), "answer": str(data.get("answer") or ""), "tests": tests,
+                    "criteria": [c for c in data.get("criteria") or [] if isinstance(c, dict) and "test" in c and "text" in c]}
+        except (ValueError, KeyError, TypeError, IndexError):
+            continue
+        except NoKey:
+            raise
+        except Exception as err:
+            if "429" in str(err) or "rate_limit" in str(err):
+                await asyncio.sleep(30)  # cards are written in the background: waiting out the minute is fine
+                continue
+            return None
+    return None
+
+
+PLAN_RULES = """You plan which functions of a small Python web app a learner rewrites, from their profile.
+Mark "write" for what's worth learning for them: their gaps and goals first, then the key spots of the app
+(login, password hashing, sessions, the cart, the database). Mark "keep" for plain glue or things they clearly know.
+Pick 1 or 2 functions that test a skill they CLAIMED as "spot_checks", marked "write" too, to check the claim.
+Order the "write" ones from most useful to least. Aim for about a third of the functions for a beginner,
+half for an intermediate learner, and most for an advanced one.
+Reply with JSON only: {"order": ["piece.function", ...] (the write ones, in order),
+"keep": ["piece.function", ...], "reasons": {"piece.function": "why, in under 10 words"},
+"spot_checks": [{"function": "piece.function", "claim": "<the claimed skill, as written in the profile>"}]}"""
+
+
+async def plan(profile: dict, functions: list[dict]) -> dict | None:
+    """A suggested plan: {order, keep, reasons, spot_checks}. None if the AI is unavailable."""
+    listing = "\n".join(f"- {f['key']}: {f['signature']}  ({f['file']})" for f in functions)
+    who = (f"Level: {profile['level']}. {profile['summary']}\nClaims: " + "; ".join(c["skill"] for c in profile["claims"])
+           + "\nNew to them: " + "; ".join(profile.get("gaps") or []) + "\nGoals: " + "; ".join(profile["wants"]))
+    for _ in range(2):
+        try:
+            data = json.loads(await _chat(PLAN_RULES, f"The learner:\n{who}\n\nThe functions:\n{listing}", json_mode=True))
+            keys = {f["key"] for f in functions}
+            return {"order": [k for k in data["order"] if k in keys], "reasons": {k: str(v) for k, v in (data.get("reasons") or {}).items() if k in keys},
+                    "spot_checks": [s for s in data.get("spot_checks") or [] if isinstance(s, dict) and s.get("function") in keys]}
+        except (ValueError, KeyError, TypeError):
             continue
         except NoKey:
             raise

@@ -1,19 +1,21 @@
-"""The carvable pieces, in round order. Each piece is rebuilt one function at a time.
-Hand-written; reference code is pulled live from the store."""
+"""The carvable pieces: every .py file of the store, each rebuilt one function at a time.
+Six functions have hand-written cards (below). Every other function is found with ast, and its card and tests are
+written by the learner's AI the first time it's opened (tutor/cards.py). Reference code is pulled live from the store."""
 import ast
 from pathlib import Path
 
 STORE = Path(__file__).parent.parent / "store"
+ROOT = STORE.parent
 
 
 def _stub(signature: str, docstring: str) -> str:
     return f'def {signature}:\n    """{docstring}"""\n    # Your code here\n    raise NotImplementedError\n'
 
 
-PIECES = {
+HAND = {
     "auth": {
         "title": "Authentication",
-        "file": "auth.py",
+        "file": "pieces/auth.py",
         "test": "tests/test_auth.py",
         "functions": [
             {
@@ -77,7 +79,7 @@ PIECES = {
     },
     "cart": {
         "title": "Cart behavior",
-        "file": "cart.py",
+        "file": "pieces/cart.py",
         "test": "tests/test_cart.py",
         "functions": [
             {
@@ -142,13 +144,54 @@ PIECES = {
 }
 
 
+TITLES = {"app.py": "The web app's pages and forms", "db.py": "The database"}
+
+
+def _discover() -> dict:
+    """Every store file is a piece, every top-level function in it carvable. Hand-written cards win."""
+    pieces = {}
+    for path in sorted(STORE.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        file = str(path.relative_to(STORE))
+        key = path.stem
+        hand = HAND.get(key, {})
+        tree = ast.parse(path.read_text())
+        known = {f["name"]: f for f in hand.get("functions", [])}
+        functions = []
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef):
+                functions.append(known.get(node.name) or _auto(node))
+        pieces[key] = {"title": hand.get("title") or TITLES.get(file, file), "file": file,
+                       "test": hand.get("test"), "functions": functions}
+    return {k: pieces[k] for k in [*HAND, *sorted(set(pieces) - set(HAND))]}  # the hand-made rounds first
+
+
+def _auto(node: ast.FunctionDef) -> dict:
+    """A card from the code alone. tutor/cards.py adds the AI-written description, question and tests later."""
+    signature = next(line for line in ast.unparse(node).splitlines() if line.startswith(("def ", "async def ")))
+    signature = signature.removeprefix("async ").removeprefix("def ").removesuffix(":")
+    doc = ast.get_docstring(node) or ""
+    return {"name": node.name, "signature": signature, "description": doc, "auto": True,
+            "stub": _stub(signature, doc.split("\n")[0] or "Your code here."),
+            "criteria": [], "call_sites": [], "breaks": "", "references": [], "question": "", "answer": ""}
+
+
+PIECES = _discover()
+
+
 def function(piece: str, name: str) -> dict:
-    return next(f for f in PIECES[piece]["functions"] if f["name"] == name)
+    """A function's card: hand-written, or found by ast plus what the AI wrote for it (if it has been prepared)."""
+    base = next(f for f in PIECES[piece]["functions"] if f["name"] == name)
+    if not base.get("auto"):
+        return base
+    from tutor import cards  # imported here: cards needs this module
+    return {**base, **(cards.load(piece, name) or {})}
 
 
-def _function_spans(source: str) -> dict[str, tuple[int, int]]:
-    """1-based (first, last) line of each top-level function."""
-    return {n.name: (n.decorator_list[0].lineno if n.decorator_list else n.lineno, n.end_lineno)
+def _function_spans(source: str, decorators: bool = True) -> dict[str, tuple[int, int]]:
+    """1-based (first, last) line of each top-level function, from its decorators or from its `def` line."""
+    return {n.name: (n.decorator_list[0].lineno if n.decorator_list and decorators else n.lineno, n.end_lineno)
             for n in ast.parse(source).body if isinstance(n, ast.FunctionDef)}
 
 
@@ -164,9 +207,9 @@ def reference_code(file: str, name: str) -> str:
 def assemble(piece: str, snippets: dict[str, str]) -> str:
     """The piece's file with the learner's functions swapped in for the AI's.
     Anything in a snippet (imports, helpers) goes where the original function was."""
-    source = (STORE / "pieces" / PIECES[piece]["file"]).read_text()
+    source = (STORE / PIECES[piece]["file"]).read_text()
     lines = source.splitlines()
-    spans = _function_spans(source)
+    spans = _function_spans(source, decorators=False)  # a route's @app.get(...) stays; the learner writes the def
     for name in sorted(snippets, key=lambda n: spans[n][0], reverse=True):  # bottom-up keeps line numbers valid
         first, last = spans[name]
         lines[first - 1:last] = snippets[name].rstrip("\n").splitlines()
@@ -178,7 +221,7 @@ def task(piece: str, name: str) -> dict:
     p, f = PIECES[piece], function(piece, name)
     return {
         "piece": p["title"],
-        "file": f"store/pieces/{p['file']}",
+        "file": f"store/{p['file']}",
         "name": name,
         "signature": f["signature"],
         "description": f["description"],

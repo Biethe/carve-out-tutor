@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 
-from tutor.pieces import PIECES, assemble
+from tutor.pieces import HAND, PIECES, STORE, _function_spans, assemble
 
 ROOT = Path(__file__).parent.parent
 DATA = Path(os.environ.get("TUTOR_DATA", ROOT / "data"))  # override to keep test runs out of your real progress
@@ -41,15 +41,22 @@ def swapped(progress: dict) -> list[str]:
     return [piece for piece in PIECES if passed_snippets(progress, piece)]
 
 
+def plan(progress: dict) -> list[tuple[str, str]]:
+    """The functions the learner will write, in order: their saved plan, or else the hand-made rounds."""
+    if progress.get("plan"):
+        return [tuple(key.split(".", 1)) for key in progress["plan"]["order"] if progress["plan"]["marks"].get(key) == "write"]
+    return [(piece, f["name"]) for piece in HAND for f in PIECES[piece]["functions"]]
+
+
 def all_done(progress: dict) -> bool:
-    return all(f["status"] == "passed" for functions in progress["pieces"].values() for f in functions.values())
+    return all(progress["pieces"][piece][name]["status"] == "passed" for piece, name in plan(progress))
 
 
 def write_learner_file(progress: dict, piece: str):
     """data/learner/<file>: the piece with every passed function swapped in. Run project uses it."""
-    learner_dir = DATA / "learner"
-    learner_dir.mkdir(parents=True, exist_ok=True)
-    (learner_dir / PIECES[piece]["file"]).write_text(assemble(piece, passed_snippets(progress, piece)))
+    path = DATA / "learner" / PIECES[piece]["file"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(assemble(piece, passed_snippets(progress, piece)))
 
 
 def count_lines(code: str) -> int:
@@ -58,17 +65,19 @@ def count_lines(code: str) -> int:
 
 
 def ownership(progress: dict) -> float:
-    """Learner's lines ÷ all lines across the store's .py files as they'd run, as a percentage."""
-    files = {PIECES[p]["file"]: p for p in PIECES}
+    """The learner's share of the project's functions, in lines, as they'd run: writing every one is 100%.
+    (Imports and setup lines between functions aren't counted: there's nothing to carve there.)"""
     mine = total = 0
-    for path in (ROOT / "store").rglob("*.py"):
-        piece = files.get(path.name) if path.parent.name == "pieces" else None
-        snippets = passed_snippets(progress, piece) if piece else {}
-        if snippets:
-            mine += sum(count_lines(code) for code in snippets.values())
-            total += count_lines(assemble(piece, snippets))
-        else:
-            total += count_lines(path.read_text())
+    for piece, p in PIECES.items():
+        source = (STORE / p["file"]).read_text()
+        lines = source.splitlines()
+        for name, (first, last) in _function_spans(source, decorators=False).items():
+            f = progress["pieces"][piece].get(name)
+            if f and f["status"] == "passed":
+                mine += count_lines(f["draft"])
+                total += count_lines(f["draft"])
+            else:
+                total += count_lines("\n".join(lines[first - 1:last]))
     return round(100 * mine / total, 1) if total else 0.0
 
 
