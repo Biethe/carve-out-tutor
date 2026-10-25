@@ -246,7 +246,8 @@ async def answer(piece: str, name: str, question: str, code: str) -> str:
         return BUSY
 
 
-INTERVIEW_RULES = """You interview a new learner for a coding tutor, to find their real level before they rebuild parts of a
+INTERVIEW_RULES = """You are Chip, a friendly coding tutor. You've already introduced yourself and the learner said they're ready.
+You interview them to find their real level before they rebuild parts of a
 working Python web app: password hashing, login checks, sessions, a shopping cart, a SQLite database, and tests.
 Ask ONE short, narrow question at a time, easy to answer out loud in one sentence: no code, no lists of options.
 Each question pins down one concrete skill. Good: "Have you written a Python function that returns a dictionary?"
@@ -265,7 +266,7 @@ When you know enough: {"done": true, "level": "beginner" or "intermediate" or "a
 async def interview(history: list[dict], finish: bool) -> dict | None:
     """The next interview question, or the finished profile. None if the AI is unavailable; NoKey if there's no key."""
     talk = "\n".join(f"Tutor: {h['q']}\nLearner: {h['a']}" for h in history)
-    user = (f"The interview so far:\n{talk}\n\n" if history else "Start: greet them in a few words and ask the first question.\n\n")
+    user = (f"The interview so far:\n{talk}\n\n" if history else "Start: ask the first question. Don't greet them again.\n\n")
     if finish:
         user += "You have enough now. Finish: reply with the done JSON."
     for _ in range(2):  # one retry if the reply isn't valid JSON

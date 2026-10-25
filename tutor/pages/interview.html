@@ -23,13 +23,27 @@
   <main class="interview">
     <!-- 1. Before starting -->
     <section id="intro" hidden>
-      <p class="hero-note"><i class="ph-bold ph-scissors" aria-hidden="true"></i>before we cut anything</p>
-      <h1>Let's see what you <span class="carved">already know</span>.</h1>
-      <p class="lead">A few quick questions, about two minutes. Be honest: the tutor uses your answers to pick what you rebuild and how much help you get. Talk or type, whichever is faster.</p>
-      <div class="actions">
-        <button class="btn" id="start-voice"><i class="ph-bold ph-microphone" aria-hidden="true"></i> Start, out loud</button>
-        <button class="btn secondary" id="start-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> Start, typing</button>
+      <div class="meet">
+        <span class="avatar" id="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
+        <div>
+          <p class="hero-note">your tutor</p>
+          <h1>Hi, I'm <span class="carved">Chip</span>.</h1>
+        </div>
       </div>
+      <!-- Chip's introduction: read out loud line by line, each line lit up as it's spoken. -->
+      <ol class="script" id="script">
+        <li>I'm your coding tutor, and I'll be with you the whole way.</li>
+        <li>Here's how Carve-Out works. You start with an app that already works. I cut out one small piece, you write it back in, and the app keeps running with your code inside. Piece by piece, more of the app becomes yours.</li>
+        <li>Before we start, I'd like to get to know you. I'll ask a few quick questions about what you've already done with code. It takes about two minutes.</li>
+        <li>Be honest, there are no wrong answers. Your answers help me choose what you rebuild first, and how much help to give you.</li>
+        <li>You can talk to me, or type. So, are you ready?</li>
+      </ol>
+      <div class="actions">
+        <button class="btn secondary" id="hear"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i> Hear Chip</button>
+        <button class="btn" id="start-voice"><i class="ph-bold ph-microphone" aria-hidden="true"></i> I'm ready, let's talk</button>
+        <button class="btn secondary" id="start-type"><i class="ph-bold ph-keyboard" aria-hidden="true"></i> I'm ready, I'll type</button>
+      </div>
+      <p class="status" id="ready-status" role="status"></p>
       <p class="muted small" id="voice-note"></p>
     </section>
 
@@ -37,7 +51,7 @@
     <section id="chat" hidden>
       <p class="step-count" id="count"></p>
       <div class="card ask">
-        <span class="who">Tutor</span>
+        <span class="who">Chip</span>
         <p id="question" aria-live="polite"></p>
         <button class="icon-btn" id="replay" title="Say it again" aria-label="Say the question again"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i></button>
       </div>
@@ -89,7 +103,7 @@
     // ---- Asking -----------------------------------------------------------------
     async function next(answer = "") {
       $("send").disabled = true;
-      $("status").textContent = "The tutor is thinking…";
+      $("status").textContent = "Chip is thinking…";
       const res = await api("POST", "api/interview", { answer });
       $("send").disabled = false;
       $("status").textContent = "";
@@ -122,8 +136,29 @@
     $("replay").onclick = () => Voice.speak($("question").textContent);
     $("send").onclick = () => { Voice.stopListening(); const a = $("answer").value.trim(); if (a) next(a); };
     $("answer").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("send").click(); } };
-    $("start-voice").onclick = () => { $("hands-free").checked = true; show("chat"); next(); };
-    $("start-type").onclick = () => { $("hands-free").checked = false; show("chat"); next(); $("answer").focus(); };
+    // ---- Chip introduces itself, then asks if they're ready -----------------------
+    const lines = [...document.querySelectorAll("#script li")];
+    async function introduce() {
+      $("avatar").classList.add("talking");
+      for (const line of lines) {
+        lines.forEach(l => l.classList.toggle("now", l === line));
+        await Voice.speak(line.textContent);
+        if (!$("avatar").classList.contains("talking")) return;  // stopped: they've started
+      }
+      lines.forEach(l => l.classList.remove("now"));
+      $("avatar").classList.remove("talking");
+      if (!Voice.canListen) return;
+      $("ready-status").textContent = "Listening… say \"yes\" when you're ready.";
+      const said = await Voice.listen();
+      if (/\b(yes|yeah|yep|ready|sure|ok|okay|let's|go|start)\b/i.test(said)) return $("start-voice").click();
+      $("ready-status").textContent = "No rush. Tap a button when you're ready.";
+      Voice.speak("No rush. Tap a button when you're ready.");
+    }
+    $("hear").onclick = introduce;
+    const stopIntro = () => { $("avatar").classList.remove("talking"); Voice.stopSpeaking(); Voice.stopListening(); };
+
+    $("start-voice").onclick = () => { stopIntro(); $("hands-free").checked = true; show("chat"); next(); };
+    $("start-type").onclick = () => { stopIntro(); $("hands-free").checked = false; show("chat"); next(); $("answer").focus(); };
 
     // ---- The profile ------------------------------------------------------------
     function showProfile(p) {
