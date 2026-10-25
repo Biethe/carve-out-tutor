@@ -23,6 +23,7 @@ async function boot(data) {
   py.FS.writeFile("/bridge/bridge.py", await (await fetch(data.root + "web/bridge.py")).text());
   py.runPython("import sys; sys.path.insert(0, '/bridge')");
   bridge = py.pyimport("bridge");
+  py.runPython("import os; os.environ.setdefault('MPLBACKEND', 'Agg')");  // matplotlib draws to images, no screen here
   if (role === "apps") {
     py.FS.mkdirTree("/persist");
     py.FS.mount(py.FS.filesystems.IDBFS, {}, "/persist");

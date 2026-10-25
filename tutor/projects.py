@@ -76,6 +76,20 @@ def requirements(root: Path) -> list[str]:
             if line.split("#")[0].strip() and not line.startswith(("-", "git+"))]
 
 
+def needs(root: Path) -> list[str]:
+    """Packages to install before running or testing: what the code imports (mapped to package names, e.g.
+    PIL -> pillow) plus what requirements.txt lists, without version pins (a pin browser Python can't match would
+    stop the install), and never the ones that can't run in a browser anyway."""
+    from tutor import compat
+    built_in = compat.BUILTIN["imports"]
+    report_ = compat.load(root.name) or {}
+    impossible = {l["name"] for l in report_.get("libraries", []) if l["status"] == "can't run in a browser"}
+    imported = set().union(*compat._imports(root).values()) if compat._imports(root) else set()
+    names = {built_in.get(m) or compat.KNOWN.get(m, m) for m in imported - impossible}
+    names |= {re.split(r"[<>=!~\[; ]", r)[0].strip() for r in requirements(root)} - impossible
+    return sorted(n for n in names if n)
+
+
 def report(name: str) -> dict:
     """The safety check's result for an uploaded project (tutor/safety.py writes it)."""
     path = progress.DATA / "work" / name / "safety.json"

@@ -110,7 +110,7 @@ async def _browser_tests(file: str, test_name: str, test_code: str, code: str) -
     if pieces.STORE != pieces.BUILTIN:
         job["files"] = {str(p.relative_to(pieces.STORE)): p.read_text(errors="replace") for p in pieces.STORE.rglob("*")
                         if p.is_file() and p.suffix in (".py", ".txt", ".html", ".json", ".cfg", ".toml", ".ini", ".csv", ".sql")}
-        job["requirements"] = projects.requirements(pieces.STORE)
+        job["requirements"] = projects.needs(pieces.STORE)
     return json.loads(await runTests(json.dumps(job)))
 
 
@@ -126,10 +126,13 @@ async def _browser_store(passed: list[str]) -> dict:
     if why := compat.why_blocked(app_file):
         return {"error": "This project can't run in the browser. " + why}
     try:
-        needs = projects.requirements(pieces.STORE)
-        if needs:
-            import micropip
-            await micropip.install(needs)
+        import micropip
+        os.environ.setdefault("MPLBACKEND", "Agg")  # matplotlib draws to images: there's no screen in a worker
+        for package in projects.needs(pieces.STORE):  # one at a time: one that can't install doesn't stop the rest
+            try:
+                await micropip.install(package)
+            except Exception:
+                pass
         start_app("run", pieces.STORE, how, {PIECES[p]["file"]: (progress.work() / "learner" / PIECES[p]["file"]).read_text() for p in passed})
     except Exception as err:
         return {"error": "The project couldn't start in the browser.", "output": _short(repr(err), last=True)}
