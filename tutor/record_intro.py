@@ -1,6 +1,7 @@
 """Records everything Chip says during onboarding (tutor/onboarding.py LINES), once, into tutor/static/voice/<id>.wav:
 the same voice for every line, plays instantly, no AI call and no key needed when someone onboards.
-One natural take per line, at natural speed, with no acted delivery: stitching and speeding up are what sound artificial.
+One natural take per line, at natural speed: stitching and speeding up are what sound artificial. The delivery is
+Orpheus' "excited" direction, chosen by ear from five versions: a welcome should sound happy to see you.
     python -m tutor.record_intro           # records the lines that have no clip yet
     python -m tutor.record_intro --again   # records every line again (after changing the words or the voice)
 Needs a Groq key with Orpheus' terms accepted. The free plan allows about 3,600 characters a day: if it runs out,
@@ -15,6 +16,7 @@ from tutor import llm
 from tutor.onboarding import LINES
 
 VOICE = "hannah"
+DIRECTION = "[excited]"
 DIR = Path(__file__).parent / "static" / "voice"
 
 
@@ -27,7 +29,7 @@ async def record(line_id: str, text: str) -> str | None:
     """Records one line. Returns None, or why it couldn't (the daily limit, with when to try again)."""
     for _ in range(8):
         try:
-            audio = await llm.speech(text, voice=VOICE, direction=None)
+            audio = await llm.speech(text, voice=VOICE, direction=DIRECTION)
             break
         except RuntimeError as err:
             daily = re.search(r"tokens per day.*?try again in ([\w.]+)", str(err))

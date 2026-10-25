@@ -11,14 +11,16 @@ QUESTIONS = {
     "data_easy": ("Have you saved data in a database before?", "Saving data in a database"),
 }
 # Everything Chip says during onboarding, recorded once (tutor/record_intro.py): clip id -> words.
+# Upbeat on purpose: it's a welcome. The spoken questions get a little lead-in that stays off the screen.
+LEAD_IN = {"python": "Okay! ", "data_hard": "Last one! ", "data_easy": "Last one! "}
 LINES = {
-    "intro": "Hey, I'm Chip. You'll rebuild small pieces of a real app... and it keeps running, on your code. "
-             "Three quick yes or no questions, and we're off.",
-    **{qid: text for qid, (text, _) in QUESTIONS.items()},
-    "yes": "Nice.",
-    "no": "No problem.",
-    "again": "Sorry, was that a yes, or a no?",
-    "closing": "That's all I need. Let's build.",
+    "intro": "Hey, welcome! I'm Chip! You're about to rebuild pieces of a real app, and watch it keep running on your code. "
+             "Three quick yes or no questions, and we're off!",
+    **{qid: LEAD_IN.get(qid, "") + text for qid, (text, _) in QUESTIONS.items()},
+    "yes": "Nice!",
+    "no": "No problem at all!",
+    "again": "Oops, I missed that! Was it a yes, or a no?",
+    "closing": "Awesome, that's all I need! Let's build!",
 }
 
 
@@ -26,7 +28,7 @@ def tree() -> dict:
     """What the page needs: the first question, and which question follows a yes or a no."""
     return {"first": "python", "next": {"python": ["web_hard", "web_easy"], "web_hard": ["data_hard", "data_easy"],
                                         "web_easy": ["data_hard", "data_easy"]},
-            "questions": {qid: text for qid, (text, _) in QUESTIONS.items()}, "lines": LINES}
+            "questions": {qid: text for qid, (text, _) in QUESTIONS.items()}, "lines": LINES}  # the screen shows no lead-in
 
 
 def profile(answers: list[tuple[str, bool]]) -> dict:
