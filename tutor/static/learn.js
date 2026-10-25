@@ -36,6 +36,7 @@ function bigEditor(on) {
   $("editor-size").firstElementChild.className = "ph-bold " + (on ? "ph-arrows-in" : "ph-arrows-out");
   editor.refresh?.();  // CodeMirror re-measures after its box changes size
 }
+addEventListener("codefontchange", () => editor.refresh?.());  // CodeMirror re-measures the new font
 $("editor-size").onclick = () => bigEditor($("editor-size").getAttribute("aria-pressed") !== "true");
 addEventListener("keydown", e => { if (e.key === "Escape" && document.querySelector(".editor-full") && !document.querySelector("dialog[open]")) bigEditor(false); });
 

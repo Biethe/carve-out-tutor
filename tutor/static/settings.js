@@ -26,6 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
       <label>Address <input name="base_url" required spellcheck="false"></label>
       <label>Model <input name="model" required spellcheck="false"></label>
       <label>Key <input name="api_key" type="password" autocomplete="off" spellcheck="false"></label>
+      <label>Code font <select name="code_font">
+        <option value="hand">Handwritten (Shantell Sans)</option>
+        <option value="mono">Classic mono (JetBrains Mono)</option>
+        <option value="legible">Extra readable (Atkinson Hyperlegible Mono)</option>
+      </select></label>
+      <pre class="font-preview" aria-hidden="true">def check_login(user: str) -> bool:
+    return user in users  # 0O 1lI</pre>
       <p class="small"><a class="get-key" target="_blank" rel="noopener">Get a free key</a> <span class="key-state muted"></span></p>
       <div class="chat-buttons"><button class="btn" value="save">Save</button><button class="btn secondary" value="cancel" formnovalidate>Cancel</button></div>
     </form>`;
@@ -41,6 +48,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   field("provider").onchange = () => pick(field("provider").value);
 
+  // The code font changes straight away (with a preview) and is kept in this browser.
+  field("code_font").onchange = () => {
+    document.documentElement.dataset.codeFont = field("code_font").value;
+    try { localStorage.setItem("codeFont", field("code_font").value); } catch (e) {}
+    dispatchEvent(new CustomEvent("codefontchange"));
+  };
+
   gear.onclick = async () => {
     const s = await fetch("api/settings").then(r => r.json());
     const key = Object.keys(PROVIDERS).find(k => PROVIDERS[k].url && s.base_url.startsWith(PROVIDERS[k].url)) || "other";
@@ -48,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     field("base_url").value = s.base_url;
     field("model").value = s.model;
     field("api_key").value = "";
+    field("code_font").value = document.documentElement.dataset.codeFont || "hand";
     field("api_key").placeholder = s.key_end ? "Saved key ending in " + s.key_end : "Paste your key";
     form.querySelector(".key-state").textContent = s.key_end ? "" : s.demo
       ? "No key needed to try it: you're using the shared demo. Add your own for unlimited use." : "No key yet.";

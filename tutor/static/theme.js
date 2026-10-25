@@ -6,6 +6,9 @@
   var saved = null;
   try { saved = localStorage.getItem("theme"); } catch (e) {}
   root.dataset.theme = saved || (system.matches ? "night" : "paper");
+  var codeFont = null;
+  try { codeFont = localStorage.getItem("codeFont"); } catch (e) {}
+  root.dataset.codeFont = codeFont || "hand";  // the editor's font, chosen in Settings
 
   function mark() {
     document.querySelectorAll("[data-theme-choice]").forEach(function (b) {

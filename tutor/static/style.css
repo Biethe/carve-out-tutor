@@ -4,7 +4,7 @@
    The identity is the cut: a dashed outline and scissors around the piece you rebuild. Shapes: cards 18px, inputs and editor 14px, buttons and chips fully round.
    Every surface gets a 2px ink border and a hard offset shadow, so things feel like paper you can press. */
 
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..900,0..100,0..1;1,9..144,400..900,0..100,0..1&family=Shantell+Sans:ital,wght,BNCE,INFM@0,300..800,-100..100,0..100;1,300..800,-100..100,0..100&family=Caveat:wght@500..700&family=Figtree:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..900,0..100,0..1;1,9..144,400..900,0..100,0..1&family=Shantell+Sans:ital,wght,BNCE,INFM@0,300..800,-100..100,0..100;1,300..800,-100..100,0..100&family=Caveat:wght@500..700&family=Figtree:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;600&family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap");
 
 /* ---------- Themes ---------------------------------------------------------- */
 :root, [data-theme="paper"] {
@@ -365,10 +365,15 @@ summary { cursor: pointer; padding: 9px 14px; font-size: 15px; font-weight: 600;
 details pre { margin: 0; padding: 14px; background: var(--cm-bg); border-top: 2px solid var(--hairline); overflow-x: auto; font-size: 13px; line-height: 1.55; }
 
 .editor-wrap { flex: 1; min-height: 260px; border: 2px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--cm-bg); box-shadow: 5px 5px 0 var(--shadow); }
-/* The code you write is handwritten. Colors and weights still tell keywords, names and types apart. */
-.editor-wrap .CodeMirror, .editor-wrap textarea, details pre, .clean-code {
-  font-family: var(--code-hand); font-variation-settings: "INFM" 100, "BNCE" 25;
+/* The code font is the learner's choice (Settings): handwritten by default, or a classic or extra-readable mono.
+   Colors and weights still tell keywords, names and types apart. */
+:root { --code-font: var(--code-hand); --code-axes: "INFM" 100, "BNCE" 25; }
+:root[data-code-font="mono"] { --code-font: "JetBrains Mono", ui-monospace, monospace; --code-axes: normal; }
+:root[data-code-font="legible"] { --code-font: "Atkinson Hyperlegible Mono", ui-monospace, monospace; --code-axes: normal; }
+.editor-wrap .CodeMirror, .editor-wrap textarea, details pre, .clean-code, .font-preview {
+  font-family: var(--code-font); font-variation-settings: var(--code-axes);
 }
+:root:not([data-code-font="hand"]) .editor-wrap .CodeMirror { font-size: 15px; }  /* a mono looks bigger than handwriting */
 .editor-wrap { position: relative; }
 .editor-size {
   position: absolute; top: 10px; right: 10px; z-index: 5;
@@ -660,3 +665,4 @@ img.model { object-fit: contain !important; padding: 6%; background: radial-grad
 .yesno { display: flex; justify-content: center; gap: 16px; margin: 18px 0 8px; }
 .yesno .btn { min-width: 132px; min-height: 56px; font-size: 20px; }
 .interview .lead.center { margin-left: auto; margin-right: auto; text-align: center; }
+.settings-dialog .font-preview { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--cm-bg); border: 2px solid var(--hairline); font-size: 14px; white-space: pre; overflow-x: auto; }
