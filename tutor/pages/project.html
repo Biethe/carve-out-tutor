@@ -48,6 +48,14 @@
         <button class="btn secondary" id="download"><i class="ph-bold ph-download-simple" aria-hidden="true"></i> Download with my code</button>
       </div>
       <p class="status" id="run-status" role="status">Try the finished project first. It opens in a new tab.</p>
+      <div class="delete-project" id="delete-area" hidden>
+        <button class="link danger" id="delete-ask"><i class="ph-bold ph-trash" aria-hidden="true"></i> Delete this project</button>
+        <div class="confirm" id="delete-confirm" hidden>
+          <p>Delete <strong id="delete-name"></strong>? Its files and your progress on it go too.</p>
+          <button class="btn small danger" id="delete-yes">Delete</button>
+          <button class="link" id="delete-no">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <aside class="project-side">
@@ -77,6 +85,15 @@
         if (info.error) { document.querySelector("main").innerHTML = `<p class="lead">${info.error} <a href="/">Back to projects</a></p>`; return; }
         if (opening) history.replaceState(null, "", "project");
         if (info.builtin) return;
+        // Uploaded projects can be deleted from here too (asked first).
+        document.getElementById("delete-area").hidden = false;
+        document.getElementById("delete-name").textContent = info.name;
+        document.getElementById("delete-ask").onclick = () => (document.getElementById("delete-confirm").hidden = false);
+        document.getElementById("delete-no").onclick = () => (document.getElementById("delete-confirm").hidden = true);
+        document.getElementById("delete-yes").onclick = async () => {
+          await fetch(`api/projects/${encodeURIComponent(info.name)}`, { method: "DELETE" });
+          location.href = "./#mine";  // relative: the tutor lives under a path on the published site
+        };
         const kinds = { asgi: "a Python web app, running in your browser", wsgi: "a Flask web app, running in your browser",
                         static: "a web page, running in your browser", tests: "Python code, checked with tests" };
         document.getElementById("p-name").textContent = info.name;

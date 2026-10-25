@@ -115,9 +115,32 @@ def report(name: str) -> dict:
     return json.loads(path.read_text()) if path.exists() else {"blocked": True, "reasons": ["Not checked yet."]}
 
 
+def _count(root: Path) -> tuple[int, int]:
+    """(functions, files) in a project's own Python code."""
+    import ast
+    files = pieces.python_files(root)
+    functions = 0
+    for f in files:
+        try:
+            functions += sum(isinstance(n, ast.FunctionDef) for n in ast.parse(f.read_text(errors="replace")).body)
+        except SyntaxError:
+            pass
+    return functions, len(files)
+
+
 def listing() -> list[dict]:
-    return [{"name": p.name, "kind": kind(p)["kind"], **{k: v for k, v in report(p.name).items() if k in ("blocked", "reasons", "warnings")}}
-            for p in sorted(UPLOADS.iterdir()) if p.is_dir()] if UPLOADS.exists() else []
+    """The uploaded projects, for the catalog: kind, size, the safety check, and whether they run in the browser."""
+    from tutor import compat
+    out = []
+    for p in sorted(UPLOADS.iterdir()) if UPLOADS.exists() else []:
+        if not p.is_dir():
+            continue
+        functions, files = _count(p)
+        fit = compat.load(p.name)
+        out.append({"name": p.name, "kind": kind(p)["kind"], "functions": functions, "files": files,
+                    "fit": fit["verdict"] if fit else None,
+                    **{k: v for k, v in report(p.name).items() if k in ("blocked", "reasons", "warnings")}})
+    return out
 
 
 def active() -> str:

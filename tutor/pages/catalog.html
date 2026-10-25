@@ -103,21 +103,29 @@
           <p>A tiny two-player game that runs in the browser.</p>
           <div class="chips"><span class="chip">JavaScript</span><span class="chip">Canvas</span></div>
         </div>
-        <div class="card p-upload">
-          <i class="ph-bold ph-upload-simple icon" aria-hidden="true"></i>
-          <h3>Bring your own project</h3>
-          <p>Upload a working project as a <strong>.zip</strong>, for example one you downloaded from GitHub. Python web apps and plain web pages run right here; other Python code gets tests.</p>
-          <label class="btn small"><i class="ph-bold ph-file-zip" aria-hidden="true"></i> Upload a .zip
-            <input type="file" id="upload" accept=".zip,application/zip" hidden></label>
-          <p class="small muted">Only upload projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
-          <div class="upload-result" id="upload-result" role="status"></div>
-        </div>
-        <div id="uploads" class="uploads"></div>
         <div class="card p-idea" aria-disabled="true">
           <span class="chip soon">Coming soon</span>
           <i class="ph-bold ph-lightbulb icon" aria-hidden="true"></i>
           <h3>Your own idea</h3>
           <p>Describe what you want to build. The tutor makes it, then carves it up for you.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Your own projects: upload a zip, then open or delete them. -->
+    <section class="mine" id="mine" aria-labelledby="mine-title">
+      <h2 id="mine-title">Your projects</h2>
+      <p class="lead">Bring a working project, for example one you downloaded from GitHub as a <strong>.zip</strong>. Python web apps and plain web pages run right here; other Python code gets tests.</p>
+      <div class="mine-grid" id="uploads">
+        <div class="card drop-card">
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="upload" accept=".zip,application/zip" hidden>
+            <i class="ph-bold ph-file-zip" aria-hidden="true"></i>
+            <strong>Drop a .zip here</strong>
+            <span>or click to choose one</span>
+          </label>
+          <p class="small muted">Only upload projects you trust: Chip checks for harmful code first, but no check catches everything.</p>
+          <div class="upload-result" id="upload-result" role="status"></div>
         </div>
       </div>
     </section>
@@ -132,42 +140,64 @@
   <script>
     // First launch: the interview comes first, so the tutor knows who it's teaching.
     fetch("api/profile").then(r => r.json()).then(p => { if (!p.done) location.replace("interview"); }).catch(() => {});
-    // ---- Bring your own project ------------------------------------------------------
+    // ---- Your projects: upload, open, delete --------------------------------------------
     const esc = t => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
-    const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page", tests: "Python, tests only" };
+    const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page", tests: "Python code, tests only" };
+    const FIT = { full: "✅ Runs fully in your browser", partial: "⚠️ Partly runs in your browser", none: "❌ Needs your own computer" };
+    const grid = document.getElementById("uploads"), drop = grid.querySelector(".drop-card");
+
     function showUploads({ projects }) {
-      document.getElementById("uploads").innerHTML = projects.map(p => `
-        <div class="card p-mine${p.blocked ? " blocked" : ""}">
-          <button class="icon-btn remove" data-remove="${esc(p.name)}" aria-label="Remove ${esc(p.name)}"><i class="ph-bold ph-trash" aria-hidden="true"></i></button>
-          <i class="ph-bold ${p.blocked ? "ph-shield-warning" : "ph-folder-open"} icon" aria-hidden="true"></i>
-          <h3>${esc(p.name)}</h3>
-          <div class="chips"><span class="chip">${KIND[p.kind]}</span>${p.blocked ? `<span class="chip soon">Blocked</span>` : ""}</div>
-          ${p.blocked ? `<ul class="small">${p.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>`
-                      : `<a class="btn small" href="project?open=${encodeURIComponent(p.name)}">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>`}
-        </div>`).join("");
+      grid.querySelectorAll(".p-mine").forEach(card => card.remove());
+      drop.insertAdjacentHTML("afterend", projects.map(p => `
+        <article class="card p-mine${p.blocked ? " blocked" : ""}" data-name="${esc(p.name)}">
+          <h3><i class="ph-bold ${p.blocked ? "ph-shield-warning" : "ph-folder-open"}" aria-hidden="true"></i>${esc(p.name)}</h3>
+          <p class="meta">${KIND[p.kind]} · ${p.functions} function${p.functions === 1 ? "" : "s"} in ${p.files} file${p.files === 1 ? "" : "s"}</p>
+          <p class="fit">${p.blocked ? "🛡️ Blocked by the safety check" : FIT[p.fit] || ""}</p>
+          ${p.blocked ? `<ul class="small">${p.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+          <div class="row">
+            ${p.blocked ? "" : `<a class="btn small" href="project?open=${encodeURIComponent(p.name)}">Open <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>`}
+            <button class="link danger" data-ask-delete>Delete</button>
+          </div>
+          <div class="confirm" hidden>
+            <p>Delete <strong>${esc(p.name)}</strong>? Its files and your progress on it go too.</p>
+            <div class="row"><button class="btn small danger" data-delete>Delete</button><button class="link" data-cancel>Cancel</button></div>
+          </div>
+        </article>`).join(""));
     }
     fetch("api/projects").then(r => r.json()).then(showUploads);
-    document.getElementById("uploads").onclick = async e => {
-      const b = e.target.closest("[data-remove]");
-      if (b) showUploads(await fetch(`api/projects/${encodeURIComponent(b.dataset.remove)}`, { method: "DELETE" }).then(r => r.json()));
-    };
-    document.getElementById("upload").onchange = async e => {
-      const file = e.target.files[0], out = document.getElementById("upload-result");
+
+    // Delete asks first, right on the card.
+    grid.addEventListener("click", async e => {
+      const card = e.target.closest(".p-mine");
+      if (!card) return;
+      if (e.target.closest("[data-ask-delete]")) { card.querySelector(".confirm").hidden = false; card.querySelector("[data-delete]").focus(); }
+      if (e.target.closest("[data-cancel]")) card.querySelector(".confirm").hidden = true;
+      if (e.target.closest("[data-delete]")) {
+        card.classList.add("leaving");
+        showUploads(await fetch(`api/projects/${encodeURIComponent(card.dataset.name)}`, { method: "DELETE" }).then(r => r.json()));
+      }
+    });
+
+    async function upload(file) {
+      const out = document.getElementById("upload-result");
       if (!file) return;
-      out.innerHTML = `<p class="hand">Unpacking and checking it for harmful code…</p>`;
+      if (!/\.zip$/i.test(file.name)) { out.innerHTML = `<p class="bad">That's not a .zip file.</p>`; return; }
+      out.innerHTML = `<p class="hand">Unpacking ${esc(file.name)} and checking it…</p>`;
       const form = new FormData();
       form.append("file", file);
       const res = await fetch("api/projects", { method: "POST", body: form }).then(r => r.json());
-      e.target.value = "";
       if (res.error) { out.innerHTML = `<p class="bad">${esc(res.error)}</p>`; return; }
       out.innerHTML = res.blocked
         ? `<p class="bad"><strong>Blocked.</strong> It won't run:</p><ul class="small">${res.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>`
-        : `<p class="good"><strong>${esc(res.name)}</strong> passed the check (${KIND[res.kind]}).</p>`
-          + (res.compat ? `<p class="small">${esc(Compat.verdict(res.compat))}</p>` : "")
-          + (res.warnings.length ? `<p class="small muted">Worth knowing:</p><ul class="small">${res.warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "")
-          + `<a class="btn small" href="project?open=${encodeURIComponent(res.name)}">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>`;
-      fetch("api/projects").then(r => r.json()).then(showUploads);
-    };
+        : `<p class="good"><strong>${esc(res.name)}</strong> is ready. ${esc(Compat.verdict(res.compat))}</p>`;
+      showUploads(await fetch("api/projects").then(r => r.json()));
+    }
+    document.getElementById("upload").onchange = e => { upload(e.target.files[0]); e.target.value = ""; };
+    // Drag and drop a zip onto the drop zone.
+    const zone = document.getElementById("dropzone");
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("over"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+    zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("over"); upload(e.dataTransfer.files[0]); });
 
     // If they've started, say how much of Polyvault is already theirs.
     fetch("api/state").then(r => r.json()).then(s => {
