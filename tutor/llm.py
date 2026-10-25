@@ -185,12 +185,16 @@ async def clean(piece: str, name: str, code: str) -> dict | None:
     return None
 
 
-ANSWER_RULES = """You are a coding tutor acting as a quick, friendly reference for a beginner writing one Python function.
-They may ask about a library, a method, an attribute, a concept or an error message.
-Answer briefly (under 100 words) and precisely: name modules, list relevant methods or attributes and what they do,
-explain concepts, and use tiny generic examples that aren't about their task.
-Format: short plain sentences, or a simple list with "- " bullets. No tables, no headings.
-Never write the function they are working on, or the lines that would solve it."""
+ANSWER_RULES = """You are a coding tutor answering a beginner's question while they write ONE Python function.
+They ask so they can understand what their function should do. Answer only what they need for that. Rules:
+- At most 3 short sentences, under 60 words in all. No lists of facts, no history, nothing they didn't ask.
+- Everyday words, like explaining to a friend. No jargon (not "deterministic", "idempotent"): say what it means instead.
+- Give one small example as "what goes in → what comes out" (for example: "hello" → 2cf24d…, "hellp" → 1a9f…).
+  No code for "what is" or "why" questions. Only for "how do I use X" may you show code, and then never the call
+  their function needs: show a different method or different data.
+- End with one sentence linking the idea to their function: why it matters for what they're writing.
+- Never write their function, the lines that would solve it, or the exact call their function needs.
+Format: plain sentences. A code example goes in a ``` block."""
 
 
 async def answer(piece: str, name: str, question: str, code: str) -> str:

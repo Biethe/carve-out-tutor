@@ -28,17 +28,32 @@ if (window.CodeMirror) {
   editor = { getValue: () => ta.value, setValue: v => (ta.value = v), on: (_, fn) => ta.addEventListener("input", fn), setOption() {} };
 }
 
+// The editor can take the whole workspace width, for longer code. Esc puts the task panel back.
+function bigEditor(on) {
+  document.querySelector(".workspace").classList.toggle("editor-full", on);
+  $("editor-size").setAttribute("aria-pressed", on);
+  $("editor-size").title = on ? "Back to normal size (Esc)" : "Make the editor taller";
+  $("editor-size").firstElementChild.className = "ph-bold " + (on ? "ph-arrows-in" : "ph-arrows-out");
+  editor.refresh?.();  // CodeMirror re-measures after its box changes size
+}
+$("editor-size").onclick = () => bigEditor($("editor-size").getAttribute("aria-pressed") !== "true");
+addEventListener("keydown", e => { if (e.key === "Escape" && document.querySelector(".editor-full") && !document.querySelector("dialog[open]")) bigEditor(false); });
+
 function noPaste() {
   $("save-state").textContent = "No pasting here. Type it out!";
 }
 
 // Light formatting for tutor replies: `code`, **bold**, line breaks. Everything else is escaped.
 function formatReply(text) {
+  // ``` blocks become code blocks; they're set aside first so the line-break rule below can't touch them.
+  const blocks = [];
+  text = text.replace(/```[\w-]*\n?([\s\S]*?)(```|$)/g, (_, code) => `\u0000${blocks.push(code.trimEnd()) - 1}\u0000`);
   return escapeHtml(text)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/^\s*[-*] /gm, "• ")
-    .replace(/\n+/g, "<br>");
+    .replace(/\n+/g, "<br>")
+    .replace(/\u0000(\d+)\u0000/g, (_, i) => `<pre class="clean-code">${escapeHtml(blocks[i])}</pre>`);
 }
 
 // ---- Tutor window --------------------------------------------------------------
@@ -221,17 +236,18 @@ async function loadOverview() {
     : `<li class="${i.path === overview.current ? "you" : ""}"><i class="ph-bold ph-file" aria-hidden="true"></i><code>${escapeHtml(i.name)}</code>` +
       (i.path === overview.current ? ` <span class="chip">you're here</span>` : "") + `</li>`).join("");
   $("file-tree").innerHTML = `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>store/</summary><ul>${render(overview.tree)}</ul></details></li>`;
-  $("map-view").insertAdjacentHTML("beforeend", `<optgroup label="Follow one request">${
+  $("map-view").insertAdjacentHTML("beforeend", `<optgroup label="Requests that reach your code">${
     overview.flows.map((f, i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join("")}</optgroup>`);
   drawDiagram();
 }
 
 const CAPTIONS = {
-  system: "Each box is a file. Arrows show what travels between them: form fields, function calls with what goes in and what comes back, the session cookie, and the database tables. Your file has the dashed outline.",
-  flow: "One request from start to finish, top to bottom: every function it reaches, what it hands over, and what it gets back.",
+  system: "Each box is a file, listing the functions other files call: what goes in → what comes back. Your file is highlighted and ★ marks your function. Thick arrows show who calls your code and what it calls, so you can see what your code affects. Click the diagram to see it full size.",
+  flow: "One request, read top to bottom: the numbers give the order, from the click to what goes back to the browser. ★ marks your function. A framed \"alt\" block shows two paths (if / otherwise); a \"loop\" block repeats, and says when it stops.",
 };
 $("map-view").onchange = () => drawDiagram();
 $("map-expand").onclick = () => { $("map-dialog").showModal(); drawDiagram($("diagram-big")); };
+$("diagram").onclick = () => $("map-expand").click();
 $("map-close").onclick = () => $("map-dialog").close();
 
 // Mermaid draws in a hand-drawn style, in the current theme's colors. Redrawn when the theme changes.
@@ -243,7 +259,10 @@ async function drawDiagram(target = $("diagram")) {
   if (!window.mermaid) { target.innerHTML = `<pre>${escapeHtml(text)}</pre>`; return; }
   const css = getComputedStyle(document.documentElement), v = name => css.getPropertyValue(name).trim();
   mermaid.initialize({
-    startOnLoad: false, look: "handDrawn", theme: "base",
+    // Clean lines, roomy spacing, and natural size (the panel scrolls instead of shrinking the text).
+    startOnLoad: false, look: "classic", theme: "base",
+    flowchart: { nodeSpacing: 56, rankSpacing: 78, padding: 18, wrappingWidth: 640, useMaxWidth: false },
+    sequence: { useMaxWidth: false, messageMargin: 44, boxMargin: 12, noteMargin: 12, mirrorActors: false },
     themeVariables: {
       fontFamily: v("--code-hand"), fontSize: "15px", background: v("--surface"),
       primaryColor: v("--surface-2"), primaryTextColor: v("--ink"), primaryBorderColor: v("--ink"),
@@ -367,6 +386,7 @@ editor.on("change", () => {
 });
 
 $("submit").onclick = async () => {
+  bigEditor(false);  // so the results are visible
   clearTimeout(saveTimer);
   $("submit").disabled = true;
   $("results").innerHTML = `<p class="muted">Running the tests…</p>`;
