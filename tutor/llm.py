@@ -1,20 +1,36 @@
-"""The only file that talks to the AI. Groq by default; any OpenAI-compatible endpoint works via env vars."""
+"""The only file that talks to the AI. Groq by default; any OpenAI-compatible endpoint works.
+Settings come from the environment, the learner's Settings (data/settings.json), or a local .env file."""
+import asyncio
 import json
 import os
 import re
+import sys
+import urllib.request
 from pathlib import Path
 
-from openai import OpenAI
-
 from tutor.pieces import PIECES, function
+from tutor.progress import DATA
 
 BUSY = "The tutor is busy, try again in a minute."
+NO_KEY = "Add your AI key in Settings (the gear at the top). Groq gives free keys at console.groq.com."
+DEFAULTS = {"LLM_BASE_URL": "https://api.groq.com/openai/v1", "LLM_MODEL": "openai/gpt-oss-120b"}
+SETTINGS = DATA / "settings.json"
+
+
+class NoKey(Exception):
+    pass
+
+
+def settings() -> dict:
+    return json.loads(SETTINGS.read_text()) if SETTINGS.exists() else {}
 
 
 def _env(name: str, default: str | None = None) -> str | None:
-    """Read a setting from the environment, or from a local .env file (never committed)."""
+    """Read a setting from the environment, the learner's Settings, or a local .env file (never committed)."""
     if name in os.environ:
         return os.environ[name]
+    if settings().get(name):
+        return settings()[name]
     env_file = Path(__file__).parent.parent / ".env"
     if env_file.exists():
         for line in env_file.read_text().splitlines():
@@ -24,18 +40,35 @@ def _env(name: str, default: str | None = None) -> str | None:
     return default
 
 
-def _chat(system: str, user: str, json_mode: bool = False) -> str:
+async def _post(url: str, headers: dict, body: dict) -> dict:
+    """POST JSON and return the JSON reply. In the browser (Pyodide) this is the page's fetch."""
+    if sys.platform == "emscripten":
+        from pyodide.http import pyfetch
+        reply = await pyfetch(url, method="POST", headers=headers, body=json.dumps(body))
+        if not reply.ok:
+            raise RuntimeError(f"{reply.status}: {await reply.string()}")
+        return await reply.json()
+
+    def send():
+        request = urllib.request.Request(url, json.dumps(body).encode(), {**headers, "User-Agent": "carve-out-tutor"})
+        with urllib.request.urlopen(request, timeout=30) as reply:
+            return json.load(reply)
+    return await asyncio.to_thread(send)
+
+
+async def _chat(system: str, user: str, json_mode: bool = False) -> str:
     api_key = _env("LLM_API_KEY") or _env("GROQ_API_KEY")
     if not api_key:
-        raise RuntimeError("No API key set")
-    client = OpenAI(base_url=_env("LLM_BASE_URL", "https://api.groq.com/openai/v1"), api_key=api_key, timeout=30)
-    reply = client.chat.completions.create(
-        model=_env("LLM_MODEL", "openai/gpt-oss-120b"),
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-        reasoning_effort="low",  # keeps replies quick and inside the free tier's token budget
-        **({"response_format": {"type": "json_object"}} if json_mode else {}),
-    )
-    text = reply.choices[0].message.content or ""
+        raise NoKey()
+    model = _env("LLM_MODEL", DEFAULTS["LLM_MODEL"])
+    body = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+    if "gpt-oss" in model:
+        body["reasoning_effort"] = "low"  # keeps replies quick and inside the free tier's token budget
+    if json_mode:
+        body["response_format"] = {"type": "json_object"}
+    url = _env("LLM_BASE_URL", DEFAULTS["LLM_BASE_URL"]).rstrip("/") + "/chat/completions"
+    reply = await _post(url, {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, body)
+    text = reply["choices"][0]["message"]["content"] or ""
     # House style: no em or en dashes in anything the learner reads.
     return text.replace(" — ", ", ").replace("—", ", ").replace(" – ", " - ").replace("–", "-")
 
@@ -61,7 +94,7 @@ Nudge, don't solve. Rules:
 - You may name a module, function or concept (for example "the hashlib module") without showing how to call it."""
 
 
-def hint(piece: str, name: str, code: str, results: list[dict] | None = None) -> str:
+async def hint(piece: str, name: str, code: str, results: list[dict] | None = None) -> str:
     """A nudge toward the goal. After a failed submit, `results` focuses it on the failing tests."""
     parts = [_task_text(piece, name), f"The learner's current code:\n{code}"]
     if results:
@@ -73,7 +106,9 @@ def hint(piece: str, name: str, code: str, results: list[dict] | None = None) ->
     else:
         parts.append("They asked for a hint while writing code.")
     try:
-        return _strip_code(_chat(HINT_RULES, "\n\n".join(parts))) or BUSY
+        return _strip_code(await _chat(HINT_RULES, "\n\n".join(parts))) or BUSY
+    except NoKey:
+        return NO_KEY
     except Exception:
         return BUSY
 
@@ -89,7 +124,7 @@ Reply with JSON only, with these keys:
 "hint": if score < 7, ONE short, narrower follow-up question that points at the missing idea without answering it; otherwise ""."""
 
 
-def grade(piece: str, name: str, explanation: str, code: str, earlier: list[str]) -> dict | None:
+async def grade(piece: str, name: str, explanation: str, code: str, earlier: list[str]) -> dict | None:
     """Score an answer together with earlier attempts: {score, missing, extra, hint}. None if the AI is unavailable."""
     f = function(piece, name)
     previous = "".join(f"\n\nTheir earlier answer {i}:\n{e}" for i, e in enumerate(earlier, 1))
@@ -97,7 +132,7 @@ def grade(piece: str, name: str, explanation: str, code: str, earlier: list[str]
             f"\n\nThe learner's code:\n{code}{previous}\n\n{'Their newest answer' if earlier else 'Their answer'}:\n{explanation}")
     for _ in range(2):  # one retry if the reply isn't valid JSON
         try:
-            data = json.loads(_chat(GRADE_RULES, user, json_mode=True))
+            data = json.loads(await _chat(GRADE_RULES, user, json_mode=True))
             return {
                 "score": max(0, min(10, int(data["score"]))),
                 "missing": str(data.get("missing") or ""),
@@ -106,6 +141,8 @@ def grade(piece: str, name: str, explanation: str, code: str, earlier: list[str]
             }
         except (ValueError, KeyError, TypeError):
             continue
+        except NoKey:
+            raise
         except Exception:
             return None
     return None
@@ -124,11 +161,11 @@ Reply with JSON only, with these keys:
 "code": the cleaner version of the whole function, same signature, plain Python, no markdown fences ("" if clean)."""
 
 
-def clean(piece: str, name: str, code: str) -> dict | None:
+async def clean(piece: str, name: str, code: str) -> dict | None:
     """{clean, hints, code} for a passing function. None if the AI is unavailable."""
     for _ in range(2):  # one retry if the reply isn't valid JSON
         try:
-            data = json.loads(_chat(CLEAN_RULES, f"{_task_text(piece, name)}\n\nTheir passing code:\n{code}", json_mode=True))
+            data = json.loads(await _chat(CLEAN_RULES, f"{_task_text(piece, name)}\n\nTheir passing code:\n{code}", json_mode=True))
             return {
                 "clean": bool(data.get("clean")),
                 "hints": [_strip_code(str(h)) for h in data.get("hints") or []][:3],
@@ -136,6 +173,8 @@ def clean(piece: str, name: str, code: str) -> dict | None:
             }
         except (ValueError, KeyError, TypeError, AttributeError):
             continue
+        except NoKey:
+            raise
         except Exception:
             return None
     return None
@@ -149,9 +188,11 @@ Format: short plain sentences, or a simple list with "- " bullets. No tables, no
 Never write the function they are working on, or the lines that would solve it."""
 
 
-def answer(piece: str, name: str, question: str, code: str) -> str:
+async def answer(piece: str, name: str, question: str, code: str) -> str:
     try:
-        reply = _chat(ANSWER_RULES, f"{_task_text(piece, name)}\n\nThe learner's current code:\n{code}\n\nTheir question:\n{question}")
+        reply = await _chat(ANSWER_RULES, f"{_task_text(piece, name)}\n\nThe learner's current code:\n{code}\n\nTheir question:\n{question}")
         return reply.strip() or BUSY
+    except NoKey:
+        return NO_KEY
     except Exception:
         return BUSY

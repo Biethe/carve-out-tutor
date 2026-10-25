@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carve-Out Tutor</title>
+  <meta name="description" content="Learn to code by rebuilding small pieces of apps that already work. Runs entirely in your browser.">
+  <script src="../tutor/static/theme.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+  <link rel="stylesheet" href="../tutor/static/style.css">
+  <style>
+    html, body { height: 100%; }
+    body { margin: 0; overflow: hidden; }
+    #tutor { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+    .boot { height: 100%; display: grid; place-content: center; gap: 18px; text-align: center; padding: 16px; }
+    .boot .brand { justify-content: center; transform: scale(1.6); margin-bottom: 18px; }
+    .boot p { margin: 0; color: var(--ink-soft); max-width: 36ch; }
+    .boot .step { font-family: var(--hand); font-size: 26px; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <!-- This page owns browser Python. The tutor runs inside it, in the frame, with no server anywhere. -->
+  <div class="boot" id="boot">
+    <span class="brand"><span class="brand-word">Carve</span><span class="brand-piece"><i class="ph-bold ph-scissors" aria-hidden="true"></i>out</span><span class="brand-hand">tutor</span></span>
+    <p class="step" id="step">getting Python ready…</p>
+    <p>Everything runs in your browser. The first visit downloads Python once, so it takes a little longer.</p>
+  </div>
+  <iframe id="tutor" title="Carve-Out Tutor" hidden></iframe>
+  <script src="python.js"></script>
+  <script>
+    const frame = document.getElementById("tutor");
+    Python.start().then(() => {
+      frame.src = "tutor/" + location.hash.slice(1);  // #learn reopens the workspace after a reload
+      frame.hidden = false;
+      frame.onload = () => {
+        document.getElementById("boot").hidden = true;
+        // Keep the address bar in step with the tutor page, so reloading comes back to it.
+        const page = frame.contentWindow.location.pathname.split("/tutor/")[1] || "";
+        history.replaceState(null, "", page ? "#" + page : location.pathname);
+        document.title = frame.contentDocument.title;
+      };
+    }).catch(err => {
+      document.getElementById("step").textContent = "Python couldn't start: " + err.message;
+    });
+  </script>
+</body>
+</html>

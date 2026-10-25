@@ -1,4 +1,5 @@
 """The tutor app: serves the pages and the JSON API on localhost:8000."""
+import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -109,7 +110,7 @@ def save_code(code: str = Body(embed=True)):
 
 
 @app.post("/api/submit")
-def submit(code: str = Body(embed=True)):
+async def submit(code: str = Body(embed=True)):
     """Test the learner's function inside the piece's file. On pass, it runs in the store from now on.
     A passed function can be resubmitted (a cleaner version); it only replaces the old one if it passes too."""
     prog = progress.load()
@@ -117,7 +118,7 @@ def submit(code: str = Body(embed=True)):
     if not fn or fn["status"] not in ("in_progress", "passed"):
         return {"error": "No open step to submit to."}
     cleaning = fn["status"] == "passed"
-    results = runner.run_tests(piece, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
+    results = await runner.run_tests(piece, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
     all_passed = all(r["passed"] for r in results)
     if all_passed or not cleaning:
         fn["draft"], fn["last_results"] = code, results
@@ -131,7 +132,7 @@ def submit(code: str = Body(embed=True)):
 
 
 @app.post("/api/hint")
-def get_hint(code: str = Body(), after_submit: bool = Body(False)):
+async def get_hint(code: str = Body(), after_submit: bool = Body(False)):
     """A hint for the current code. After a failed submit it targets the failing tests."""
     prog = progress.load()
     piece, name, fn = _current(prog)
@@ -143,22 +144,25 @@ def get_hint(code: str = Body(), after_submit: bool = Body(False)):
         mine = {test for test, _ in function(piece, name)["criteria"]}
         if any(not r["passed"] for r in results if r["name"] in mine):
             results = [r for r in results if r["name"] in mine]
-    return {"hint": llm.hint(piece, name, code, results)}
+    return {"hint": await llm.hint(piece, name, code, results)}
 
 
 @app.post("/api/clean")
-def clean():
+async def clean():
     """Short hints for a cleaner version of the passed function, plus a cleaner version that passes the same tests."""
     prog = progress.load()
     piece, name, fn = _current(prog)
     if not fn or fn["status"] != "passed":
         return {"error": "Pass the tests first, then clean it up."}
-    result = llm.clean(piece, name, fn["draft"])
+    try:
+        result = await llm.clean(piece, name, fn["draft"])
+    except llm.NoKey:
+        return {"error": llm.NO_KEY}
     if result is None:
         return {"error": llm.BUSY}
     if result["code"]:  # never show a "cleaner" answer that breaks the tests
         snippets = {**progress.passed_snippets(prog, piece), name: result["code"]}
-        if not all(r["passed"] for r in runner.run_tests(piece, assemble(piece, snippets))):
+        if not all(r["passed"] for r in await runner.run_tests(piece, assemble(piece, snippets))):
             result["code"] = ""
     return result
 
@@ -171,7 +175,7 @@ def project_overview():
 
 
 @app.post("/api/explain")
-def explain(explanation: str = Body(embed=True)):
+async def explain(explanation: str = Body(embed=True)):
     """Grade the answer to this function's question. Up to two narrower follow-up questions, then the answer.
     The score never touches the learner's code or the ownership %."""
     prog = progress.load()
@@ -181,7 +185,10 @@ def explain(explanation: str = Body(embed=True)):
     check = fn["check"]
     if check["done"]:
         return {"error": "You've already answered the question for this function."}
-    result = llm.grade(piece, name, explanation, fn["draft"], check["explanations"])
+    try:
+        result = await llm.grade(piece, name, explanation, fn["draft"], check["explanations"])
+    except llm.NoKey:
+        return {"error": llm.NO_KEY}
     if result is None:
         return {"error": llm.BUSY}
     check["explanations"].append(explanation)
@@ -202,14 +209,34 @@ def explain(explanation: str = Body(embed=True)):
 
 
 @app.post("/api/ask")
-def ask(question: str = Body(), code: str = Body("")):
+async def ask(question: str = Body(), code: str = Body("")):
     prog = progress.load()
     piece, name, _ = _current(prog)
     if not piece:
         return {"answer": "Start learning first, then ask me anything about your function."}
-    return {"answer": llm.answer(piece, name, question, code)}
+    return {"answer": await llm.answer(piece, name, question, code)}
 
 
 @app.post("/api/run")
 def run():
     return runner.run_store(passed=progress.swapped(progress.load()))
+
+
+@app.get("/api/settings")
+def get_settings():
+    """The AI provider settings, without the key itself."""
+    key = llm._env("LLM_API_KEY") or llm._env("GROQ_API_KEY") or ""
+    return {"base_url": llm._env("LLM_BASE_URL", llm.DEFAULTS["LLM_BASE_URL"]),
+            "model": llm._env("LLM_MODEL", llm.DEFAULTS["LLM_MODEL"]), "key_end": key[-4:]}
+
+
+@app.put("/api/settings")
+def put_settings(base_url: str = Body(), model: str = Body(), api_key: str = Body("")):
+    """Saved in this browser (or data/ locally). An empty key keeps the one already saved."""
+    saved = llm.settings()
+    saved.update(LLM_BASE_URL=base_url.strip(), LLM_MODEL=model.strip())
+    if api_key.strip():
+        saved["LLM_API_KEY"] = api_key.strip()
+    progress.DATA.mkdir(parents=True, exist_ok=True)
+    llm.SETTINGS.write_text(json.dumps(saved))
+    return get_settings()

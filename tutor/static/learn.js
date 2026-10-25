@@ -85,7 +85,7 @@ async function getHint(afterSubmit) {
   openTutor();
   startExchange();
   $("hint").disabled = true;
-  const { el, res } = await askTutor("/api/hint", { code: editor.getValue(), after_submit: afterSubmit });
+  const { el, res } = await askTutor("api/hint", { code: editor.getValue(), after_submit: afterSubmit });
   el.innerHTML = formatReply(res.hint);
   $("hint").disabled = false;
 }
@@ -97,7 +97,7 @@ $("ask").onclick = async () => {
   addMessage(escapeHtml(text), "learner-msg");
   $("chat-input").value = "";
   $("ask").disabled = true;
-  const { el, res } = await askTutor("/api/ask", { question: text, code: editor.getValue() });
+  const { el, res } = await askTutor("api/ask", { question: text, code: editor.getValue() });
   $("ask").disabled = false;
   el.innerHTML = formatReply(res.answer);
 };
@@ -108,7 +108,7 @@ $("explain").onclick = async () => {
   addMessage(escapeHtml(text), "learner-msg");
   $("chat-input").value = "";
   $("explain").disabled = true;
-  const { el, res } = await askTutor("/api/explain", { explanation: text });
+  const { el, res } = await askTutor("api/explain", { explanation: text });
   $("explain").disabled = false;
   if (res.error) { el.textContent = res.error; return; }
   let html = `<strong>${res.score}/10.</strong> `;
@@ -213,7 +213,7 @@ let overview = null;
 
 async function loadOverview() {
   if (overview) return;
-  overview = await api("GET", "/api/overview");
+  overview = await api("GET", "api/overview");
   const render = items => items.map(i => i.dir
     ? `<li class="dir"><details open><summary><i class="ph-bold ph-folder-simple" aria-hidden="true"></i>${escapeHtml(i.name)}/</summary><ul>${render(i.children)}</ul></details></li>`
     : `<li class="${i.path === overview.current ? "you" : ""}"><i class="ph-bold ph-file" aria-hidden="true"></i><code>${escapeHtml(i.name)}</code>` +
@@ -316,7 +316,7 @@ function afterPass() {
 
 $("next").onclick = async () => {
   $("next").disabled = true;
-  await api("POST", "/api/next");
+  await api("POST", "api/next");
   location.reload();
 };
 
@@ -328,7 +328,7 @@ $("clean").onclick = async () => {
   openTutor();
   startExchange();
   $("clean").disabled = true;
-  const { el, res } = await askTutor("/api/clean", {});
+  const { el, res } = await askTutor("api/clean", {});
   $("clean").disabled = false;
   if (res.error) { el.textContent = res.error; return; }
   if (res.clean) { el.innerHTML = "Already clean. Nothing to cut here."; return; }
@@ -355,7 +355,7 @@ editor.on("change", () => {
   $("save-state").textContent = "Editing…";
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    await api("PUT", "/api/code", { code: editor.getValue() });
+    await api("PUT", "api/code", { code: editor.getValue() });
     $("save-state").textContent = "Saved";
   }, 1500);
 });
@@ -364,7 +364,7 @@ $("submit").onclick = async () => {
   clearTimeout(saveTimer);
   $("submit").disabled = true;
   $("results").innerHTML = `<p class="muted">Running the tests…</p>`;
-  const res = await api("POST", "/api/submit", { code: editor.getValue() });
+  const res = await api("POST", "api/submit", { code: editor.getValue() });
   $("submit").disabled = false;
   if (res.error) { $("results").innerHTML = `<p class="summary fail">${escapeHtml(res.error)}</p>`; return; }
   showResults(res.results, res.passed);
@@ -415,8 +415,8 @@ function celebrate() {
 }
 
 (async () => {
-  const s = await api("GET", "/api/state");
-  if (!s.current) { location.href = "/project"; return; }
+  const s = await api("GET", "api/state");
+  if (!s.current) { location.href = "project"; return; }
   check = s.check;
   allDone = s.all_done;
   showTask(s);

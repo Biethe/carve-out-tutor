@@ -5,7 +5,7 @@ async function runProject(statusEl) {
   if (tab) tab.document.body.innerHTML = "<p style='font:16px system-ui;padding:2rem'>Starting the store…</p>";
   statusEl.textContent = "Starting the store…";
   statusEl.className = "status";
-  const res = await fetch("/api/run", { method: "POST" }).then(r => r.json());
+  const res = await fetch("api/run", { method: "POST" }).then(r => r.json());
   if (res.url) {
     statusEl.textContent = "The store is running in the other tab.";
     if (tab) tab.location = res.url; else window.open(res.url, "carve-store");

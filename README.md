@@ -6,7 +6,13 @@ The tutor gives you a finished Python web app (Polyvault, a small 3D asset store
 
 Built for the Devpost *Build With AI: Basics* hackathon as a proof of concept: one project, two rounds (authentication, then the cart).
 
-## Run it
+## Use it in your browser
+
+Open the published site (GitHub Pages) in any modern browser. Nothing to install: Python, the tests and the store all run inside the page with [Pyodide](https://pyodide.org/), and your progress is saved in that browser. Click the gear to add your own AI key: [Groq](https://console.groq.com/keys), [OpenRouter](https://openrouter.ai/settings/keys) and [Google Gemini](https://aistudio.google.com/apikey) all have free tiers. The key stays in your browser and goes only to that provider.
+
+To try the browser version locally: `python web/files.py && python -m http.server 8020`, then open http://localhost:8020/web/.
+
+## Run it locally with a server
 
 You need Python 3.11+ and a free [Groq API key](https://console.groq.com/keys).
 
@@ -44,7 +50,9 @@ Close the tutor at any point and start it again. Your round, draft and progress 
 ## How it works
 
 ```
-tutor/            the tutor app (FastAPI, :8000)
+web/              the standalone site: the main page, browser Python, the service worker
+  bridge.py       runs tests, and serves the tutor and the store as web apps with no server
+tutor/            the tutor app (FastAPI, :8000 locally; inside the browser on the site)
   app.py          pages + JSON API
   pieces.py       the carvable pieces, function by function: stubs, criteria, questions; assemble()
   runner.py       runs pytest on your code (separate process, 15s limit); assembles and restarts the store
@@ -57,4 +65,6 @@ tests/            the tests each piece must pass
 
 Each piece is its own file, rebuilt one function at a time. When a function passes, it's swapped into the AI's file and saved to `data/learner/`. **Run project** copies the store to `.run/store/` with your file in place, then restarts it. Functions you haven't written yet keep running the original, so the store never breaks.
 
-**Note:** your code runs directly on your machine, not in a sandbox. That's fine for one learner locally, but not for a public deployment.
+In the browser, the same tutor app runs inside Pyodide. A service worker passes the page's requests under `web/tutor/` and `web/run/` to it, tests run in a second Python worker that's replaced if code runs past 15 seconds, and progress lives in IndexedDB.
+
+**Note:** with the local server, your code runs directly on your machine, not in a sandbox. On the site it runs inside the browser's sandbox.

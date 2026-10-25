@@ -1,32 +1,36 @@
-// Service worker: every request under run/ goes to the project's web app running in browser Python.
-// It asks the tutor page (which owns the Python worker) to answer, through a private message channel.
+// Service worker: requests under tutor/ and run/ go to web apps running in browser Python (the tutor itself,
+// and the learner's project). It asks the main page, which owns Python, through a private message channel.
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 
-const RUN = new URL("run/", self.registration.scope).pathname;
+const SCOPE = new URL(self.registration.scope).pathname;
+const MOUNTS = ["tutor", "run"];
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (url.origin === location.origin && url.pathname.startsWith(RUN)) e.respondWith(answer(e.request, url));
+  const mount = url.origin === location.origin && MOUNTS.find(m => url.pathname.startsWith(SCOPE + m + "/"));
+  if (mount) e.respondWith(answer(e.request, url, mount));
 });
 
-async function answer(request, url) {
+async function answer(request, url, mount) {
   const pages = await self.clients.matchAll({ type: "window" });
-  const tutor = pages.find(c => !new URL(c.url).pathname.startsWith(RUN));
-  if (!tutor) return new Response("Open the tutor page to run the project.", { status: 503 });
+  const main = pages.find(c => !MOUNTS.some(m => new URL(c.url).pathname.startsWith(SCOPE + m + "/")));
+  if (!main) return new Response("Open the tutor's main page to run this.", { status: 503 });
   const req = {
+    mount,
     method: request.method,
-    path: "/" + url.pathname.slice(RUN.length),
+    path: "/" + url.pathname.slice((SCOPE + mount + "/").length),
     query: url.search.slice(1),
     headers: [...request.headers],
     body: await request.arrayBuffer(),
   };
   const channel = new MessageChannel();
   const reply = new Promise(resolve => (channel.port1.onmessage = m => resolve(m.data)));
-  tutor.postMessage({ type: "http", req }, [channel.port2]);
+  main.postMessage({ type: "http", req }, [channel.port2]);
   const { ok, value, error } = await reply;
-  if (!ok) return new Response("The project crashed:\n\n" + error, { status: 500, headers: { "content-type": "text/plain" } });
+  if (!ok) return new Response("Python crashed:\n\n" + error, { status: 500, headers: { "content-type": "text/plain" } });
   const location = value.headers.find(([k]) => k.toLowerCase() === "location");
   if (value.status >= 300 && value.status < 400 && location) return Response.redirect(new URL(location[1], url).href, value.status);
-  return new Response(value.body, { status: value.status, headers: value.headers });
+  const empty = value.status === 204 || value.status === 304;
+  return new Response(empty ? null : value.body, { status: value.status, headers: value.headers });
 }

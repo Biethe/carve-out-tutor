@@ -1,34 +1,57 @@
-// Browser Python in a Web Worker, so the page never freezes. Loads the project files listed in files.json,
-// then answers messages: {type: "tests" | "start" | "http"}. Replies go to e.data.port when given, else to the page.
+// Browser Python in a Web Worker, so the page never freezes. Two roles, one worker each:
+// "tests" runs test files (the page replaces this worker when code runs too long);
+// "apps" serves the tutor and the learner's project, and saves the tutor's data in IndexedDB.
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js");
 
-let py, bridge;
+let py, bridge, role;
+const DATA = "/persist/data";
 
-async function boot(base, prefix) {
+async function boot(data) {
+  role = data.role;
   py = await loadPyodide();
-  await py.loadPackage(["micropip", "pytest", "jinja2", "sqlite3", "pydantic"]);
-  await py.pyimport("micropip").install(["fastapi", "python-multipart", "itsdangerous"]);
-  const files = await (await fetch(base + "web/files.json")).json();
+  await py.loadPackage(role === "tests" ? ["pytest"] : ["micropip", "jinja2", "sqlite3", "pydantic"]);
+  if (role === "apps") await py.pyimport("micropip").install(["fastapi", "python-multipart", "itsdangerous"]);
+  const files = await (await fetch(data.root + "web/files.json")).json();
   await Promise.all(files.map(async path => {
-    const bytes = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
+    const bytes = new Uint8Array(await (await fetch(data.root + path)).arrayBuffer());
     py.FS.mkdirTree("/project/" + path.split("/").slice(0, -1).join("/"));
     py.FS.writeFile("/project/" + path, bytes);
   }));
   py.FS.mkdirTree("/bridge");
-  py.FS.writeFile("/bridge/bridge.py", await (await fetch(base + "web/bridge.py")).text());
+  py.FS.writeFile("/bridge/bridge.py", await (await fetch(data.root + "web/bridge.py")).text());
   py.runPython("import sys; sys.path.insert(0, '/bridge')");
   bridge = py.pyimport("bridge");
-  bridge.setup(prefix);
+  if (role === "apps") {
+    py.FS.mkdirTree("/persist");
+    py.FS.mount(py.FS.filesystems.IDBFS, {}, "/persist");
+    await sync(true);
+    py.FS.mkdirTree(DATA);
+    bridge.setup_apps(data.base, DATA);
+    bridge.start_tutor();
+  }
 }
 
+// IndexedDB <-> /persist. `load` reads saved data in; otherwise writes changes out.
+const sync = load => new Promise((ok, fail) => py.FS.syncfs(load, err => (err ? fail(err) : ok())));
+
+// The tutor asks for tests through the page, which owns the tests worker and its time limit.
+let nextTest = 0;
+const testReplies = new Map();
+self.runTests = (test, overrides) => new Promise(resolve => {
+  const id = ++nextTest;
+  testReplies.set(id, resolve);
+  postMessage({ type: "run-tests", id, test, overrides });
+});
+
 const handlers = {
-  init: ({ base, prefix }) => boot(base, prefix).then(() => ({ ready: true })),
-  tests: ({ test, overrides }) => bridge.run_tests(test, py.toPy(overrides || {})).toJs({ dict_converter: Object.fromEntries }),
-  start: ({ app, overrides }) => { bridge.start_app(app, py.toPy(overrides || {})); return { started: true }; },
+  init: data => boot(data).then(() => ({ ready: true })),
+  tests: ({ test, overrides }) => JSON.parse(bridge.run_tests(test, JSON.stringify(overrides || {}))),
+  "tests-done": ({ testId, results }) => { testReplies.get(testId)?.(results); testReplies.delete(testId); },
   http: async ({ req }) => {
-    const res = await bridge.handle(req.method, req.path, req.query, py.toPy(req.headers), py.toPy(new Uint8Array(req.body)));
+    const res = await bridge.handle(req.mount, req.method, req.path, req.query, JSON.stringify(req.headers), new Uint8Array(req.body));
     const out = res.toJs({ dict_converter: Object.fromEntries });
     res.destroy();
+    if (req.method !== "GET") await sync(false);
     return { status: out.status, headers: out.headers, body: out.body };
   },
 };
@@ -36,7 +59,8 @@ const handlers = {
 onmessage = async e => {
   const reply = e.data.port || self;
   try {
-    reply.postMessage({ id: e.data.id, ok: true, value: await handlers[e.data.type](e.data) });
+    const value = await handlers[e.data.type](e.data);
+    if (e.data.id !== undefined || e.data.port) reply.postMessage({ id: e.data.id, ok: true, value });
   } catch (err) {
     reply.postMessage({ id: e.data.id, ok: false, error: String(err.message || err) });
   }

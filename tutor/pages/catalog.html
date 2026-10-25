@@ -6,6 +6,7 @@
   <title>Carve-Out Tutor</title>
   <meta name="description" content="Learn to code by rebuilding small pieces of apps that already work.">
   <script src="/static/theme.js"></script>
+  <script src="/static/settings.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -119,7 +120,7 @@
 
   <script>
     // If they've started, say how much of Polyvault is already theirs.
-    fetch("/api/state").then(r => r.json()).then(s => {
+    fetch("api/state").then(r => r.json()).then(s => {
       if (s.ownership > 0) {
         const el = document.getElementById("mine");
         el.textContent = `${s.ownership}% of it is yours`;

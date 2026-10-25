@@ -1,39 +1,29 @@
-"""Runs inside browser Python (Pyodide): the project's tests, and the project's web app with no server.
-The page's JavaScript calls run_tests() and handle(); everything here is plain Python."""
+"""Runs inside browser Python (Pyodide). Two jobs, one per worker:
+- tests worker: run_tests() runs a project's test file with some files replaced;
+- app worker: serves web apps with no server. The tutor itself is mounted at tutor/, the learner's project at run/.
+The page's JavaScript calls these functions; everything here is plain Python."""
+import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import anyio.to_thread
-
-ROOT = Path("/project")
-PREFIX = ""  # where the app is served in the page, e.g. /web/run (set by setup)
-_app = None
-_cookies: dict[str, str] = {}
-
-
-async def _same_thread(func, *args, **_):
-    return func(*args)
+ROOT = Path("/project")      # the site's files: store/, tests/, tutor/
+RUNNING = Path("/running")   # copies of apps with the learner's files swapped in
+BASE = ""                    # the site's path on its host, e.g. /repo/web
+_apps: dict = {}
+_cookies: dict[str, dict[str, str]] = {}
 
 
-# The browser has no threads. FastAPI runs plain `def` routes and file reads "in a thread"; here they just run.
-anyio.to_thread.run_sync = _same_thread
+# ---- Tests ---------------------------------------------------------------------
 
-
-def setup(prefix: str):
-    global PREFIX
-    PREFIX = prefix.rstrip("/")
-    os.environ["STORE_DB"] = "/data/store.db"
-
-
-def _forget_project_modules():
-    """Drop the project's modules so the next import reads the files as they are now."""
+def _forget(folders: tuple[str, ...]):
+    """Drop modules loaded from these folders, so the next import reads the files as they are now."""
     for name, mod in list(sys.modules.items()):
-        path = getattr(mod, "__file__", None) or ""
-        if path.startswith((str(ROOT), tempfile.gettempdir())) or name.startswith(("test_", "conftest")):
+        if (getattr(mod, "__file__", None) or "").startswith(folders) or name.startswith(("test_", "conftest")):
             del sys.modules[name]
 
 
@@ -42,16 +32,17 @@ def _short(text: str, lines: int = 12, last: bool = False) -> str:
     return "\n".join(text_lines[-lines:] if last else text_lines[:lines])
 
 
-def run_tests(test_file: str, overrides: dict) -> list[dict]:
-    """Run one test file with some project files replaced. Same result shape as tutor/runner.py."""
+def run_tests(test_file: str, overrides_json: str) -> str:
+    """Run one test file with some files replaced. Same result shape as tutor/runner.py, as JSON."""
     import pytest
 
     with tempfile.TemporaryDirectory() as tmp:
-        for path, code in overrides.items():
+        for path, code in json.loads(overrides_json).items():
             Path(tmp, Path(path).name).write_text(code)  # tests import pieces by bare name, like the local runner
         report = Path(tmp, "report.xml")
         sys.path.insert(0, tmp)
-        _forget_project_modules()
+        folders = (str(ROOT), tmp)
+        _forget(folders)
         cwd = os.getcwd()
         os.chdir(tmp)
         try:
@@ -59,7 +50,7 @@ def run_tests(test_file: str, overrides: dict) -> list[dict]:
         finally:
             os.chdir(cwd)
             sys.path.remove(tmp)
-            _forget_project_modules()
+            _forget(folders)
         cases = ET.parse(report).getroot().iter("testcase") if report.exists() else []
         results = []
         for case in cases:
@@ -71,50 +62,99 @@ def run_tests(test_file: str, overrides: dict) -> list[dict]:
             else:
                 message = None
             results.append({"name": case.get("name"), "passed": message is None, "message": message})
-        return results or [{"name": "running the tests", "passed": False, "message": "The tests didn't run."}]
+        return json.dumps(results or [{"name": "running the tests", "passed": False, "message": "The tests didn't run."}])
 
 
-def start_app(app_dir: str, overrides: dict):
-    """(Re)load the web app from the project files, with the learner's passed files swapped in."""
-    global _app
+# ---- Web apps ------------------------------------------------------------------
+
+def setup_apps(base: str, data: str):
+    """Called once in the app worker, before any app is imported."""
+    global BASE
+    BASE = base.rstrip("/")
+    os.environ["TUTOR_DATA"] = data
+    os.environ["STORE_DB"] = f"{data}/store.db"
+    import anyio.to_thread
+
+    async def same_thread(func, *args, **_):
+        return func(*args)
+
+    # The browser has no threads. FastAPI runs plain `def` routes and file reads "in a thread"; here they just run.
+    anyio.to_thread.run_sync = same_thread
+    sys.path.insert(0, str(ROOT))
+
+
+def start_tutor():
+    import tutor.app
+    from tutor import runner
+    runner.run_tests, runner.run_store, runner.stop_store = _browser_tests, _browser_store, lambda: None
+    _apps["tutor"] = tutor.app.app
+
+
+async def _browser_tests(piece: str, code: str) -> list[dict]:
+    """The tutor's runner, in the browser: the page runs the tests in the separate tests worker."""
+    from js import runTests
+    from tutor.pieces import PIECES
+    p = PIECES[piece]
+    return json.loads(await runTests(p["test"], json.dumps({f"store/pieces/{p['file']}": code})))
+
+
+def _browser_store(passed: list[str]) -> dict:
+    from tutor.progress import DATA
+    try:
+        start_app("run", "store", {f"store/pieces/{piece}.py": (DATA / "learner" / f"{piece}.py").read_text() for piece in passed})
+    except Exception as err:
+        return {"error": "The store couldn't start.", "output": _short(repr(err), last=True)}
+    return {"url": f"{BASE}/run/"}
+
+
+def start_app(mount: str, folder: str, overrides: dict):
+    """(Re)load the web app in `folder` (its app.py) from a fresh copy with the learner's files swapped in."""
+    copy = RUNNING / mount
+    _forget((str(copy),))
+    shutil.rmtree(copy, ignore_errors=True)
+    shutil.copytree(ROOT / folder, copy / folder)
     for path, code in overrides.items():
-        (ROOT / path).write_text(code)
-    _forget_project_modules()
-    Path("/data").mkdir(exist_ok=True)
-    sys.path[:] = [p for p in sys.path if not p.startswith(str(ROOT))]
-    sys.path.insert(0, str(ROOT / app_dir))
+        (copy / path).write_text(code)
+    app_dir = str(copy / folder)
+    sys.path[:] = [p for p in sys.path if not p.startswith(str(RUNNING))]
+    sys.path.insert(0, app_dir)
     cwd = os.getcwd()
-    os.chdir(ROOT / app_dir)
+    os.chdir(app_dir)
     try:
         import app as module
     finally:
         os.chdir(cwd)
-    _app = module.app
-    _cookies.clear()
+        sys.modules.pop("app", None)  # the next start imports a fresh copy
+    _apps[mount] = module.app
+    _cookies[mount] = {}
 
 
-def _remember_cookies(headers: list[tuple[str, str]]):
+def _remember_cookies(jar: dict, headers: list[tuple[str, str]]):
     for name, value in headers:
         if name.lower() != "set-cookie":
             continue
         pair, _, attrs = value.partition(";")
         key, _, val = pair.strip().partition("=")
-        gone = "max-age=0" in attrs.lower() or "1970" in attrs or val in ("", "null")
-        if gone:
-            _cookies.pop(key, None)
+        if "max-age=0" in attrs.lower() or "1970" in attrs or val in ("", "null"):
+            jar.pop(key, None)
         else:
-            _cookies[key] = val
+            jar[key] = val
 
 
 _LINK = re.compile(r"""((?:href|src|action)=["'])/(?!/)""")
 _CSS_URL = re.compile(r"""(url\(["']?)/(?!/)""")
 
 
-async def handle(method: str, path: str, query: str, headers: list, body: bytes) -> dict:
-    """One browser request, answered by the app directly as ASGI. Links starting with / are moved under PREFIX."""
-    headers = [(k, v) for k, v in headers if k.lower() != "cookie"]
-    if _cookies:
-        headers.append(("cookie", "; ".join(f"{k}={v}" for k, v in _cookies.items())))
+async def handle(mount: str, method: str, path: str, query: str, headers_json: str, body: bytes) -> dict:
+    """One browser request, answered by the app directly as ASGI. Links starting with / move under the mount."""
+    app = _apps.get(mount)
+    if app is None:
+        return {"status": 404, "headers": [("content-type", "text/plain")], "body": b"Nothing is running here yet. Click Run project."}
+    prefix = f"{BASE}/{mount}"
+    jar = _cookies.setdefault(mount, {})
+    headers = [(k, v) for k, v in json.loads(headers_json) if k.lower() != "cookie"]
+    if jar:
+        headers.append(("cookie", "; ".join(f"{k}={v}" for k, v in jar.items())))
     scope = {
         "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
         "method": method, "scheme": "http", "path": path or "/", "raw_path": (path or "/").encode(),
@@ -135,19 +175,18 @@ async def handle(method: str, path: str, query: str, headers: list, body: bytes)
         elif message["type"] == "http.response.body":
             sent["body"] += message.get("body", b"")
 
-    await _app(scope, receive, send)
-    _remember_cookies(sent["headers"])
+    await app(scope, receive, send)
+    _remember_cookies(jar, sent["headers"])
     out_headers, body = [], sent["body"]
     for k, v in sent["headers"]:
         if k.lower() == "set-cookie":
             continue
         if k.lower() == "location" and v.startswith("/"):
-            v = PREFIX + v
+            v = prefix + v
         out_headers.append((k, v))
     kind = dict((k.lower(), v) for k, v in out_headers).get("content-type", "")
     if "text/html" in kind or "text/css" in kind:
         text = body.decode("utf-8", "replace")
-        text = _CSS_URL.sub(rf"\1{PREFIX}/", _LINK.sub(rf"\1{PREFIX}/", text))
-        body = text.encode()
+        body = _CSS_URL.sub(rf"\1{prefix}/", _LINK.sub(rf"\1{prefix}/", text)).encode()
         out_headers = [(k, v) for k, v in out_headers if k.lower() != "content-length"]
     return {"status": sent["status"], "headers": out_headers, "body": body}

@@ -1,4 +1,5 @@
 """Runs a piece's tests on the learner's code, and assembles and (re)starts the store."""
+import asyncio
 import os
 import shutil
 import socket
@@ -22,8 +23,13 @@ _store_proc: subprocess.Popen | None = None
 TEST_TIMEOUT = 15
 
 
-def run_tests(piece: str, code: str) -> list[dict]:
-    """Run the piece's tests against the learner's code in a separate process. Returns [{name, passed, message}]."""
+async def run_tests(piece: str, code: str) -> list[dict]:
+    """Run the piece's tests against the learner's code in a separate process. Returns [{name, passed, message}].
+    In the browser, web/bridge.py swaps this for a browser-Python worker."""
+    return await asyncio.to_thread(_run_tests, piece, code)
+
+
+def _run_tests(piece: str, code: str) -> list[dict]:
     p = PIECES[piece]
     with tempfile.TemporaryDirectory() as tmp:
         Path(tmp, p["file"]).write_text(code)

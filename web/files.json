@@ -21,5 +21,19 @@
  "tests/conftest.py",
  "tests/test_auth.py",
  "tests/test_cart.py",
- "tests/test_pieces.py"
+ "tests/test_pieces.py",
+ "tutor/app.py",
+ "tutor/llm.py",
+ "tutor/overview.py",
+ "tutor/pages/catalog.html",
+ "tutor/pages/learn.html",
+ "tutor/pages/project.html",
+ "tutor/pieces.py",
+ "tutor/progress.py",
+ "tutor/runner.py",
+ "tutor/static/learn.js",
+ "tutor/static/run.js",
+ "tutor/static/settings.js",
+ "tutor/static/style.css",
+ "tutor/static/theme.js"
 ]
