@@ -149,6 +149,7 @@ Build mode: fast
 - [ ] Editor can grow taller: the results step aside, the task panel stays, and Esc or Submit brings it back. (Checked in the browser; waiting for the learner to try it.)
 - [ ] Tutor answers are short and example-based: under 60 words, plain words, a "what goes in → what comes out" example, linked to the learner's function, no code for "what is" questions, and never the call their function needs. (Checked live; waiting for the learner to try it.)
 - [ ] In request diagrams, the learner's code is obvious at a glance: their file's whole column is tinted yellow ("your file"), and the moment their function runs (call, what happens inside, what it gives back) sits in a yellow band starting "★ YOUR CODE ★". (Checked in the browser; waiting for the learner to try it.)
+- [ ] A natural voice instead of the robotic browser default: Groq's Orpheus AI voice through the learner's own key (`/api/speak`, played sentence by sentence with the next one fetched while the current plays), falling back to the browser's most natural voice (Edge "Natural", Chrome "Google", Safari "Premium"). Code is read as words. Orpheus needs Groq's terms accepted once; until then a note links to them. (Endpoint and fallback checked; waiting for the learner to accept the terms and listen.)
 - [ ] Final review complete — feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map

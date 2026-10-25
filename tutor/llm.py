@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -54,6 +55,42 @@ async def _post(url: str, headers: dict, body: dict) -> dict:
         with urllib.request.urlopen(request, timeout=30) as reply:
             return json.load(reply)
     return await asyncio.to_thread(send)
+
+
+async def _post_audio(url: str, headers: dict, body: dict) -> bytes:
+    """POST JSON and return the raw reply (audio). Raises RuntimeError with the provider's message on failure."""
+    if sys.platform == "emscripten":
+        from pyodide.http import pyfetch
+        reply = await pyfetch(url, method="POST", headers=headers, body=json.dumps(body))
+        if not reply.ok:
+            raise RuntimeError(await reply.string())
+        return await reply.bytes()
+
+    def send():
+        request = urllib.request.Request(url, json.dumps(body).encode(), {**headers, "User-Agent": "carve-out-tutor"})
+        try:
+            with urllib.request.urlopen(request, timeout=30) as reply:
+                return reply.read()
+        except urllib.error.HTTPError as err:
+            raise RuntimeError(err.read().decode("utf-8", "replace")) from None
+    return await asyncio.to_thread(send)
+
+
+# A natural AI voice from the learner's provider. Groq's Orpheus is free, but needs its terms accepted once.
+SPEECH = {"api.groq.com": ("canopylabs/orpheus-v1-english", "hannah"), "api.openai.com": ("gpt-4o-mini-tts", "coral")}
+
+
+async def speech(text: str) -> bytes:
+    """WAV audio of the text in a natural voice. Raises NoKey, or RuntimeError if the provider has no voice for us."""
+    api_key = _env("LLM_API_KEY") or _env("GROQ_API_KEY")
+    if not api_key:
+        raise NoKey()
+    base = _env("LLM_BASE_URL", DEFAULTS["LLM_BASE_URL"]).rstrip("/")
+    model, voice = next((v for host, v in SPEECH.items() if host in base), (None, None))
+    if not model:
+        raise RuntimeError("Your AI provider has no natural voice here, so the browser's voice is used.")
+    body = {"model": model, "voice": voice, "input": text, "response_format": "wav"}
+    return await _post_audio(base + "/audio/speech", {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, body)
 
 
 async def _chat(system: str, user: str, json_mode: bool = False) -> str:
