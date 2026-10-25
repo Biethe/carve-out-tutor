@@ -49,7 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
     field("model").value = s.model;
     field("api_key").value = "";
     field("api_key").placeholder = s.key_end ? "Saved key ending in " + s.key_end : "Paste your key";
-    form.querySelector(".key-state").textContent = s.key_end ? "" : "No key yet.";
+    form.querySelector(".key-state").textContent = s.key_end ? "" : s.demo
+      ? "No key needed to try it: you're using the shared demo. Add your own for unlimited use." : "No key yet.";
     dialog.showModal();
   };
 

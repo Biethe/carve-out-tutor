@@ -22,6 +22,21 @@ class NoKey(Exception):
     pass
 
 
+# The published tutor's demo proxy (demo-proxy/worker.js): visitors without a key of their own, like judges, can still
+# use everything. The Groq key lives on Cloudflare, never in the site. Only used in the browser, never locally.
+DEMO_PROXY = ""
+
+
+def provider() -> tuple[str, str, str, bool]:
+    """(base URL, key, chat model, is_demo): the learner's own settings, or else the demo proxy (in the browser)."""
+    key = _env("LLM_API_KEY") or _env("GROQ_API_KEY")
+    if key:
+        return _env("LLM_BASE_URL", DEFAULTS["LLM_BASE_URL"]).rstrip("/"), key, _env("LLM_MODEL", DEFAULTS["LLM_MODEL"]), False
+    if DEMO_PROXY and sys.platform == "emscripten":
+        return DEMO_PROXY, "demo", DEFAULTS["LLM_MODEL"], True  # the proxy adds the real key
+    raise NoKey()
+
+
 def settings() -> dict:
     return json.loads(SETTINGS.read_text()) if SETTINGS.exists() else {}
 
@@ -87,11 +102,8 @@ SPEECH = {"api.groq.com": ("canopylabs/orpheus-v1-english", "hannah"), "api.open
 async def speech(text: str, voice: str | None = None, direction: str | None = "[cheerful]") -> bytes:
     """WAV audio of the text in a natural voice. Raises NoKey, or RuntimeError if the provider has no voice for us.
     `direction` is Orpheus' delivery note (not read out); None lets the voice speak plainly."""
-    api_key = _env("LLM_API_KEY") or _env("GROQ_API_KEY")
-    if not api_key:
-        raise NoKey()
-    base = _env("LLM_BASE_URL", DEFAULTS["LLM_BASE_URL"]).rstrip("/")
-    model, default_voice = next((v for host, v in SPEECH.items() if host in base), (None, None))
+    base, api_key, _, demo = provider()
+    model, default_voice = SPEECH["api.groq.com"] if demo else next((v for host, v in SPEECH.items() if host in base), (None, None))
     voice = voice or default_voice
     if not model:
         raise RuntimeError("Your AI provider has no natural voice here, so the browser's voice is used.")
@@ -102,16 +114,13 @@ async def speech(text: str, voice: str | None = None, direction: str | None = "[
 
 
 async def _chat(system: str, user: str, json_mode: bool = False) -> str:
-    api_key = _env("LLM_API_KEY") or _env("GROQ_API_KEY")
-    if not api_key:
-        raise NoKey()
-    model = _env("LLM_MODEL", DEFAULTS["LLM_MODEL"])
+    base, api_key, model, _ = provider()
     body = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
     if "gpt-oss" in model:
         body["reasoning_effort"] = "low"  # keeps replies quick and inside the free tier's token budget
     if json_mode:
         body["response_format"] = {"type": "json_object"}
-    url = _env("LLM_BASE_URL", DEFAULTS["LLM_BASE_URL"]).rstrip("/") + "/chat/completions"
+    url = base + "/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     try:
         reply = await _post(url, headers, body)

@@ -274,8 +274,12 @@ async def run():
 def get_settings():
     """The AI provider settings, without the key itself."""
     key = llm._env("LLM_API_KEY") or llm._env("GROQ_API_KEY") or ""
+    try:
+        demo = llm.provider()[3]
+    except llm.NoKey:
+        demo = False
     return {"base_url": llm._env("LLM_BASE_URL", llm.DEFAULTS["LLM_BASE_URL"]),
-            "model": llm._env("LLM_MODEL", llm.DEFAULTS["LLM_MODEL"]), "key_end": key[-4:]}
+            "model": llm._env("LLM_MODEL", llm.DEFAULTS["LLM_MODEL"]), "key_end": key[-4:], "demo": demo}
 
 
 @app.put("/api/settings")

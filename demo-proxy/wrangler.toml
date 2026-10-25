@@ -1,0 +1,5 @@
+# The demo proxy: lets people try the published tutor without an AI key of their own.
+# Deploy: npx wrangler deploy   Key (once): npx wrangler secret put GROQ_KEY
+name = "carve-out-demo"
+main = "worker.js"
+compatibility_date = "2025-01-01"
