@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 import inspect
 import shutil
 
-from tutor import cards, llm, overview, pieces, progress, projects, runner, safety
+from tutor import cards, llm, onboarding, overview, pieces, progress, projects, runner, safety
 from tutor.pieces import PIECES, assemble, function, task
 
 PAGES = Path(__file__).parent / "pages"
@@ -323,6 +323,23 @@ async def interview(answer: str = Body("", embed=True)):
             "of": profile.get("limit", ONBOARDING_QUESTIONS), "profile": profile}
 
 
+@app.get("/api/onboarding")
+def onboarding_tree():
+    """The three yes/no questions as a tree, and which lines already have a recorded clip."""
+    voice = Path(__file__).parent / "static" / "voice"
+    return {**onboarding.tree(), "recorded": [i for i in onboarding.LINES if (voice / f"{i}.wav").exists()]}
+
+
+@app.post("/api/onboarding")
+def finish_onboarding(answers: list[tuple[str, bool]] = Body(embed=True)):
+    """Builds the profile straight from the answers: no AI, no key."""
+    if [q for q, _ in answers][:1] != ["python"] or not all(q in onboarding.QUESTIONS for q, _ in answers):
+        return {"error": "Those answers don't match the questions."}
+    profile = {**onboarding.profile(answers), "limit": len(answers)}
+    progress.save_profile(profile)
+    return profile
+
+
 @app.post("/api/interview/restart")
 def restart_interview():
     progress.save_profile({**progress.load_profile(), "done": False, "pending": None, "interview": [], "limit": ONBOARDING_QUESTIONS})
@@ -348,7 +365,7 @@ def edit_profile(claims: list[dict] = Body(), gaps: list[str] = Body(), wants: l
 
 @app.post("/api/speak")
 async def speak(text: str = Body(embed=True)):
-    """Chip's words in Groq's Orpheus voice (WAV). On an error the page uses Kokoro, then the browser's voice."""
+    """Chip's words in Groq's Orpheus voice (WAV). On an error the page shows the words instead, never another voice."""
     try:
         return Response(await llm.speech(text[:480]), media_type="audio/wav")
     except llm.NoKey:

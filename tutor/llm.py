@@ -79,8 +79,8 @@ async def _post_audio(url: str, headers: dict, body: dict) -> bytes:
     return await asyncio.to_thread(send)
 
 
-# Chip's voice: Groq's Orpheus, free but only about 3,600 characters a day per key. When that runs out, the page
-# switches to Kokoro in the browser (tutor/static/kokoro-worker.js).
+# Chip's one voice: Groq's Orpheus, free but only about 3,600 characters a day per key. Onboarding is pre-recorded in
+# it (tutor/record_intro.py); when live speech isn't available, Chip's words stay on screen instead of changing voice.
 SPEECH = {"api.groq.com": ("canopylabs/orpheus-v1-english", "hannah"), "api.openai.com": ("gpt-4o-mini-tts", "coral")}
 
 

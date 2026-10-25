@@ -91,7 +91,7 @@ function setSpeak(on) {
   try { localStorage.setItem("tutorSpeaks", on ? "1" : "0"); } catch {}
   $("speak-toggle").setAttribute("aria-pressed", on);
   $("speak-toggle").firstElementChild.className = "ph-bold " + (on ? "ph-speaker-high" : "ph-speaker-slash");
-  if (on) Voice.warmUp(); else Voice.stopSpeaking();
+  if (!on) Voice.stopSpeaking();
 }
 $("speak-toggle").onclick = () => setSpeak(!speakOn);
 setSpeak(speakOn);

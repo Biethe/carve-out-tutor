@@ -99,43 +99,102 @@
     }
 
     // ---- Talking or reading -----------------------------------------------------
-    let talking = true, last = null;  // last: the latest {feedback, question}
+    // Two kinds of questions: onboarding's three, from a fixed tree with every line recorded in Chip's voice
+    // (no AI, no key), and "Improve my profile", where the AI picks the questions.
+    let talking = true, mode = "onboarding", tree = null, asking = null, answers = [], last = null, clip = null;
+    const yes = said => /\b(yes|yeah|yep|yup|sure|of course|i have|i did|correct|definitely)\b/i.test(said);
+    const no = said => /\b(no|nope|nah|not yet|never|haven't|have not|didn't)\b/i.test(said);
 
     function useTalking(on) {
       talking = on;
       $("typed").hidden = talking;
       $("to-read").hidden = !talking;
       $("to-talk").hidden = talking;
-      if (talking) { if (last) converse(); }
-      else { Voice.stopListening(); Voice.stopSpeaking(); turn(""); }
+      if (!talking) { Voice.stopListening(); Voice.stopSpeaking(); clip?.pause(); turn(""); }
+      else if (mode === "onboarding" && asking) say(asking);
+      else if (last) converse();
     }
     $("to-read").onclick = () => useTalking(false);
     $("to-talk").onclick = () => useTalking(true);
+    const answerButtons = on => document.querySelectorAll("[data-answer]").forEach(b => (b.disabled = !on));
 
-    // ---- The questions ------------------------------------------------------------
-    async function next(answer = "") {
+    // A recorded line in Chip's voice. A line with no clip yet stays silent: the words are on screen, never another voice.
+    function playLine(id) {
+      if (!tree?.recorded.includes(id)) return Promise.resolve();
+      return new Promise(done => {
+        clip?.pause();
+        clip = new Audio(`static/voice/${id}.wav`);
+        clip.onended = clip.onerror = done;
+        clip.play().catch(done);
+      });
+    }
+
+    // ---- Onboarding: three yes/no questions --------------------------------------------
+    async function ask(qid, reaction = "") {
+      asking = qid;
+      $("count").textContent = `Question ${answers.length + 1} of 3`;
+      $("feedback").textContent = reaction && tree.lines[reaction];
+      $("question").textContent = tree.questions[qid];
+      if (!talking) return;
+      turn("chip", "Chip");
+      if (reaction) await playLine(reaction);
+      await playLine(qid);
+      if (asking !== qid || !talking) return;
+      listenFor(qid, true);
+    }
+
+    async function listenFor(qid, retry) {
+      if (!Voice.canListen) return turn("", "Yes or no?");
+      turn("you", "Yes or no?");
+      const said = await Voice.listen();
+      if (asking !== qid || !talking) return;
+      if (yes(said) || no(said)) return answer(yes(said));
+      if (!retry) return turn("", "Click Yes or No");
+      turn("chip", "Chip");
+      await playLine("again");  // "Sorry, was that a yes, or a no?"
+      listenFor(qid, false);
+    }
+
+    async function answer(said) {
+      if (mode !== "onboarding") return aiNext(said ? "Yes" : "No");
       Voice.stopListening();
-      document.querySelectorAll("[data-answer]").forEach(b => (b.disabled = true));
+      answers.push([asking, said]);
+      const following = tree.next[asking]?.[said ? 0 : 1];
+      if (following) return ask(following, said ? "yes" : "no");
+      // Done: the profile comes straight from the answers. Chip's last line, then the projects.
+      asking = null;
+      answerButtons(false);
+      document.querySelector(".yesno").hidden = true;
+      $("feedback").textContent = "";
+      $("question").textContent = tree.lines.closing;
+      await api("POST", "api/onboarding", { answers });
+      if (talking) { turn("chip", "Chip"); await playLine("closing"); }
+      else await new Promise(r => setTimeout(r, 900));
+      location.href = "/";
+    }
+    document.querySelectorAll("[data-answer]").forEach(b => (b.onclick = () => answer(b.dataset.answer === "Yes")));
+
+    // ---- Improve my profile: the AI asks a few more ------------------------------------------
+    async function aiNext(reply = "") {
+      Voice.stopListening();
+      answerButtons(false);
       turn("thinking", "Chip is thinking…");
-      const res = await api("POST", "api/interview", { answer });
-      document.querySelectorAll("[data-answer]").forEach(b => (b.disabled = false));
+      const res = await api("POST", "api/interview", { answer: reply });
+      answerButtons(true);
       turn("");
       if (res.error) {
         $("status").innerHTML = res.no_key
-          ? `First, add your AI key: click the <strong>gear</strong> at the top, then <button class="link" id="retry">try again</button>.`
+          ? `Improving your profile uses the AI: add your key with the <strong>gear</strong> at the top, then <button class="link" id="retry">try again</button>.`
           : esc(res.error) + ` <button class="link" id="retry">Try again</button>`;
-        $("retry").onclick = () => { $("status").textContent = ""; next(answer); };
+        $("retry").onclick = () => { $("status").textContent = ""; aiNext(reply); };
         return;
       }
       if (res.done) {
-        // Straight to work: Chip's last line, then the projects. The profile can be improved later from the top bar.
         document.querySelector(".yesno").hidden = true;
-        $("question").textContent = res.closing || "That's all I need. Let's build.";
+        $("question").textContent = res.closing || "Thanks, that helps.";
         $("feedback").textContent = "";
-        if (talking) await Voice.speak(res.closing || "That's all I need. Let's build.", () => turn("chip"));
-        else await new Promise(r => setTimeout(r, 900));
-        location.href = "/";
-        return;
+        if (talking) await Voice.speak(res.closing, () => turn("chip"));
+        return showProfile(res.profile);
       }
       last = res;
       $("count").textContent = `Question ${res.number} of ${res.of}`;
@@ -144,34 +203,24 @@
       if (talking) converse();
     }
 
-    // Chip says its reaction and the question; then it listens. A yes or a no (or anything else) is the answer.
-    async function converse(retry = true) {
+    async function converse() {
       turn("thinking");
       await Voice.speak([last.feedback, last.question].filter(Boolean).join(" "), () => turn("chip", "Chip"));
       if (!talking || !Voice.canListen) return turn("", "Yes or no?");
       turn("you", "Yes or no?");
       const said = await Voice.listen();
-      if (!talking) return;
-      if (said) return next(said);
-      if (retry) return converse(false);  // didn't catch anything: ask again, once
-      turn("", "Click Yes or No");
+      if (talking && said) aiNext(said);
+      else turn("", "Click Yes or No");
     }
-    document.querySelectorAll("[data-answer]").forEach(b => (b.onclick = () => next(b.dataset.answer)));
 
-    // ---- Chip says hello (a recorded clip: instant, no AI call) --------------------------------------
-    let clip = null;
+    // ---- Chip says hello (recorded: instant, no AI call) --------------------------------------
     async function hello() {
-      clip?.pause();
-      clip = new Audio("static/chip-intro.wav");
       turn("chip");
-      try {
-        await clip.play();
-        await new Promise(done => (clip.onended = clip.onerror = done));
-      } catch {}  // the browser blocked sound until a click: the speaker button plays it
+      await playLine("intro");  // the browser may block sound until a click: the speaker button plays it
       turn("");
     }
     $("hear").onclick = hello;
-    $("start").onclick = () => { clip?.pause(); show("chat"); useTalking(true); next(); };
+    $("start").onclick = () => { clip?.pause(); mode = "onboarding"; answers = []; show("chat"); useTalking(true); ask(tree.first); };
 
     // ---- The profile ------------------------------------------------------------
     function showProfile(p) {
@@ -201,9 +250,16 @@
     };
     $("redo").onclick = async () => { await api("POST", "api/interview/restart"); show("intro"); hello(); };
     // A few more questions on top of the first ones: Chip sees all the earlier answers.
-    $("more").onclick = async () => { await api("POST", "api/interview/more"); show("chat"); useTalking(true); next(); };
+    $("more").onclick = async () => {
+      await api("POST", "api/interview/more");
+      mode = "ai";
+      document.querySelector(".yesno").hidden = false;
+      show("chat"); useTalking(true); aiNext();
+    };
 
-    api("GET", "api/profile").then(p => {
+    Promise.all([api("GET", "api/onboarding"), api("GET", "api/profile")]).then(([t, p]) => {
+      tree = t;
+      tree.recorded.forEach(id => Object.assign(new Audio(), { preload: "auto", src: `static/voice/${id}.wav` }));  // instant later
       if (p.done) return showProfile(p);
       show("intro");
       hello();  // plays straight away if the browser allows sound; otherwise the speaker button does
