@@ -7,8 +7,8 @@ const Compat = {
     const files = Object.keys(c.blocked).length;
     const machine = c.machine.length ? ` It also uses ${c.machine.join(", ")}, which needs a real computer.` : "";
     if (c.verdict === "full") return "Runs fully in your browser.";
-    if (c.verdict === "none") return `Can't run in a browser: it needs ${bad.join(", ")}. You can still explore its Files and Map, and rebuild it in the local tutor.` + machine;
-    return (files ? `Partly runs here: ${files} file${files > 1 ? "s" : ""} need${files > 1 ? "" : "s"} ${bad.join(", ")}, which can't run in a browser. Those functions are left out of your plan; everything else works.` : "Runs here.") + machine;
+    if (c.verdict === "none") return `Can’t run in a browser: it needs ${bad.join(", ")}. You can still look through its files and how its data flows, and rebuild it in the local tutor.` + machine;
+    return (files ? `Partly runs here: ${files} file${files > 1 ? "s" : ""} need${files > 1 ? "" : "s"} ${bad.join(", ")}, which can’t run in a browser. Here those functions are left out of your plan; everything else works.` : "Runs here.") + machine;
   },
   libraries(c) {
     return c && c.libraries.length

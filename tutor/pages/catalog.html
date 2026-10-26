@@ -49,7 +49,7 @@
         <button class="btn" id="own-open" aria-expanded="false" aria-controls="drop">Bring my project</button>
       </div>
       <div class="drop panel" id="drop" hidden>
-        <label class="drop-zone" id="drop-zone" for="zip-in"><input type="file" id="zip-in" accept=".zip,application/zip" hidden><b>Drop a .zip here</b><span class="muted">or click to choose one</span></label>
+        <label class="drop-zone" id="drop-zone" for="zip-in"><input type="file" id="zip-in" class="sr" accept=".zip,application/zip"><b>Drop a .zip here</b><span class="muted">or click to choose one</span></label>
         <p class="muted small">Only upload projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
         <div id="upload-result" role="status"></div>
       </div>
@@ -72,7 +72,7 @@
     const cChip = $("c-chip"), say = (text) => Chip.say($("c-say"), text, cChip);
 
     // A learner with a profile goes home, unless they asked for a new project (or the story again).
-    fetch("api/profile").then((r) => r.json()).then((profile) => {
+    fetch("api/profile").then((r) => r.json()).catch(() => ({ done: false, error: "The tutor couldn’t be reached. Try again in a moment." })).then((profile) => {
       if (profile.done && !params.has("new") && !params.has("intro")) return location.replace("project");
       $("to-profile").hidden = !profile.done;
       if (params.has("intro") || (!profile.done && !Story.seen())) Story.play($("intro"), { onDone: choose });
@@ -156,7 +156,7 @@
         </article>`;
       }).join("");
     }
-    fetch("api/projects").then((r) => r.json()).then(showUploads);
+    fetch("api/projects").then((r) => r.json()).catch(() => ({ projects: [] })).then(showUploads);
 
     // Delete asks first, right on the card.
     grid.addEventListener("click", async (e) => {
@@ -165,7 +165,7 @@
       if (e.target.closest("[data-ask-delete]")) { card.querySelector(".confirm").hidden = false; card.querySelector("[data-delete]").focus(); }
       if (e.target.closest("[data-cancel]")) card.querySelector(".confirm").hidden = true;
       if (e.target.closest("[data-delete]")) {
-        showUploads(await fetch(`api/projects/${encodeURIComponent(card.dataset.name)}`, { method: "DELETE" }).then((r) => r.json()));
+        showUploads(await fetch(`api/projects/${encodeURIComponent(card.dataset.name)}`, { method: "DELETE" }).then((r) => r.json()).catch(() => ({ projects: [] })));
       }
     });
 
@@ -177,13 +177,13 @@
       Chip.mood(cChip, "busy");
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("api/projects", { method: "POST", body: form }).then((r) => r.json());
+      const res = await fetch("api/projects", { method: "POST", body: form }).then((r) => r.json()).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." }));
       cChip.classList.remove("busy");
       if (res.error) { out.innerHTML = `<p class="bad">${esc(res.error)}</p>`; return; }
       out.innerHTML = res.blocked
         ? `<p class="bad"><strong>Blocked.</strong> It won’t run:</p><ul class="small">${res.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`
         : `<p class="good"><strong>${esc(res.name)}</strong> is ready. ${esc(Compat.verdict(res.compat))}</p>`;
-      showUploads(await fetch("api/projects").then((r) => r.json()));
+      showUploads(await fetch("api/projects").then((r) => r.json()).catch(() => ({ projects: [] })));
     }
     $("zip-in").onchange = (e) => { upload(e.target.files[0]); e.target.value = ""; };
     const zone = $("drop-zone");

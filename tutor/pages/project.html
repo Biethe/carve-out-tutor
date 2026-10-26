@@ -73,7 +73,7 @@
     const $ = (id) => document.getElementById(id);
     const esc = (t) => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
     const api = (method, url, body) =>
-      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then((r) => r.json());
+      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then((r) => r.json()).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." }));
     const local = (key, value) => {
       try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch { return null; }
     };
@@ -154,7 +154,7 @@
       } else if (writing.length) {
         $("next-step").textContent = "Your plan is done";
         $("next-title").textContent = "Every function in your plan is yours.";
-        $("next-text").textContent = "Open your app to see it run on your code, or add more functions to your plan.";
+        $("next-text").textContent = state.runs ? "Open your app to see it run on your code, or add more functions to your plan." : "Add more functions to your plan whenever you like.";
         $("next-actions").innerHTML = (state.runs ? `<button class="btn primary lg" data-act="run">Open my app ${ARROW}</button>` : "")
           + `<button class="btn lg" data-act="plan">Add more functions</button>`;
         say("That’s your whole plan, written by you.");
@@ -264,12 +264,13 @@
       if (act === "run") runProject($("next-status"));
       if (act === "plan") { togglePlan(true); $("edit").open = true; $("edit").scrollIntoView({ behavior: "smooth", block: "start" }); }
       if (act === "write") {
+        const label = b.firstChild.textContent;
         b.disabled = true;
         b.firstChild.textContent = "Getting it ready… ";
         Chip.mood(chip, "busy");
-        const s = await api("POST", "api/next");
+        const s = await api("POST", "api/open", { key: current(steps()).key });  // exactly the function the card names
         chip.classList.remove("busy");
-        if (s.error) { $("next-status").textContent = s.error; b.disabled = false; b.firstChild.textContent = "Start writing "; return; }
+        if (s.error) { $("next-status").textContent = s.error; b.disabled = false; b.firstChild.textContent = label; return; }
         location.href = "learn";
       }
     };
@@ -291,7 +292,7 @@
       $("delete-ask").onclick = () => ($("delete-confirm").hidden = false);
       $("delete-no").onclick = () => ($("delete-confirm").hidden = true);
       $("delete-yes").onclick = async () => {
-        await fetch(`api/projects/${encodeURIComponent(info.name)}`, { method: "DELETE" });
+        await fetch(`api/projects/${encodeURIComponent(info.name)}`, { method: "DELETE" }).catch(() => {});
         location.href = "./?new";
       };
       let html = "";
@@ -325,7 +326,7 @@
         Chip.mood(chip, "busy");
         const ok = await suggest();
         chip.classList.remove("busy");
-        if (!ok) { $("plan-note").textContent = "I couldn’t make you a plan just now. You can ask me again in the whole plan."; $("plan-note").hidden = false; }
+        if (!ok) { $("plan-note").textContent = `I couldn’t make you a plan just now. ${$("plan-status").textContent} You can ask me again in the whole plan.`; $("plan-note").hidden = false; }
       }
       render();
     })();

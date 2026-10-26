@@ -5,7 +5,8 @@ document.documentElement.dataset.codeFont = codeFont || "mono";  // before the e
 
 const $ = (id) => document.getElementById(id);
 const api = (method, url, body) =>
-  fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then(r => r.json());
+  fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) })
+    .then(r => r.json()).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." }));  // never a stuck button
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function escapeHtml(text) {
@@ -270,7 +271,7 @@ function afterPass() {
   if (allDone) {
     $("results").hidden = false;
     $("results").insertAdjacentHTML("beforeend",
-      `<p class="done-note">That’s every function in your plan. Open your app to see ${escapeHtml(project)} running on your code, or add more functions from home.</p>`);
+      `<p class="done-note">That’s every function in your plan. ${runs ? `Open your app to see ${escapeHtml(project)} running on your code, or add` : "Add"} more functions from home.</p>`);
   } else {
     $("next").hidden = false;
   }
@@ -341,7 +342,9 @@ function openWin(claim) {
   (asking ? $("win-answer") : $("win-next").hidden ? $("win-home") : $("win-next")).focus();
 }
 
+let skipped = false;
 function afterQuestion() {
+  skipped = true;
   $("win-qa").hidden = true;
   $("win-after").hidden = false;
   ($("win-next").hidden ? $("win-home") : $("win-next")).focus();
@@ -387,7 +390,7 @@ $("win-run").onclick = () => runProject($("run-status"));
 $("win-home").onclick = () => (location.href = "project");
 // Closing the sheet (Esc) leaves an unanswered question waiting in Chip's panel.
 win.addEventListener("close", () => {
-  if (check?.question && !check.done) {
+  if (check?.question && !check.done && !skipped) {
     buddy(`${fnName} is yours. One question about it is waiting.`);
     $("answer-it").hidden = false;
   }
@@ -428,7 +431,7 @@ function tourNext() {
   if (stop >= TOUR.length) return endTour();
   const [id, text] = TOUR[stop];
   spotted = $(id);
-  spotted.scrollIntoView({ block: "nearest" });
+  spotted.scrollIntoView({ block: spotted.offsetHeight > innerHeight * 0.6 ? "start" : "nearest" });
   spotted.classList.add("spot");
   $("coach-count").textContent = `${stop + 1} of ${TOUR.length}`;
   $("coach-next").textContent = stop === TOUR.length - 1 ? "Got it" : "Next";
@@ -546,7 +549,6 @@ $("submit").onclick = async () => {
   }
   if (res.passed) {
     allDone = res.all_done;
-    if (res.shown_claim) check.shownClaim = res.shown_claim;
     onPass(res);
     return;
   }

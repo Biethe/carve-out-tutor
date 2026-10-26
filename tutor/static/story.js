@@ -110,6 +110,7 @@ const Story = (() => {
       wrap.style.height = `${470 * k}px`;
     }
     function clickAt(el, then) {  // the pointer walks to el and clicks it
+      if (RM) return then();  // with reduced motion, the click just happens
       const s = stage.getBoundingClientRect(), k = s.width / 1040 || 1, b = el.getBoundingClientRect();
       const to = `translate(${(b.left - s.left) / k + b.width / k * 0.55}px, ${(b.top - s.top) / k + b.height / k * 0.45}px)`;
       cursor.animate([{ transform: "translate(960px, 450px)", opacity: 0 }, { transform: "translate(960px, 450px)", opacity: 1, offset: 0.15 }, { transform: to, opacity: 1 }],

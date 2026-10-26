@@ -116,6 +116,8 @@ async function choose() {  // the idea box reacts, Polyvault opens, a zip upload
   await see(t, "#c-say", "I can’t build new ideas yet. That’s coming soon.");
   await t.click("#own-open");
   await see(t, "#c-say", "Your own code works too. Drop it in and I’ll find its pieces.");
+  await t.focus("#zip-in");  // the drop zone can be reached from the keyboard
+  if (!(await t.evaluate(() => document.activeElement?.id === "zip-in"))) fail("the zip picker can't get keyboard focus");
   await t.setInputFiles("#zip-in", makeZip("mini", { "shapes.py": AREA }));
   await see(t, "#upload-result", "mini is ready");
   await see(t, '.p-mine[data-name="mini"]', "Python code, tests only");
@@ -139,9 +141,11 @@ async function quiz() {  // three yes/no questions after picking Polyvault; the 
     || document.querySelector("#q-status").textContent.includes("Tap the speaker to hear Chip."), null, { timeout: 8000 });
   await shot(t, "quiz");
   await t.click("#sound");  // voice off, so the walk never waits on a microphone
-  await t.click("#q-yes");
+  await t.dblclick("#q-yes");  // a fast double click answers one question, not two
   await see(t, "#q-react", "Nice.");
   await see(t, "#q-text", "Have you built a web app with a login form?");
+  await page.waitForTimeout(500);
+  await see(t, "#q-count", "Question 2 of 3");
   await t.click("#q-no");
   await see(t, "#q-react", "No problem at all.");
   await see(t, "#q-text", "Have you saved data in a database before?");

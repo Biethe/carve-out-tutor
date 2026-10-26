@@ -274,6 +274,7 @@ h1, h2, h3 { font-family: var(--display); }
 .op-text span { font-size: 15px; }
 .drop { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 22px; animation: rise .45s var(--ease) both; }
 .drop-zone { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 26px 16px; border-radius: 16px; border: 1.5px dashed rgba(34, 48, 58, .2); text-align: center; cursor: pointer; transition: background .2s, border-color .2s; }
+.drop-zone:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
 .drop-zone:hover, .drop-zone.over { background: var(--accent-soft); border-color: rgba(61, 127, 119, .7); }
 .small { font-size: 14px; }
 .good { color: var(--good-ink); }

@@ -13,7 +13,7 @@ from tutor.pieces import PIECES, function
 from tutor.progress import DATA, load_profile
 
 BUSY = "The tutor is busy, try again in a minute."
-NO_KEY = "Add your AI key in Settings, at the top right. Groq gives free keys at console.groq.com."
+NO_KEY = "Add your AI key with the Settings button at the top. Groq gives free keys at console.groq.com."
 DEFAULTS = {"LLM_BASE_URL": "https://api.groq.com/openai/v1", "LLM_MODEL": "openai/gpt-oss-120b"}
 SETTINGS = DATA / "settings.json"
 

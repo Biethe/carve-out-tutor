@@ -54,7 +54,7 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const api = (method, url, body) =>
-      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then((r) => r.json());
+      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then((r) => r.json()).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." }));
     const esc = (t) => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
     const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const show = (id) => ["quiz", "profile"].forEach((s) => ($(s).hidden = s !== id));
@@ -128,6 +128,7 @@
       dots(answers.length);
       if (reaction) Chip.say($("q-react"), { yes: "Nice.", no: "No problem at all." }[reaction], chip);
       showQuestion(tree.questions[qid], Boolean(reaction));
+      setTimeout(() => asking === qid && answerButtons(true), reaction && !RM ? 300 : 0);  // once the new question is in
       if (!voiceOn()) return;
       if (reaction) await playLine(reaction);
       await playLine(qid);
@@ -150,6 +151,7 @@
     async function answer(said) {
       unlocked = true;
       if (mode !== "onboarding") return aiNext(said ? "Yes" : "No");
+      answerButtons(false);  // one answer per question, even after a fast double click
       Voice.stopListening();
       status("");
       answers.push([asking, said]);
