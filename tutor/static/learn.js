@@ -143,7 +143,7 @@ async function getHint(afterSubmit) {
   if (cleaning || passedNow) $("hint").disabled = true;
   buddy(formatReply(res.hint || res.error || ""), { html: true });
 }
-$("hint").onclick = () => getHint(false);
+$("hint").onclick = () => { bigEditor(false); getHint(false); };  // the hint shows beside the editor, so make room for it
 
 $("ask-form").onsubmit = async (e) => {
   e.preventDefault();

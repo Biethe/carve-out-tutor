@@ -493,6 +493,10 @@ h1, h2, h3 { font-family: var(--display); }
 }
 .work.editor-full { grid-template-columns: minmax(0, 1fr); grid-template-areas: "editor" "buddy"; }
 .work.editor-full .task { display: none; }
+/* Expanded: the editor takes the whole window, wide and tall. Esc or the same button brings the page back. */
+.work.editor-full .editor { position: fixed; inset: 12px; z-index: 40; width: auto; height: calc(100dvh - 24px); min-height: 0; max-width: none; align-self: stretch; }
+.work.editor-full .ed-body .CodeMirror { min-height: 0; }
+.work.editor-full { animation: none; transform: none; filter: none; }  /* its entrance motion leaves a transform, which would trap the fixed editor */
 .run-line { max-width: 1240px; margin: 0 auto; }
 .run-line:empty { display: none; }
 .buddy .say { font-size: 15.5px; }
