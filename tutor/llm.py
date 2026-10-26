@@ -365,6 +365,35 @@ STORE_NOTES = """- Modules: db, app, and the pieces (from auth import ..., from 
 
 
 
+def _split_card(reply: str) -> tuple[dict, str]:
+    """The JSON card and the pytest file, even when the TESTS: label is missing."""
+    start = reply.index("{")
+    depth, in_str, esc, end = 0, False, False, start
+    for i, ch in enumerate(reply[start:], start):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+    data = json.loads(reply[start:end])
+    fence = re.search(r"```(?:python)?[^\n]*\n(.*?)```", reply[end:], re.S)
+    if not fence or "def test_" not in fence[1]:
+        raise ValueError("no tests")
+    return data, fence[1].strip() + "\n"
+
+
 async def card(piece: str, name: str, context: dict, problem: str = "") -> dict | None:
     """A card and tests for one function. None if the AI is unavailable or keeps replying badly."""
     user = (f"About this project:\n{context['notes']}\n\n"
@@ -377,8 +406,7 @@ async def card(piece: str, name: str, context: dict, problem: str = "") -> dict 
         try:
             # Not JSON mode: escaping a whole test file inside JSON often fails. The card is JSON, the tests a code block.
             reply = await _chat(CARD_RULES, user)
-            data = json.loads(reply[reply.index("{"):reply.index("TESTS:")].strip().rstrip("`").strip())
-            tests = re.search(r"```(?:python)?\n(.*?)```", reply, re.S)[1].strip() + "\n"
+            data, tests = _split_card(reply)
             return {"description": str(data["description"]), "breaks": str(data.get("breaks") or ""),
                     "question": str(data["question"]), "answer": str(data.get("answer") or ""), "tests": tests,
                     "criteria": [c for c in data.get("criteria") or [] if isinstance(c, dict) and "test" in c and "text" in c]}

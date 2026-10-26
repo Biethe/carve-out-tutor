@@ -1,6 +1,8 @@
 """Cards and tests for the functions that have no hand-written card, written by the learner's AI the first time one
-is opened, then kept in data/cards/. A generated test file is only kept if it passes on the original code and fails
-on the empty stub, so a bad AI-written test can never fail the learner unfairly."""
+is opened, then kept in data/cards/. A generated test is only kept if it passes on the original code and fails
+on the empty stub, so a bad AI-written test can never fail the learner unfairly. One bad test no longer throws
+the rest away."""
+import ast
 import json
 import re
 from pathlib import Path
@@ -26,6 +28,21 @@ def load(piece: str, name: str) -> dict | None:
 
 def _test_name(piece: str, name: str) -> str:
     return f"test_{piece.replace('.', '_')}_{name}.py"  # a dot in a test file's name would break its import
+
+
+def _keep_good_tests(source: str, on_original: list, on_stub: list) -> str | None:
+    """Tests that pass on the real function and fail when it is empty. Drops the rest. None if none qualify."""
+    fails_empty = {r["name"] for r in on_stub if not r["passed"]}
+    good = {r["name"] for r in on_original if r["passed"] and r["name"] in fails_empty}
+    if not good:
+        return None
+    if good == {r["name"] for r in on_original}:
+        return source
+    tree = ast.parse(source)
+    tree.body = [n for n in tree.body if not (isinstance(n, ast.FunctionDef) and n.name.startswith("test_") and n.name not in good)]
+    if not any(isinstance(n, ast.FunctionDef) and n.name in good for n in tree.body):
+        return None
+    return ast.unparse(tree) + "\n"
 
 
 def test_file(piece: str, name: str) -> tuple[str, str]:
@@ -93,17 +110,22 @@ async def _prepare_other(piece: str, name: str) -> str | None:
     context = {"lang": language, "file": file, "source": source[:14000], "function": original, "call_sites": known["call_sites"],
                "callers": "\n\n".join(reference_code(f, n) for f, n in known["references"])}
     problem = ""
-    for _ in range(2 if language in langs.CODE else 1):  # one retry, told what went wrong
+    saw = False
+    attempts = 4 if language in langs.CODE else 1
+    for _ in range(attempts):
         card = await llm.card_other(language, context, problem)
         if card is None:
-            return llm.BUSY
+            problem = "Reply with the JSON card, then CHECK: and a code block."
+            continue
+        saw = True
         on_original = await langs.check(pieces.STORE, file, name, original, card["check"])
         on_stub = await langs.check(pieces.STORE, file, name, base["stub"], card["check"])
         failing = [f"{r['name']}: {r['message']}" for r in on_original if not r["passed"]]
         if failing:
             problem = "The check program FAILED on the original, correct code, so it's wrong:\n" + "\n".join(failing)[:1500]
+            problem += "\n\nYour check was:\n" + card["check"][:2500]
         elif all(r["passed"] for r in on_stub):
-            problem = "Every line printed the same when the function was empty, so the checks don't test it."
+            problem = "Every line printed the same when the function was empty, so the checks don't test it.\n\nYour check was:\n" + card["check"][:2500]
         else:
             _path(piece, name, "").parent.mkdir(parents=True, exist_ok=True)
             if card["check"]:
@@ -115,6 +137,8 @@ async def _prepare_other(piece: str, name: str) -> str | None:
             return None
     if language not in langs.CODE:
         return f"This {langs.NAMES[language]} piece can't be checked here, because it doesn't run the same way in this checker. Try again, or choose another function."
+    if not saw:
+        return llm.BUSY
     return "I couldn't make checks that match the original code, so I can't score this function yet. Try again, or choose another."
 
 
@@ -133,22 +157,21 @@ async def prepare(piece: str, name: str) -> str | None:
     original = (pieces.STORE / file).read_text()
     stubbed = assemble(piece, {name: base["stub"]})
     problem = ""
-    for _ in range(2):  # one retry, told what went wrong
+    saw = False
+    for _ in range(4):
         card = await llm.card(piece, name, context, problem)
         if card is None:
-            return llm.BUSY
+            problem = "Reply with a JSON object, then a ```python block of pytest functions named test_..."
+            continue
+        saw = True
         test_name = _test_name(piece, name)
         on_original = await runner.run_test_code(file, test_name, card["tests"], original)
         on_stub = await runner.run_test_code(file, test_name, card["tests"], stubbed)
-        failing = [f"{r['name']}: {r['message']}" for r in on_original if not r["passed"]]
-        if failing:
-            problem = "These tests FAILED on the original, correct code, so they're wrong:\n" + "\n".join(failing)
-        elif all(r["passed"] for r in on_stub):
-            problem = "These tests still PASS when the function only raises NotImplementedError, so they don't test it."
-        else:
-            names = {r["name"] for r in on_original}
+        kept = _keep_good_tests(card["tests"], on_original, on_stub)
+        if kept:
+            names = {r["name"] for r in on_original if r["passed"] and r["name"] in kept}
             _path(piece, name, "").parent.mkdir(parents=True, exist_ok=True)
-            _path(piece, name, ".py").write_text(card["tests"])
+            _path(piece, name, ".py").write_text(kept)
             _path(piece, name, ".json").write_text(json.dumps({
                 "description": card["description"], "breaks": card["breaks"], "question": card["question"],
                 "answer": card["answer"], "call_sites": known["call_sites"], "references": known["references"],
@@ -156,4 +179,10 @@ async def prepare(piece: str, name: str) -> str | None:
                             or [(n, n.removeprefix("test_").replace("_", " ")) for n in sorted(names)],
             }, indent=2))
             return None
-    return "I couldn't make checks that match the original code, so I can't score this function yet. Try again, or choose another."
+        failing = [f"{r['name']}: {r['message']}" for r in on_original if not r["passed"]]
+        if failing:
+            problem = "These tests FAILED on the original, correct code, so they're wrong:\n" + "\n".join(failing)
+        else:
+            problem = "These tests still PASS when the function only raises NotImplementedError, so they don't test it."
+        problem += "\n\nYour tests were:\n" + card["tests"][:3500]
+    return llm.BUSY if not saw else "I couldn't make checks that match the original code, so I can't score this function yet. Try again, or choose another."
