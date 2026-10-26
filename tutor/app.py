@@ -559,14 +559,7 @@ async def open_function(key: str = Body(embed=True)):
         except llm.NoKey:
             return {"error": llm.NO_KEY}
         if problem:
-            if problem != llm.BUSY:  # no reliable checks: it keeps the original, so the plan moves on to the next one
-                prog = progress.load()
-                plan = _plan(prog)
-                plan["marks"][key], plan["reasons"][key] = "keep", problem
-                plan["order"] = overview.roadmap([k for k, m in plan["marks"].items() if m == "write"])
-                prog["plan"] = plan
-                progress.save(prog)
-            return {"error": problem, "skipped": problem != llm.BUSY}
+            return {"error": problem}
     prog = progress.load()  # re-read after the wait
     plan = _plan(prog)
     plan["marks"][key] = "write"

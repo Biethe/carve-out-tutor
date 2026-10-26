@@ -6,7 +6,7 @@ You know how to write a script or a function, but a real system with hundreds of
 
 **Languages:** Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML and CSS. A piece is a function, a SQL table, view or query, a CSS rule, or an HTML section with an id.
 
-**Ready projects:** Polyvault (a Python web store), the Tiny compiler ([jamiebuilds/the-super-tiny-compiler](https://github.com/jamiebuilds/the-super-tiny-compiler), CC BY 4.0), a Todo page (HTML, CSS, JavaScript) and a Shop database (SQL).
+**Ready projects:** Polyvault (a Python web store), the Tiny compiler ([jamiebuilds/the-super-tiny-compiler](https://github.com/jamiebuilds/the-super-tiny-compiler), CC BY 4.0), Field notes (an HTML, CSS and JavaScript list) and Corner shop (a SQL shop: customers, products, orders and the lines on each order).
 
 Built for the Devpost *Build With AI: Basics* hackathon as a proof of concept.
 
@@ -47,7 +47,7 @@ LLM_API_KEY=your_ai_studio_key
 ## Demo walkthrough
 
 1. **The story.** On the first visit Chip tells what Carve-Out does in seven short steps, while Python loads in the background. Skip it any time.
-2. **What do you want to build?** Building from your own idea is coming soon; for now open **Polyvault**, or bring your own project as a .zip.
+2. **Which project do you want to understand?** Paste a GitHub link or drop a zip, or start from one that's ready: **Polyvault**, the **Tiny compiler**, **Field notes**, or **Corner shop**. Building a project from your own idea is marked coming soon.
 3. **Three questions.** Yes or no, in Chip's voice, so the plan starts at the right level. You can skip them.
 4. **Home** shows one next step: try the store first (login `learner` / `carve123`), then your first function. **See the whole plan** lists every step and lets you choose what you write.
 5. **The workspace.** A short tour the first time. The task card says what the function must do; write it in the editor, **Get a hint** for a nudge, ask Chip anything. **Check my code** ticks each check.

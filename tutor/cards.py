@@ -114,8 +114,8 @@ async def _prepare_other(piece: str, name: str) -> str | None:
                 "criteria": [(r["name"], r["name"]) for r in on_original]}, indent=2))
             return None
     if language not in langs.CODE:
-        return f"Chip can't check this {langs.NAMES[language]} piece here (it doesn't run the same way in this checker), so it stays the original code."
-    return "Chip couldn't write reliable checks for this one, so it stays the original code for now."
+        return f"This {langs.NAMES[language]} piece can't be checked here, because it doesn't run the same way in this checker. Try again, or choose another function."
+    return "I couldn't make checks that match the original code, so I can't score this function yet. Try again, or choose another."
 
 
 async def prepare(piece: str, name: str) -> str | None:
@@ -156,4 +156,4 @@ async def prepare(piece: str, name: str) -> str | None:
                             or [(n, n.removeprefix("test_").replace("_", " ")) for n in sorted(names)],
             }, indent=2))
             return None
-    return "Chip couldn't write reliable tests for this one, so it stays the original code for now."
+    return "I couldn't make checks that match the original code, so I can't score this function yet. Try again, or choose another."

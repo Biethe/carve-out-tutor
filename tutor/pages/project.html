@@ -271,7 +271,6 @@
         note.textContent = was;
         say(s.error);
         planStatus(s.error);
-        if (s.skipped) { plan = await api("GET", "api/plan"); render(); }
         return;
       }
       note.textContent = "Ready. Opening it…";
@@ -295,13 +294,13 @@
         Chip.mood(chip, "busy");
         const s = await api("POST", "api/open", { key: current(steps()).key });  // exactly the function the card names
         chip.classList.remove("busy");
-        if (s.error && s.skipped) {  // that one keeps the original: show the next function, and say why
-          plan = await api("GET", "api/plan");
-          render();
-          $("next-status").textContent = `${s.error} Here’s the next one, or choose another function.`;
+        if (s.error) {
+          $("next-status").textContent = s.error;
+          say(s.error);
+          b.disabled = false;
+          b.firstChild.textContent = label;
           return;
         }
-        if (s.error) { $("next-status").textContent = s.error; b.disabled = false; b.firstChild.textContent = label; return; }
         location.href = "learn";
       }
     };
