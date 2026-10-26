@@ -1,0 +1,1676 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Carve-Out Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Wix+Madefor+Display:wght@500;600;700&family=Wix+Madefor+Text:wght@400;500;600&display=swap">
+<style>
+/* Layout: one thing at a time. A story on the first visit, "what do you want to build?", three questions while
+   the app gets built, one next step at home, and a guided two-pane workspace.
+   Look: calm and easy on the eyes. A plain light background, soft white panels, one muted teal. Chip is a little microchip. */
+:root {
+  color-scheme: light;
+  --bg: #F3F4F2;
+  --surface: #FDFDFC;
+  --ink: #22303A;
+  --muted: #5B6770;
+  --line: #E1E4E0;
+  --accent: #3D7F77;
+  --accent-hover: #336D66;
+  --accent-soft: #E4EFEC;
+  --accent-line: #A9CCC4;
+  --accent-ink: #2F6A63;
+  --good: #3B8A5A;
+  --good-ink: #2E7049;
+  --bad: #C2554D;
+  --bad-ink: #A8433C;
+  --kw: #8E4A9E;
+  --fn: #2F6BB0;
+  --str: #3B7D5A;
+  --ty: #9A6A2E;
+  --studio: #ECE9E3;
+  --shadow: 0 1px 2px rgba(34, 48, 58, .05), 0 8px 24px rgba(34, 48, 58, .06);
+  --shadow-lg: 0 2px 6px rgba(34, 48, 58, .05), 0 18px 44px rgba(34, 48, 58, .09);
+  --shadow-xl: 0 6px 12px rgba(34, 48, 58, .06), 0 30px 64px rgba(34, 48, 58, .14);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --display: "Wix Madefor Display", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text: "Wix Madefor Text", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--text); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+button, input, textarea { font: inherit; color: inherit; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 8px; }
+.gut { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+
+/* Panels: plain and soft, close in tone to the page, so they blend without any gradients. */
+.glass { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.glass-strong { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); }
+
+/* Screens slide in one at a time. */
+.screen { position: relative; z-index: 1; opacity: 0; transform: translateY(14px); filter: blur(4px); transition: opacity .55s var(--ease), transform .6s var(--ease), filter .55s var(--ease); }
+.screen.on { opacity: 1; transform: none; filter: none; }
+.screen.off { opacity: 0; transform: translateY(-10px); filter: blur(4px); transition-duration: .22s; }
+
+/* Top bar. */
+.top { max-width: 1240px; margin: 0 auto; min-height: 70px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; font: 700 18px var(--display); letter-spacing: -0.02em; cursor: pointer; }
+.crumb { font-size: 15px; color: var(--muted); }
+.crumb b { color: var(--ink); font-weight: 500; }
+.top-right { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.status { display: inline-flex; align-items: center; gap: 8px; margin-right: 6px; font-size: 13.5px; color: var(--muted); }
+.spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(34, 48, 58, .15); border-top-color: var(--ink); animation: spin .8s linear infinite; }
+.ready { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px rgba(59, 138, 90, .15); }
+.navb { height: 38px; padding: 0 12px; border: 0; border-radius: 11px; background: none; color: var(--muted); font-size: 15px; font-weight: 500; cursor: pointer; transition: background .2s, color .2s; }
+.navb:hover { background: var(--surface); color: var(--ink); }
+.own { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 13px 0 9px; border-radius: 18px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.own.bump { animation: bump .8s var(--spring); }
+.ring .track { stroke: rgba(34, 48, 58, .12); }
+.ring .val { stroke: var(--accent); transition: stroke-dashoffset .9s var(--ease); }
+
+/* Buttons. */
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.btn { position: relative; height: 46px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); font: 600 15.5px var(--text); white-space: nowrap; cursor: pointer; box-shadow: 0 1px 2px rgba(34, 48, 58, .05); transition: transform .2s var(--ease), box-shadow .25s var(--ease), opacity .2s, filter .2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(34, 48, 58, .1); }
+.btn:active { transform: translateY(1px) scale(.98); box-shadow: none; }
+.btn:disabled { opacity: .45; cursor: default; transform: none; box-shadow: none; }
+.btn.primary { background: var(--accent); border-color: transparent; color: #FFFFFF; box-shadow: 0 4px 14px rgba(61, 127, 119, .22); }
+.btn.primary:hover { background: var(--accent-hover); box-shadow: 0 8px 22px rgba(61, 127, 119, .28); }
+.btn.ghost { background: transparent; border-color: transparent; box-shadow: none; }
+.btn.ghost:hover { background: var(--surface); }
+.btn.lg { height: 54px; padding: 0 26px; border-radius: 16px; font-size: 16.5px; }
+.btn.xl { height: 64px; min-width: 156px; border-radius: 18px; font-size: 19px; }
+.btn.sm { height: 40px; padding: 0 15px; border-radius: 12px; font-size: 14.5px; }
+.btn .go { transition: transform .25s var(--ease); }
+.btn:hover .go { transform: translateX(3px); }
+.btn.nudge { animation: nudge 2s ease-in-out infinite; }
+.btn.nudge .go { animation: arrow 2s ease-in-out infinite; }
+.link { padding: 4px 2px; border: 0; background: none; color: var(--muted); font-size: 15px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(91, 103, 112, .4); cursor: pointer; }
+.link:hover { color: var(--ink); text-decoration-color: currentColor; }
+.pill { height: 40px; padding: 0 16px; border-radius: 20px; font-size: 15px; font-weight: 500; cursor: pointer; transition: transform .2s var(--ease), box-shadow .2s, background .2s; }
+.pill:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.pill.on { background: var(--accent-soft); border-color: var(--accent-line); }
+
+/* Chip: a little microchip. Pins, a screen for a face, eyes that follow you, a cursor for a mouth, a status light. */
+.chip { --s: 54px; position: relative; flex: none; display: inline-block; width: var(--s); height: var(--s); filter: drop-shadow(0 calc(var(--s) * .07) calc(var(--s) * .1) rgba(40, 70, 80, .18)); transition: opacity .4s var(--ease), scale .5s var(--spring), margin-left .6s var(--ease); }
+.chip svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chip.xs { --s: 28px; }
+.chip.sm { --s: 40px; }
+.chip.md { --s: 56px; }
+.chip.lg { --s: 100px; }
+.chip.xl { --s: 168px; }
+.chip .pin { transform-box: fill-box; transform-origin: center; }
+.chip .look { transform: translate(var(--px, 0px), var(--py, 0px)); transition: transform .14s ease-out; }
+.chip .eyes { filter: drop-shadow(0 0 1.5px rgba(191, 235, 221, .5)); }
+.chip .eye { fill: #BFEBDD; transform-box: fill-box; transform-origin: center; animation: blink 5.5s infinite; }
+.chip .eye + .eye { animation-delay: .05s; }
+.chip .smile { stroke: #BFEBDD; opacity: 0; }
+.chip .mouth { fill: #BFEBDD; transform-box: fill-box; transform-origin: center; animation: cursor 1.1s steps(1) infinite; }
+.chip .led { fill: #E2BE6A; }
+.chip .cheek { fill: #E6A1B2; opacity: .75; }
+.chip.happy .eyes { opacity: 0; }
+.chip.happy .smile { opacity: 1; }
+.chip.happy .mouth { animation: none; transform: scaleX(1.5); }
+.chip.talk .mouth { animation: mouth .2s ease-in-out infinite alternate; }
+.chip.talk .led, .chip.think .led, .chip.busy .led { animation: led .4s ease-in-out infinite alternate; }
+.chip.talk .pin.l { animation: pinL .34s ease-in-out infinite alternate; }
+.chip.talk .pin.r { animation: pinR .34s ease-in-out infinite alternate; }
+.chip.busy .pin { animation: tap .28s ease-in-out infinite alternate; }
+.chip.busy .pin:nth-child(even) { animation-delay: .14s; }
+.chip.think .look { transform: translate(3px, -4px); }
+.chip.hop { animation: hop 2.8s ease-in-out infinite; }
+.chip.jump { animation: jump .7s var(--spring); }
+
+/* Chip's words arrive one at a time. */
+.say { margin: 0; font: 600 30px/1.28 var(--display); letter-spacing: -0.015em; text-wrap: balance; }
+.say.md { font-size: 22px; line-height: 1.35; }
+.say.sm { font: 500 16px/1.5 var(--text); letter-spacing: 0; }
+.say .w { display: inline-block; animation: wordIn .55s var(--ease) both; }
+
+/* ---------- The story ---------- */
+.story { max-width: 1120px; margin: 0 auto; padding-block: 0 40px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.stage-wrap { position: relative; width: 100%; max-width: 1040px; height: 470px; }
+.stage { position: absolute; left: 0; top: 0; width: 1040px; height: 470px; transform: scale(var(--k, 1)); transform-origin: 0 0; }
+.stage > * { position: absolute; left: 0; top: 0; transition: transform .9s var(--ease), opacity .6s var(--ease), box-shadow .6s var(--ease); }
+.caption { min-height: 88px; max-width: 860px; display: flex; align-items: center; justify-content: center; gap: 16px; }
+.story.s-hello .caption .chip { opacity: 0; scale: .4; margin-left: -72px; }
+.story.s-hello .say { text-align: center; }
+.story-nav { display: flex; align-items: center; gap: 18px; }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 8px; height: 8px; border-radius: 4px; background: rgba(34, 48, 58, .16); transition: width .45s var(--ease), background .3s; }
+.dots i.done { background: rgba(34, 48, 58, .38); }
+.dots i.on { width: 28px; background: var(--accent); }
+
+.hello { width: 280px; height: 280px; display: grid; place-items: center; transform: translate(380px, 120px); }
+.hello-glow { position: absolute; inset: 24px; border-radius: 50%; background: var(--accent-soft); animation: breathe 3.6s ease-in-out infinite; }
+.story:not(.s-hello) .hello { opacity: 0; transform: translate(380px, 120px) scale(.45); }
+
+.idea-box { width: 640px; display: flex; flex-direction: column; gap: 10px; opacity: 0; transform: translate(200px, 160px) scale(.96); }
+.s-idea .idea-box { opacity: 1; transform: translate(200px, 140px); }
+.s-app .idea-box { opacity: 0; transform: translate(200px, 80px) scale(.9); }
+.ib-label { font-size: 14px; font-weight: 600; color: var(--muted); padding-left: 6px; }
+.ib-field { height: 82px; display: flex; align-items: center; gap: 14px; padding: 0 12px 0 24px; border-radius: 22px; }
+.ib-text { flex: 1; min-width: 0; font: 500 23px var(--display); white-space: nowrap; overflow: hidden; }
+.ib-go { height: 56px; padding: 0 22px; display: inline-flex; align-items: center; border-radius: 16px; background: var(--accent); color: #FFFFFF; font-weight: 600; box-shadow: 0 4px 14px rgba(61, 127, 119, .22); transition: scale .2s; }
+.ib-go.pressed { scale: .94; }
+
+.app-win { width: 500px; height: 340px; overflow: hidden; border-radius: 20px; opacity: 0; transform: translate(270px, 70px) scale(.94); }
+.s-app .app-win { opacity: 1; transform: translate(270px, 40px); }
+.s-code .app-win { transform: translate(20px, 40px); }
+.s-lift .app-win { opacity: .3; }
+.s-all .app-win { box-shadow: 0 0 0 3px rgba(61, 127, 119, .45), var(--shadow-lg); }
+.aw-head { height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid var(--line); }
+.aw-logo { font: 700 16px var(--display); letter-spacing: -0.01em; }
+.aw-add { padding: 6px 12px; border-radius: 10px; background: var(--accent-soft); border: 1px solid rgba(61, 127, 119, .4); font-size: 12.5px; font-weight: 600; transition: scale .2s, background .2s; }
+.aw-add.pressed { scale: .93; background: var(--accent); color: #FFFFFF; }
+.aw-search { margin: 12px 18px 6px; height: 36px; display: flex; align-items: center; padding: 0 12px; border-radius: 11px; background: rgba(34, 48, 58, .045); font-size: 13px; color: var(--muted); }
+.aw-list { display: flex; flex-direction: column; gap: 4px; padding: 4px 12px 12px; }
+.aw-row { height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 8px; border-radius: 12px; }
+.aw-row:nth-child(odd) { background: rgba(34, 48, 58, .03); }
+.aw-thumb { width: 34px; height: 34px; flex: none; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+.aw-title { flex: 1; font-size: 13.5px; font-weight: 600; }
+.aw-time { font-size: 12.5px; color: var(--muted); }
+.aw-row.new { opacity: 0; transform: translateY(-10px); transition: opacity .5s var(--ease), transform .6s var(--spring); }
+.aw-row.new.show { opacity: 1; transform: none; }
+.aw-toast { position: absolute; left: 50%; top: 11px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 12px; background: rgba(255, 255, 255, .95); box-shadow: var(--shadow-lg); color: var(--accent-ink); font-size: 12.5px; font-weight: 600; white-space: nowrap; opacity: 0; transform: translate(-50%, -10px); transition: opacity .5s var(--ease), transform .6s var(--ease); }
+.tk { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #FFFFFF; }
+.s-back .aw-toast { opacity: 1; transform: translate(-50%, 0); transition-delay: 1s; }
+
+.code-win { width: 440px; height: 340px; border-radius: 20px; opacity: 0; transform: translate(620px, 40px); }
+.s-code .code-win { opacity: 1; transform: translate(580px, 40px); }
+.s-lift .code-win { opacity: .3; }
+.cw-head { height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 600; }
+.cw-head .muted { font-weight: 500; }
+
+.blk { width: 400px; height: 40px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(34, 48, 58, .05); opacity: 0; transform: translate(640px, var(--y)); transition: transform .9s var(--ease), opacity .6s var(--ease), background .4s, border-color .4s; }
+.s-code .blk { opacity: 1; transform: translate(600px, var(--y)); }
+.story.b4 .blk { transition-delay: calc(var(--i) * 70ms + 250ms); }
+.s-lift .blk { opacity: .3; }
+.s-lift .blk.b0 { opacity: 0; transform: translate(320px, 214px) scale(1.15); }
+.blk .bd { width: 8px; height: 8px; border-radius: 50%; background: rgba(34, 48, 58, .2); transition: background .4s; }
+.blk .bn { font: 500 13px var(--mono); }
+.blk .bf { margin-left: auto; font-size: 12px; color: var(--muted); }
+.blk .bc { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #FFFFFF; scale: 0; transition: scale .45s var(--spring); }
+.blk.mine { background: var(--accent-soft); border-color: var(--accent-line); }
+.blk.mine .bd { background: var(--accent); }
+.blk.mine .bc { scale: 1; }
+.blk.pop { animation: popScale .55s var(--spring); }
+
+.slot-ghost { width: 400px; height: 40px; border-radius: 12px; background: repeating-linear-gradient(-45deg, rgba(34, 48, 58, .05) 0 7px, transparent 7px 14px); box-shadow: inset 0 0 0 1px rgba(34, 48, 58, .08); opacity: 0; transform: translate(600px, 98px); }
+.s-lift .slot-ghost { opacity: 1; }
+
+.desk { width: 560px; height: 268px; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 22px; opacity: 0; transform: translate(240px, 124px) scale(.94); }
+.s-lift .desk { opacity: 1; transform: translate(240px, 100px); transition-delay: .15s; }
+.s-back .desk { opacity: 0; transform: translate(520px, -15px) scale(.2); }
+.dk-head { display: flex; align-items: center; justify-content: space-between; }
+.dk-name { font: 500 14px var(--mono); }
+.dk-tag { padding: 4px 10px; border-radius: 8px; background: var(--accent-soft); border: 1px solid rgba(61, 127, 119, .4); color: var(--accent-ink); font-size: 12px; font-weight: 600; }
+.dk-code { margin: 0; padding: 14px 16px; border-radius: 13px; background: rgba(34, 48, 58, .04); font: 400 12.5px/22px var(--mono); white-space: pre; overflow: hidden; }
+.dk-tests { display: flex; gap: 22px; font-size: 13px; }
+.dk-tests .t { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); opacity: 0; transform: translateY(6px); transition: opacity .35s var(--ease), transform .45s var(--ease), color .3s; }
+.dk-tests .t.show { opacity: 1; transform: none; }
+.dk-tests .t i { position: relative; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(34, 48, 58, .15); border-top-color: var(--ink); animation: spin .7s linear infinite; }
+.dk-tests .t.ok { color: var(--good-ink); font-weight: 600; }
+.dk-tests .t.ok i { border-color: var(--good); background: var(--good); animation: popScale .4s var(--spring); }
+.dk-tests .t.ok i::after { content: ""; position: absolute; left: 3.5px; top: 1px; width: 4px; height: 7px; border: solid #FFFFFF; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.dk-hint { position: absolute; right: -30px; top: -26px; display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 7px; border-radius: 16px; background: rgba(255, 255, 255, .96); box-shadow: var(--shadow-lg); font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px) scale(.94); transition: opacity .35s var(--ease), transform .5s var(--spring); }
+.dk-hint.show { opacity: 1; transform: none; }
+.caret { display: inline-block; width: 2px; height: 1.15em; vertical-align: -0.2em; background: var(--accent); animation: caret 1s steps(1) infinite; }
+
+.meter { width: 400px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); opacity: 0; transform: translate(320px, 424px); }
+.s-back .meter { opacity: 1; transform: translate(320px, 410px); }
+.meter b { color: var(--ink); }
+.m-track { width: 100%; height: 8px; overflow: hidden; border-radius: 4px; background: rgba(34, 48, 58, .08); }
+.m-fill { display: block; width: 0; height: 100%; border-radius: 4px; background: var(--accent); transition: width .8s var(--ease); }
+
+.cursor { width: 26px; height: 26px; opacity: 0; transform: translate(960px, 450px); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .22)); }
+
+/* ---------- What do you want to build? ---------- */
+.choose { max-width: 780px; margin: 0 auto; padding-block: clamp(12px, 4vh, 44px) 56px; display: flex; flex-direction: column; gap: 22px; }
+.greet { display: flex; align-items: center; gap: 16px; min-height: 64px; }
+.idea { display: flex; flex-direction: column; gap: 14px; padding: 22px; border-radius: 26px; transition: box-shadow .3s var(--ease); }
+.idea textarea { width: 100%; min-height: 96px; padding: 4px; border: 0; outline: none; resize: none; background: transparent; font: 500 24px/1.35 var(--display); letter-spacing: -0.01em; }
+.idea textarea::placeholder { color: var(--muted); }
+.idea:focus-within { box-shadow: 0 0 0 3px rgba(61, 127, 119, .35), var(--shadow-lg); }
+.idea-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.idea-foot .muted { font-size: 14.5px; }
+.known { display: flex; flex-direction: column; gap: 10px; }
+.known .muted { font-size: 15px; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.own-project { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 16px; padding: 18px 20px; border-radius: 22px; }
+.op-icon { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 14px; background: var(--accent-soft); border: 1px solid rgba(61, 127, 119, .35); }
+.op-text { flex: 1 1 260px; display: flex; flex-direction: column; }
+.op-text b { font-weight: 600; }
+.op-text span { font-size: 15px; }
+.drop { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 22px; animation: rise .45s var(--ease) both; }
+.drop-zone { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 26px 16px; border-radius: 16px; border: 1.5px dashed rgba(34, 48, 58, .2); text-align: center; cursor: pointer; transition: background .2s, border-color .2s; }
+.drop-zone:hover, .drop-zone.over { background: var(--accent-soft); border-color: rgba(61, 127, 119, .7); }
+.gh { display: flex; gap: 8px; }
+.gh input { flex: 1; min-width: 0; height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+
+/* ---------- Questions ---------- */
+.quiz { max-width: 760px; margin: 0 auto; padding-block: clamp(8px, 3vh, 36px) 56px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.build-pill { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 10px; border-radius: 20px; font-size: 14px; font-weight: 500; }
+.qtop { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+.qdots { display: flex; gap: 6px; }
+.qdots i { width: 30px; height: 5px; border-radius: 3px; background: rgba(34, 48, 58, .13); transition: background .4s; }
+.qdots i.done { background: var(--accent); }
+.qdots i.on { background: var(--ink); }
+.q-react { min-height: 32px; margin: 0; font: 600 19px var(--display); color: var(--accent-ink); }
+.q-text { max-width: 22ch; margin: 0; font: 600 clamp(26px, 4.2vw, 42px)/1.2 var(--display); letter-spacing: -0.02em; text-wrap: balance; transition: opacity .25s, transform .4s var(--ease); }
+.q-text.out { opacity: 0; transform: translateX(-28px); }
+.q-text.pre { opacity: 0; transform: translateX(28px); transition: none; }
+.q-why { margin: 0; color: var(--muted); }
+.q-yn { display: flex; gap: 14px; margin-top: 10px; }
+
+/* ---------- Building the app ---------- */
+.build { max-width: 760px; margin: 0 auto; padding-block: clamp(8px, 3vh, 36px) 56px; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.b-note { margin: -6px 0 0; font-size: 14.5px; color: var(--muted); max-width: 52ch; }
+.files { width: min(420px, 100%); list-style: none; margin: 0; padding: 14px 18px; border-radius: 20px; text-align: left; }
+.files li { display: flex; align-items: center; gap: 12px; padding: 6px 0; font: 400 14.5px var(--mono); color: var(--muted); opacity: .35; transition: opacity .3s, color .3s; }
+.files li[data-state="run"], .files li[data-state="pass"] { opacity: 1; color: var(--ink); }
+.b-ready { display: flex; flex-direction: column; align-items: center; gap: 18px; animation: rise .6s var(--ease) both; }
+
+/* ---------- Home: one next step ---------- */
+.home { max-width: 1000px; margin: 0 auto; padding-block: 16px 64px; display: flex; flex-direction: column; gap: 24px; }
+.next { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); overflow: hidden; border-radius: 28px; }
+.next-visual { position: relative; min-height: 310px; display: grid; place-items: center; padding: 30px; overflow: hidden; background: #EDF1EE; }
+.next-body { display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 36px 36px 32px; }
+.next-step { font-size: 13.5px; font-weight: 600; color: var(--accent-ink); }
+.next-title { margin: 0; font: 600 34px/1.12 var(--display); letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.next-text { margin: 0; font-size: 16.5px; color: var(--muted); }
+.next-note { margin: 2px 0 0; padding: 12px 14px; border-radius: 13px; background: var(--bg); font-size: 15px; }
+.next-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.next.in .next-visual > * { animation: rise .8s var(--ease) both; }
+.next.in .next-body > * { animation: rise .6s var(--ease) both; }
+.next.in .next-body > :nth-child(2) { animation-delay: .06s; }
+.next.in .next-body > :nth-child(3) { animation-delay: .12s; }
+.next.in .next-body > :nth-child(4) { animation-delay: .18s; }
+.next.in .next-body > :nth-child(5) { animation-delay: .24s; }
+.mini { position: relative; width: min(360px, 100%); overflow: hidden; border-radius: 20px; text-align: left; }
+.mh { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.mh b { font: 700 14px var(--display); }
+.mb { padding: 4px 10px; border-radius: 9px; background: var(--accent-soft); border: 1px solid rgba(61, 127, 119, .4); font-size: 12px; font-weight: 600; }
+.mb.dark { background: var(--ink); color: #FFFFFF; border-color: var(--ink); }
+.ml { display: flex; flex-direction: column; gap: 4px; padding: 10px; }
+.mr { height: 46px; display: flex; align-items: center; gap: 12px; padding: 0 8px; border-radius: 12px; font-size: 13.5px; }
+.mr:nth-child(odd) { background: rgba(34, 48, 58, .03); }
+.mt { width: 30px; height: 30px; flex: none; border-radius: 9px; }
+.mn { flex: 1; font-weight: 600; }
+.mm { font-size: 12.5px; color: var(--muted); }
+.mini .my { position: absolute; right: 12px; top: 54px; padding: 3px 9px; border-radius: 7px; background: var(--accent); color: #FFFFFF; font-size: 11.5px; font-weight: 600; animation: popScale .5s .4s var(--spring) both; }
+.ms-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px; }
+.ms-grid span { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 12px; background: var(--studio); }
+.ms-grid img { position: absolute; left: 10%; top: 10%; width: 80%; height: 80%; object-fit: contain; }
+.ms-cursor { position: absolute; right: 26px; top: 32px; width: 22px; height: 22px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .22)); animation: hover 2.4s ease-in-out infinite; }
+.mini-code { width: min(360px, 100%); overflow: hidden; border-radius: 20px; }
+.mc-head { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.mc-lines { color: var(--accent-ink); font-weight: 600; }
+.mini-code pre { margin: 0; padding: 18px 16px 22px; font: 400 14px/24px var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.kw { color: var(--kw); } .fn { color: var(--fn); } .str { color: var(--str); } .ty { color: var(--ty); }
+
+.journey { display: flex; align-items: center; padding: 14px 10px 38px; }
+.jn { position: relative; flex: none; width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); border: 2px solid rgba(34, 48, 58, .2); transition: background .4s, border-color .4s; }
+.jn.done { background: var(--accent); border-color: var(--accent); color: #FFFFFF; animation: popScale .5s var(--spring); }
+.jn.done svg { width: 9px; height: 9px; }
+.jn.now { width: 22px; height: 22px; border-color: var(--ink); animation: ring 1.8s ease-out infinite; }
+.jn.now::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+.jl { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.jn .tip { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translate(-50%, 4px); padding: 5px 9px; border-radius: 8px; background: var(--ink); color: #FFFFFF; font-size: 12.5px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s, transform .25s var(--ease); }
+.jn:hover .tip { opacity: 1; transform: translate(-50%, 0); }
+.jline { flex: 1; height: 2px; margin: 0 6px; border-radius: 1px; background: rgba(34, 48, 58, .12); transition: background .5s; }
+.jline.done { background: var(--accent); }
+.plan-wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.plan { width: 100%; list-style: none; margin: 0; padding: 8px 22px; border-radius: 22px; animation: rise .45s var(--ease) both; }
+.plan li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.plan li:last-child { border-bottom: 0; }
+.plan .pi { width: 20px; height: 20px; margin-top: 2px; display: grid; place-items: center; border-radius: 50%; border: 2px solid rgba(34, 48, 58, .18); }
+.plan li.done .pi { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
+.plan li.done .pi svg { width: 10px; height: 10px; }
+.plan li.now .pi { border-color: var(--ink); }
+.plan li.now .pi::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); }
+.plan b { display: block; font-weight: 600; }
+.plan li.next b { color: var(--muted); font-weight: 500; }
+.plan .muted { font-size: 14.5px; }
+.foot-links { display: flex; flex-wrap: wrap; gap: 4px 22px; }
+
+/* ---------- Workspace ---------- */
+.card { border-radius: 24px; }
+.work { max-width: 1240px; margin: 0 auto; padding-block: 10px 48px; display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); grid-template-areas: "task editor" "buddy editor"; grid-template-rows: auto 1fr; gap: 20px; }
+.task { grid-area: task; display: flex; flex-direction: column; gap: 6px; padding: 24px; }
+.w-step { font-size: 13.5px; font-weight: 600; color: var(--accent-ink); }
+.task h1 { margin: 2px 0 0; font: 500 26px/1.2 var(--mono); letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.w-sig { margin: 0; font: 400 13.5px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.w-desc { margin: 10px 0 6px; }
+.w-h { margin: 6px 0 2px; font: 600 15px var(--text); }
+.checks { list-style: none; margin: 0 0 12px; padding: 0; }
+.checks li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 15px; transition: color .3s; }
+.ck { position: relative; flex: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%; border: 2px solid rgba(34, 48, 58, .18); }
+[data-state="run"] > .ck { border-top-color: var(--ink); animation: spin .7s linear infinite; }
+[data-state="pass"] > .ck { border-color: var(--good); background: var(--good); animation: popScale .4s var(--spring); }
+[data-state="pass"] > .ck::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid #FFFFFF; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.checks li[data-state="pass"] { color: var(--good-ink); }
+[data-state="fail"] > .ck { border-color: var(--bad); background: var(--bad); animation: popScale .4s var(--spring); }
+[data-state="fail"] > .ck::before, [data-state="fail"] > .ck::after { content: ""; position: absolute; left: 6px; top: 2px; width: 2px; height: 10px; border-radius: 1px; background: #FFFFFF; transform: rotate(45deg); }
+[data-state="fail"] > .ck::after { transform: rotate(-45deg); }
+.checks li[data-state="fail"] { color: var(--bad-ink); }
+.task details { padding-top: 12px; border-top: 1px solid var(--line); }
+.task summary { font-size: 15px; font-weight: 600; cursor: pointer; }
+.task details ul { margin: 8px 0 0; padding-left: 18px; font-size: 14.5px; color: var(--muted); }
+.editor { grid-area: editor; min-height: 560px; display: flex; flex-direction: column; overflow: hidden; transition: box-shadow .45s var(--ease); }
+.editor.ok { box-shadow: 0 0 0 3px rgba(61, 127, 119, .5), var(--shadow); }
+.editor.bad { animation: shake .45s; box-shadow: 0 0 0 3px rgba(220, 38, 38, .25), var(--shadow); }
+.ed-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.ed-body { flex: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); background: #FAFBFA; }
+.gutter { margin: 0; padding: 18px 10px 18px 18px; overflow: hidden; font: 400 14px/24px var(--mono); color: rgba(91, 103, 112, .7); text-align: right; user-select: none; }
+#w-code { display: block; width: 100%; height: 100%; min-height: 400px; padding: 18px 18px 18px 6px; border: 0; outline: none; resize: none; background: transparent; font: 400 14px/24px var(--mono); white-space: pre; overflow: auto; tab-size: 4; caret-color: var(--accent); }
+.ed-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--line); }
+.saved { margin-left: auto; font-size: 13px; color: var(--muted); }
+.buddy { grid-area: buddy; align-self: start; display: flex; align-items: flex-start; gap: 12px; padding: 18px; }
+.buddy-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.buddy .say { min-height: 48px; }
+.ask { display: flex; gap: 8px; }
+.ask input { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #FAFBFA; }
+.ask input::placeholder, .gh input::placeholder { color: var(--muted); }
+.spot { position: relative; z-index: 50; box-shadow: 0 0 0 4px rgba(61, 127, 119, .9), 0 0 0 200vmax rgba(34, 48, 58, .42) !important; transition: box-shadow .35s var(--ease); }
+
+/* Layers above everything: the tour, the win, the flying function, the toast. */
+.shield { position: fixed; inset: 0; z-index: 49; }
+.coach-card { position: fixed; left: 0; top: 0; z-index: 60; width: min(330px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-xl); transition: transform .45s var(--ease); }
+.coach-card .head { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.coach-card .row { justify-content: space-between; }
+.coach-card .say { min-height: 72px; }
+.win { position: fixed; inset: 0; z-index: 65; display: grid; place-items: center; padding: 24px; background: rgba(243, 244, 242, .72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); opacity: 0; transition: opacity .3s; }
+.win.on { opacity: 1; }
+.sheet { width: min(600px, 100%); display: flex; flex-direction: column; gap: 18px; padding: 28px; border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-xl); transform: translateY(34px) scale(.98); transition: transform .55s var(--spring); }
+.win.on .sheet { transform: none; }
+.win-top { display: flex; align-items: center; gap: 14px; }
+.win-top h2 { margin: 0; font: 600 24px/1.2 var(--display); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.win-top p { margin: 2px 0 0; }
+.qa { display: flex; flex-direction: column; gap: 10px; }
+.qa label, .qa p { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+.qa textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #FAFBFA; resize: vertical; }
+.qa textarea::placeholder { color: var(--muted); }
+.flyer { position: fixed; left: 0; top: 0; z-index: 70; display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px 12px 12px; border-radius: 16px; background: #FFFFFF; box-shadow: var(--shadow-xl); font-size: 15px; pointer-events: none; }
+.flyer .fc { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #FFFFFF; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 80; max-width: min(520px, calc(100% - 32px)); padding: 12px 16px; border-radius: 14px; background: var(--ink); color: #FFFFFF; font-size: 15px; transform: translateX(-50%); }
+.toast.in { animation: toastIn .35s var(--ease) both; }
+
+@keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(6vmax, 4vmax) scale(1.12); } }
+@keyframes wordIn { from { opacity: 0; transform: translateY(.35em); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+@keyframes cursor { 0%, 55% { opacity: 1; } 56%, 100% { opacity: .15; } }
+@keyframes mouth { from { transform: scale(1, 1); } to { transform: scale(.8, 2.6); } }
+@keyframes led { from { fill: #E2BE6A; } to { fill: #F4E3B5; } }
+@keyframes pinL { to { transform: translateX(-2px); } }
+@keyframes pinR { to { transform: translateX(2px); } }
+@keyframes tap { to { transform: translateY(-2px); } }
+@keyframes hop { 0%, 100% { transform: none; } 18% { transform: translateY(-10px) rotate(-6deg); } 36% { transform: translateY(0) rotate(4deg); } 52% { transform: translateY(-5px) rotate(-2deg); } 68% { transform: none; } }
+@keyframes jump { 0% { transform: none; } 30% { transform: translateY(-14px) scale(1.06, .96); } 60% { transform: translateY(0) scale(.96, 1.04); } 100% { transform: none; } }
+@keyframes breathe { 0%, 100% { transform: scale(.92); opacity: .8; } 50% { transform: scale(1.06); opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes caret { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes popScale { 0% { scale: .6; } 60% { scale: 1.12; } 100% { scale: 1; } }
+@keyframes bump { 0% { scale: 1; } 35% { scale: 1.12; box-shadow: 0 0 0 6px rgba(61, 127, 119, .22); } 100% { scale: 1; } }
+@keyframes nudge { 0%, 100% { box-shadow: 0 6px 18px rgba(61, 127, 119, .35), 0 0 0 0 rgba(61, 127, 119, .45); } 55% { box-shadow: 0 6px 18px rgba(61, 127, 119, .35), 0 0 0 12px rgba(61, 127, 119, 0); } }
+@keyframes arrow { 0%, 100% { transform: none; } 50% { transform: translateX(4px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes shake { 0%, 100% { translate: 0; } 20% { translate: -6px; } 40% { translate: 5px; } 60% { translate: -3px; } 80% { translate: 2px; } }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(34, 48, 58, .3); } 100% { box-shadow: 0 0 0 11px rgba(34, 48, 58, 0); } }
+@keyframes hover { 0%, 100% { translate: 0 0; } 50% { translate: -7px 5px; } }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
+}
+
+@media (max-width: 920px) {
+  .work { grid-template-columns: minmax(0, 1fr); grid-template-areas: "task" "editor" "buddy"; grid-template-rows: auto; }
+  .editor { min-height: 460px; }
+}
+@media (max-width: 760px) {
+  .next { grid-template-columns: minmax(0, 1fr); }
+  .next-visual { min-height: 230px; }
+  .next-body { padding: 26px 22px 24px; }
+  .next-title { font-size: 28px; }
+  .say { font-size: 22px; }
+  .say.md { font-size: 19px; }
+  .caption { min-height: 70px; }
+  .crumb, .status { display: none; }
+  .story-nav { gap: 10px; }
+  .q-yn .btn.xl { min-width: 120px; }
+  .idea textarea { font-size: 20px; }
+}
+</style>
+
+<!-- Shared paint for Chip and the progress rings. -->
+<svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="chipBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A6C99A"></stop><stop offset=".5" stop-color="#74B2A7"></stop><stop offset="1" stop-color="#86A6CC"></stop>
+    </linearGradient>
+    <radialGradient id="chipShine" cx=".3" cy=".2" r=".75">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".45"></stop><stop offset=".45" stop-color="#FFFFFF" stop-opacity=".12"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop>
+    </radialGradient>
+    <linearGradient id="chipScreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22394A"></stop><stop offset="1" stop-color="#15252F"></stop>
+    </linearGradient>
+    <linearGradient id="chipPin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEF3F7"></stop><stop offset="1" stop-color="#9DB0C3"></stop>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- 1. The story: what Carve-Out is, one sentence at a time. -->
+<section class="screen on" id="s-story" aria-label="What Carve-Out is">
+  <header class="top gut">
+    <span class="brand"><span class="chip xs" data-chip></span>Carve-Out</span>
+    <div class="top-right">
+      <span class="status" id="py"><span class="spin" aria-hidden="true"></span>Getting Python ready</span>
+      <button class="navb" id="skip-intro">Skip intro</button>
+    </div>
+  </header>
+  <div class="story gut s-hello" id="story">
+    <div class="stage-wrap" id="stage-wrap">
+      <div class="stage" id="stage" aria-hidden="true">
+        <div class="hello"><span class="hello-glow"></span><span class="chip xl hop" id="big-chip" data-chip></span></div>
+
+        <div class="idea-box">
+          <span class="ib-label">Your idea</span>
+          <div class="ib-field glass-strong"><span class="ib-text"><span id="ib-typed"></span><span class="caret"></span></span><span class="ib-go" id="ib-go">Build it</span></div>
+        </div>
+
+        <div class="app-win glass-strong">
+          <div class="aw-head"><span class="aw-logo">Family Recipes</span><span class="aw-add" id="aw-add">+ Add recipe</span></div>
+          <div class="aw-search">Search recipes</div>
+          <div class="aw-list">
+            <div class="aw-row"><span class="aw-thumb" style="background: #D9A48F"></span><span class="aw-title">Grandma's jollof rice</span><span class="aw-time">45 min</span></div>
+            <div class="aw-row"><span class="aw-thumb" style="background: #CACF96"></span><span class="aw-title">Lemon drizzle cake</span><span class="aw-time">1 h 5 min</span></div>
+            <div class="aw-row"><span class="aw-thumb" style="background: #B48C6B"></span><span class="aw-title">Sunday beef stew</span><span class="aw-time">2 h 10 min</span></div>
+            <div class="aw-row new" id="aw-new"><span class="aw-thumb" style="background: #E2BE98"></span><span class="aw-title">Mum's pancakes</span><span class="aw-time">20 min</span></div>
+          </div>
+          <div class="aw-toast"><span class="tk"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>Search runs your code now</div>
+        </div>
+
+        <div class="code-win glass"><div class="cw-head"><span>Your app's code</span><span class="muted">23 functions</span></div></div>
+        <div class="slot-ghost"></div>
+        <div class="blk b0" style="--i: 0; --y: 98px"><span class="bd"></span><span class="bn">find_recipes</span><span class="bf">recipes.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 1; --y: 145px"><span class="bd"></span><span class="bn">scale_servings</span><span class="bf">recipes.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 2; --y: 192px"><span class="bd"></span><span class="bn">total_time</span><span class="bf">recipes.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 3; --y: 239px"><span class="bd"></span><span class="bn">save_recipe</span><span class="bf">storage.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 4; --y: 286px"><span class="bd"></span><span class="bn">load_recipes</span><span class="bf">storage.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 5; --y: 333px"><span class="bd"></span><span class="bn">delete_recipe</span><span class="bf">storage.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+
+        <div class="desk glass-strong">
+          <div class="dk-head"><span class="dk-name">find_recipes</span><span class="dk-tag">Your turn</span></div>
+          <pre class="dk-code"><span class="kw">def</span> <span class="fn">find_recipes</span>(recipes, text):
+    <span class="str">"""Recipes whose name contains the text, any case."""</span>
+    <span id="dk-typed"></span><span class="caret"></span></pre>
+          <div class="dk-tests"><span class="t"><i></i>Finds a recipe by its name</span><span class="t"><i></i>Ignores upper and lower case</span></div>
+          <div class="dk-hint" id="dk-hint"><span class="chip xs" data-chip></span>Lower-case both sides, then compare.</div>
+        </div>
+
+        <div class="meter"><span><b id="m-n">0</b> of 23 functions are yours</span><span class="m-track"><span class="m-fill" id="m-fill"></span></span></div>
+
+        <svg class="cursor" id="cursor" viewBox="0 0 24 24"><path d="M5 3l14 8.2-6.1 1.4L16.4 20l-2.9 1.3-3.5-7.4L5 18.4z" fill="#22303A" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+      </div>
+    </div>
+    <div class="caption">
+      <span class="chip md" id="story-chip" data-chip></span>
+      <p class="say" id="story-say" aria-live="polite"></p>
+    </div>
+    <div class="story-nav">
+      <button class="btn ghost" id="story-back" disabled>Back</button>
+      <div class="dots" id="story-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <button class="btn primary lg" id="story-next"><span id="story-next-label">Show me</span><svg class="go" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></button>
+    </div>
+  </div>
+</section>
+
+<!-- 2. What do you want to build? Your own idea first; your own code or an example right beside it. -->
+<section class="screen" id="s-choose" aria-label="What do you want to build" hidden>
+  <header class="top gut">
+    <span class="brand"><span class="chip xs" data-chip></span>Carve-Out</span>
+  </header>
+  <main class="choose gut">
+    <div class="greet"><span class="chip lg" id="c-chip" data-chip></span><p class="say" id="c-say" aria-live="polite"></p></div>
+    <form class="idea glass-strong" id="idea-form">
+      <label class="sr" for="idea-in">Your idea</label>
+      <textarea id="idea-in" rows="2" placeholder="Describe your idea in one sentence"></textarea>
+      <div class="idea-foot">
+        <span class="muted">Anything you'd use or enjoy. I build it, then you rebuild it piece by piece.</span>
+        <button class="btn primary lg" type="submit" id="idea-go" disabled><span id="idea-go-label">Build it</span><svg class="go" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></button>
+      </div>
+    </form>
+    <div class="known">
+      <span class="muted">Or start from something you already know</span>
+      <div class="pills">
+        <button class="pill glass" data-idea="recipes">A recipe box</button>
+        <button class="pill glass" data-idea="habits">A habit tracker</button>
+        <button class="pill glass" data-idea="money">A bill splitter</button>
+        <button class="pill glass" data-idea="polyvault">An online store</button>
+      </div>
+    </div>
+    <div class="own-project glass">
+      <span class="op-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M5 20h14"></path></svg></span>
+      <span class="op-text"><b>Already have a project?</b><span class="muted">Bring your own code as a .zip or a GitHub link, and learn on that.</span></span>
+      <button class="btn" id="own-open" aria-expanded="false" aria-controls="drop">Bring my project</button>
+    </div>
+    <div class="drop glass" id="drop" hidden>
+      <label class="drop-zone" id="drop-zone" for="zip-in"><input type="file" id="zip-in" accept=".zip,application/zip" hidden><b>Drop a .zip here</b><span class="muted">or click to choose one</span></label>
+      <form class="gh" id="gh-form"><label class="sr" for="gh-in">GitHub link</label><input id="gh-in" autocomplete="off" placeholder="or paste a GitHub link"><button class="btn sm" type="submit">Use it</button></form>
+    </div>
+  </main>
+</section>
+
+<!-- 3. Three questions, while the app gets built. -->
+<section class="screen" id="s-quiz" aria-label="Getting to know you" hidden>
+  <header class="top gut">
+    <span class="brand"><span class="chip xs" data-chip></span>Carve-Out</span>
+  </header>
+  <div class="quiz gut">
+    <span class="build-pill glass" id="build-pill" role="status"><svg class="ring" width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"></circle><circle class="val" id="build-ring" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="44" transform="rotate(-90 9 9)"></circle></svg><span id="build-text"></span></span>
+    <div class="qtop"><span id="q-count">Question 1 of 3</span><span class="qdots" id="q-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <span class="chip lg" id="q-chip" data-chip></span>
+    <p class="q-react" id="q-react" aria-live="polite"></p>
+    <h1 class="q-text" id="q-text"></h1>
+    <p class="q-why">So I know where to start you.</p>
+    <div class="q-yn"><button class="btn primary xl" id="q-yes">Yes</button><button class="btn xl" id="q-no">No</button></div>
+    <button class="link" id="q-skip">Skip these questions</button>
+  </div>
+</section>
+
+<!-- 4. Your app gets built, file by file. -->
+<section class="screen" id="s-build" aria-label="Building your app" hidden>
+  <header class="top gut">
+    <span class="brand"><span class="chip xs" data-chip></span>Carve-Out</span>
+  </header>
+  <main class="build gut">
+    <span class="chip lg" id="b-chip" data-chip></span>
+    <p class="say" id="b-say" aria-live="polite"></p>
+    <p class="b-note" id="b-note" hidden>This preview builds one of three sample apps. The real Carve-Out builds exactly your idea.</p>
+    <ul class="files glass" id="b-files"></ul>
+    <div class="b-ready" id="b-ready" hidden>
+      <div id="b-mini"></div>
+      <button class="btn primary lg" id="b-go">See my plan<svg class="go" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></button>
+    </div>
+  </main>
+</section>
+
+<!-- 5. Home: only the next step, big. -->
+<section class="screen" id="s-home" aria-label="Your next step" hidden>
+  <header class="top gut">
+    <button class="brand" data-act="home"><span class="chip xs" data-chip></span>Carve-Out</button>
+    <span class="crumb">/ <b id="h-project"></b></span>
+    <div class="top-right">
+      <span class="own glass" title="Functions in your app that run your code"><svg class="ring" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"></circle><circle class="val" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="44" transform="rotate(-90 9 9)"></circle></svg><span><span class="own-n">0</span> of <span class="own-t">0</span> yours</span></span>
+      <button class="btn sm" data-act="new"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>New project</button>
+      <button class="navb" data-act="soon">Profile</button><button class="navb" data-act="soon">Settings</button>
+    </div>
+  </header>
+  <main class="home gut">
+    <div class="greet"><span class="chip md" id="home-chip" data-chip></span><p class="say md" id="home-say" aria-live="polite"></p></div>
+    <article class="next glass-strong" id="next">
+      <div class="next-visual" id="next-visual"></div>
+      <div class="next-body">
+        <span class="next-step" id="next-step"></span>
+        <h1 class="next-title" id="next-title"></h1>
+        <p class="next-text" id="next-text"></p>
+        <p class="next-note" id="next-note" hidden></p>
+        <div class="next-actions" id="next-actions"></div>
+      </div>
+    </article>
+    <div class="journey" id="journey" aria-hidden="true"></div>
+    <div class="plan-wrap">
+      <button class="link" data-act="plan" aria-expanded="false" aria-controls="plan">See the whole plan</button>
+      <ol class="plan glass" id="plan" hidden></ol>
+      <div class="foot-links"><button class="link" data-act="soon">Choose a different function</button><button class="link" data-act="restart">Restart this preview</button></div>
+    </div>
+  </main>
+</section>
+
+<!-- 6. Writing a function, with Chip next to you. -->
+<section class="screen" id="s-work" aria-label="Write a function" hidden>
+  <header class="top gut">
+    <button class="btn ghost sm" id="w-back"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 18l-6-6 6-6"></path></svg>Home</button>
+    <span class="crumb" id="w-crumb"></span>
+    <div class="top-right">
+      <span class="own glass" id="w-own" title="Functions in your app that run your code"><svg class="ring" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"></circle><circle class="val" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="44" transform="rotate(-90 9 9)"></circle></svg><span><span class="own-n">0</span> of <span class="own-t">0</span> yours</span></span>
+      <button class="btn sm" data-act="run-app">Open my app</button>
+    </div>
+  </header>
+  <main class="work gut" id="w-main">
+    <section class="task card glass-strong" id="w-task" aria-labelledby="w-name">
+      <span class="w-step" id="w-step"></span>
+      <h1 id="w-name"></h1>
+      <p class="w-sig" id="w-sig"></p>
+      <p class="w-desc" id="w-desc"></p>
+      <h2 class="w-h">It passes when</h2>
+      <ul class="checks" id="w-checks"></ul>
+      <details><summary>Where this code is used</summary><ul id="w-used"></ul></details>
+    </section>
+    <section class="editor card glass-strong" id="w-editor" aria-label="Code editor">
+      <div class="ed-head"><span class="mono" id="w-file"></span><span class="muted">Only this function. The rest of the file stays as it is.</span></div>
+      <div class="ed-body"><pre class="gutter" id="w-gutter" aria-hidden="true"></pre><textarea id="w-code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Your code"></textarea></div>
+      <div class="ed-foot"><button class="btn primary" id="w-check"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Check my code</button><button class="btn" id="w-hint">Get a hint</button><span class="saved" id="w-saved">Saved</span></div>
+    </section>
+    <section class="buddy card glass-strong" id="w-buddy" aria-label="Chip, your tutor">
+      <span class="chip md" id="w-chip" data-chip></span>
+      <div class="buddy-body">
+        <p class="say sm" id="w-say" aria-live="polite"></p>
+        <form class="ask" id="w-ask"><label class="sr" for="w-ask-in">Ask Chip a question</label><input id="w-ask-in" autocomplete="off" placeholder="Ask me anything"><button class="btn sm" type="submit">Ask</button></form>
+      </div>
+    </section>
+  </main>
+</section>
+
+<div class="shield" id="shield" hidden></div>
+<div class="coach-card" id="coach" role="dialog" aria-label="A quick tour" hidden>
+  <div class="head"><span class="chip sm" id="coach-chip" data-chip></span><span id="coach-count"></span></div>
+  <p class="say sm" id="coach-say"></p>
+  <div class="row"><button class="link" id="coach-skip">Skip the tour</button><button class="btn primary sm" id="coach-next">Next</button></div>
+</div>
+
+<div class="win" id="win" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <div class="win-top"><span class="chip md happy" id="win-chip" data-chip></span><div><h2 id="win-title"></h2><p class="muted" id="win-sub"></p></div></div>
+    <form class="qa" id="win-qa">
+      <label for="win-answer"><span class="muted">One question before you move on.</span><strong id="win-q"></strong></label>
+      <textarea id="win-answer" rows="3" placeholder="Answer in your own words"></textarea>
+      <div class="row"><button class="btn primary" type="submit">Send</button><button class="btn ghost" type="button" id="win-skip">Skip</button></div>
+    </form>
+    <div class="qa" id="win-after" hidden>
+      <p id="win-mine" hidden></p>
+      <p><span class="muted">Here's how I'd put it</span><span id="win-a"></span></p>
+      <div class="row"><button class="btn primary" id="win-next">Next</button><button class="btn ghost" id="win-home">Back home</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<img id="img-chest" src="../../../store/static/assets/chest.webp" alt="" hidden><img id="img-lantern" src="../../../store/static/assets/lantern.webp" alt="" hidden><img id="img-boombox" src="../../../store/static/assets/boombox.webp" alt="" hidden>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CHECK = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
+  const ARROW = '<svg class="go" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>';
+  const POINTER = '<svg class="ms-cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 8.2-6.1 1.4L16.4 20l-2.9 1.3-3.5-7.4L5 18.4z" fill="#22303A" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round"></path></svg>';
+  const IMG = { chest: $('#img-chest').src, lantern: $('#img-lantern').src, boombox: $('#img-boombox').src };
+
+  // ---------- Chip, the microchip ----------
+  const CHIP = `<svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+    <g fill="url(#chipPin)">
+      <rect class="pin l" x="2" y="40" width="16" height="9" rx="4.5"></rect><rect class="pin l" x="2" y="57" width="16" height="9" rx="4.5"></rect><rect class="pin l" x="2" y="74" width="16" height="9" rx="4.5"></rect>
+      <rect class="pin r" x="102" y="40" width="16" height="9" rx="4.5"></rect><rect class="pin r" x="102" y="57" width="16" height="9" rx="4.5"></rect><rect class="pin r" x="102" y="74" width="16" height="9" rx="4.5"></rect>
+      <rect class="pin b" x="40" y="100" width="9" height="16" rx="4.5"></rect><rect class="pin b" x="71" y="100" width="9" height="16" rx="4.5"></rect>
+    </g>
+    <rect x="13" y="12" width="94" height="94" rx="30" fill="url(#chipBody)"></rect>
+    <rect x="13" y="12" width="94" height="94" rx="30" fill="url(#chipShine)"></rect>
+    <path d="M24 23 h10 v5 M86 96 h-10 v-4" fill="none" stroke="#FFFFFF" stroke-opacity=".6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+    <circle class="led" cx="95" cy="25" r="4.6"></circle>
+    <rect x="26" y="30" width="68" height="56" rx="18" fill="url(#chipScreen)"></rect>
+    <rect x="26" y="30" width="68" height="56" rx="18" fill="none" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="1.5"></rect>
+    <g class="look">
+      <g class="eyes"><rect class="eye" x="41" y="46" width="12" height="17" rx="6"></rect><rect class="eye" x="67" y="46" width="12" height="17" rx="6"></rect></g>
+      <path class="smile" d="M40 58 q6.5 -9 13 0 M67 58 q6.5 -9 13 0" fill="none" stroke-width="4" stroke-linecap="round"></path>
+    </g>
+    <rect class="mouth" x="54" y="71" width="12" height="4" rx="2"></rect>
+    <ellipse class="cheek" cx="31" cy="93" rx="6" ry="3.2"></ellipse><ellipse class="cheek" cx="89" cy="93" rx="6" ry="3.2"></ellipse>
+  </svg>`;
+  $$('[data-chip]').forEach((el) => { el.innerHTML = CHIP; });
+
+  function speak(el, text, chip) {
+    if (!el) return;
+    const words = text.split(' ');
+    el.innerHTML = words.map((w, i) => `<span class="w" style="animation-delay:${RM ? 0 : i * 55}ms">${esc(w)}</span>`).join(' ');
+    if (chip && !RM) {
+      chip.classList.add('talk');
+      clearTimeout(chip.talkTimer);
+      chip.talkTimer = setTimeout(() => chip.classList.remove('talk'), words.length * 55 + 450);
+    }
+  }
+  // Chip's eyes follow your pointer, or whatever you're about to press.
+  let px = innerWidth / 2, py = innerHeight * 0.4, moved = 0, frame = 0;
+  function lookAll() {
+    frame = 0;
+    for (const c of $$('.chip')) {
+      const r = c.getBoundingClientRect();
+      if (!r.width) continue;
+      const t = c.target || { x: px, y: py };
+      const dx = t.x - (r.left + r.width / 2), dy = t.y - (r.top + r.height / 2);
+      const d = Math.hypot(dx, dy) || 1, m = 4.5 * Math.min(1, d / 160);
+      c.style.setProperty('--px', `${(dx / d * m).toFixed(2)}px`);
+      c.style.setProperty('--py', `${(dy / d * m).toFixed(2)}px`);
+    }
+  }
+  const look = () => { if (!frame) frame = requestAnimationFrame(lookAll); };
+  function lookAt(chip, el) {
+    if (!chip) return;
+    if (el) { const r = el.getBoundingClientRect(); chip.target = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; } else chip.target = null;
+    look();
+  }
+  addEventListener('pointermove', (e) => { px = e.clientX; py = e.clientY; moved = Date.now(); look(); }, { passive: true });
+  if (!RM) setInterval(() => {  // when nobody moves, Chip glances around on its own
+    if (Date.now() - moved < 3500) return;
+    px = innerWidth * (0.25 + Math.random() * 0.5);
+    py = innerHeight * (0.2 + Math.random() * 0.5);
+    look();
+  }, 2600);
+
+  let screen = $('#s-story');
+  function show(id) {
+    const next = $(id);
+    if (next === screen) return;
+    const prev = screen;
+    screen = next;
+    prev.classList.remove('on');
+    prev.classList.add('off');
+    setTimeout(() => {
+      prev.hidden = true;
+      prev.classList.remove('off');
+      next.hidden = false;
+      scrollTo(0, 0);
+      requestAnimationFrame(() => requestAnimationFrame(() => { next.classList.add('on'); look(); }));
+    }, RM ? 0 : 230);
+  }
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.hidden = false;
+    t.classList.remove('in');
+    void t.offsetWidth;
+    t.classList.add('in');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => { t.hidden = true; }, 3400);
+  }
+  const ringOffset = (part) => String(44 - 44 * Math.max(0, Math.min(1, part)));
+
+  // ---------- The story ----------
+  const STORY = [
+    ['Hi, I’m Chip. Let’s build something you actually care about.', 'Show me'],
+    ['It starts with your idea. Any idea.', 'Next'],
+    ['I build the whole app for you, and it already works.', 'Next'],
+    ['Inside, it’s made of small pieces of code called functions.', 'Next'],
+    ['We take one piece out, and you write it back. I give hints, never answers.', 'Next'],
+    ['Your piece goes back in, and the app keeps working on your code.', 'Next'],
+    ['Piece by piece, the app you dreamed up becomes yours.', 'What will you build?']
+  ];
+  const story = $('#story'), stage = $('#stage'), nextBtn = $('#story-next'), backBtn = $('#story-back');
+  const blocks = $$('.blk'), tests = $$('.dk-tests .t'), cursor = $('#cursor'), awAdd = $('#aw-add'), awNew = $('#aw-new'), typed = $('#dk-typed'), ibTyped = $('#ib-typed'), ibGo = $('#ib-go');
+  const FULL = 'words = text.lower()\n    return [r for r in recipes if words in r["name"].lower()]';
+  const FULL_HTML = 'words = text.<span class="fn">lower</span>()\n    <span class="kw">return</span> [r <span class="kw">for</span> r <span class="kw">in</span> recipes <span class="kw">if</span> words <span class="kw">in</span> r[<span class="str">"name"</span>].<span class="fn">lower</span>()]';
+  const IDEAS = ['a game where you dodge falling stars', 'a tracker for my morning runs', 'a recipe box for my family'];
+  let beat = 1, timers = [];
+  const later = (ms, fn) => { timers.push(setTimeout(fn, RM ? 0 : ms)); };
+  const setMeter = (n) => { $('#m-n').textContent = n; $('#m-fill').style.width = `${n / 23 * 100}%`; };
+  function fitStage() {
+    const wrap = $('#stage-wrap');
+    const k = Math.min(1, wrap.clientWidth / 1040);
+    stage.style.setProperty('--k', k);
+    wrap.style.height = `${470 * k}px`;
+  }
+  addEventListener('resize', fitStage);
+  const nudge = (ms) => later(ms, () => nextBtn.classList.add('nudge'));
+  function clickAt(el, then) {  // the pointer walks to el and clicks it
+    const s = stage.getBoundingClientRect(), k = s.width / 1040 || 1, b = el.getBoundingClientRect();
+    const to = `translate(${(b.left - s.left) / k + b.width / k * 0.55}px, ${(b.top - s.top) / k + b.height / k * 0.45}px)`;
+    cursor.animate([{ transform: 'translate(960px, 450px)', opacity: 0 }, { transform: 'translate(960px, 450px)', opacity: 1, offset: 0.15 }, { transform: to, opacity: 1 }],
+      { duration: 1100, easing: 'cubic-bezier(.45, 0, .2, 1)', fill: 'forwards' });
+    later(1150, () => {
+      cursor.animate([{ transform: `${to} scale(1)`, opacity: 1 }, { transform: `${to} scale(.8)`, opacity: 1 }, { transform: `${to} scale(1)`, opacity: 1 }], { duration: 260, fill: 'forwards' });
+      then();
+    });
+    later(2100, () => cursor.animate([{ transform: to, opacity: 1 }, { transform: `${to} translate(12px, 16px)`, opacity: 0 }], { duration: 500, fill: 'forwards' }));
+  }
+
+  const PLAY = {
+    2() {  // ideas get typed, changed, and one gets built
+      let t = 350;
+      IDEAS.forEach((idea, n) => {
+        for (let i = 1; i <= idea.length; i++) later(t + i * 38, () => { ibTyped.textContent = idea.slice(0, i); });
+        t += idea.length * 38;
+        if (n < IDEAS.length - 1) {
+          t += 650;
+          for (let i = idea.length - 1; i >= 0; i--) later(t + (idea.length - i) * 14, () => { ibTyped.textContent = idea.slice(0, i); });
+          t += idea.length * 14 + 250;
+        }
+      });
+      later(t + 300, () => ibGo.classList.add('pressed'));
+      later(t + 550, () => ibGo.classList.remove('pressed'));
+      nudge(t + 900);
+    },
+    3() {  // the app works: a recipe gets added
+      later(1150, () => clickAt(awAdd, () => { awAdd.classList.add('pressed'); later(250, () => { awAdd.classList.remove('pressed'); awNew.classList.add('show'); }); }));
+      nudge(3600);
+    },
+    5() {  // Chip hints, the code types itself, the tests turn green
+      later(250, () => $('#dk-hint').classList.add('show'));
+      const start = 1400;
+      for (let i = 1; i <= FULL.length; i++) later(start + i * 30, () => { typed.textContent = FULL.slice(0, i); });
+      const end = start + FULL.length * 30;
+      later(end + 120, () => { typed.innerHTML = FULL_HTML; });
+      tests.forEach((t, i) => {
+        later(end + 350 + i * 420, () => t.classList.add('show'));
+        later(end + 800 + i * 420, () => t.classList.add('ok'));
+      });
+      nudge(end + 1800);
+    },
+    6() {
+      later(800, () => blocks[0].classList.add('mine', 'pop'));
+      later(1150, () => setMeter(1));
+      nudge(2500);
+    },
+    7() {
+      blocks.slice(1).forEach((b, i) => later(500 + i * 330, () => { b.classList.add('mine', 'pop'); setMeter(2 + i); }));
+      nudge(500 + 5 * 330 + 700);
+    }
+  };
+  function goBeat(n) {
+    timers.forEach(clearTimeout);
+    timers = [];
+    beat = n;
+    story.classList.toggle('s-hello', n === 1);
+    story.classList.toggle('s-idea', n === 2);
+    story.classList.toggle('s-app', n >= 3);
+    story.classList.toggle('s-code', n >= 4);
+    story.classList.toggle('b4', n === 4);
+    story.classList.toggle('s-lift', n === 5);
+    story.classList.toggle('s-back', n >= 6);
+    story.classList.toggle('s-all', n === 7);
+    // Where this beat starts from; its own animation plays on top.
+    ibTyped.textContent = n > 2 ? IDEAS[2] : '';
+    awNew.classList.toggle('show', n >= 4);
+    awAdd.classList.remove('pressed');
+    blocks.forEach((b, i) => { b.classList.remove('pop'); b.classList.toggle('mine', n === 7 && i === 0); });
+    cursor.getAnimations().forEach((a) => a.cancel());
+    typed.innerHTML = n >= 6 ? FULL_HTML : '';
+    tests.forEach((t) => { t.classList.toggle('show', n >= 6); t.classList.toggle('ok', n >= 6); });
+    $('#dk-hint').classList.remove('show');
+    setMeter(n === 7 ? 1 : 0);
+    speak($('#story-say'), STORY[n - 1][0], n > 1 ? $('#story-chip') : null);
+    $('#story-next-label').textContent = STORY[n - 1][1];
+    backBtn.disabled = n === 1;
+    $$('#story-dots i').forEach((d, i) => { d.classList.toggle('on', i === n - 1); d.classList.toggle('done', i < n - 1); });
+    nextBtn.classList.remove('nudge');
+    if (PLAY[n]) PLAY[n]();
+    else nudge(n === 1 ? 2400 : 1800);
+  }
+  nextBtn.addEventListener('click', () => (beat < 7 ? goBeat(beat + 1) : enterChoose()));
+  backBtn.addEventListener('click', () => { if (beat > 1) goBeat(beat - 1); });
+  $('#skip-intro').addEventListener('click', () => enterChoose());
+  document.addEventListener('keydown', (e) => {
+    if (screen.id !== 's-story' || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if (e.key === 'ArrowRight') nextBtn.click();
+    if (e.key === 'ArrowLeft' && beat > 1) backBtn.click();
+  });
+
+  // ---------- The apps you can build (three samples for this preview) and the example ----------
+  const PROJECTS = {
+    recipes: {
+      name: 'Recipe Box', file: 'recipes.py', total: 23, rest: 17,
+      idea: 'A recipe box for my family’s favorite dishes',
+      react: 'Yum. Recipe apps have great pieces to learn from.',
+      files: ['app.py', 'recipes.py', 'storage.py', 'templates/index.html', 'static/style.css', 'tests/test_recipes.py'],
+      mini: ['Family Recipes', '+ Add recipe', [['Grandma’s jollof rice', '45 min', '#D9A48F'], ['Lemon drizzle cake', '1 h 5 min', '#CACF96'], ['Sunday beef stew', '2 h 10 min', '#B48C6B']]],
+      tryText: 'Click around your new recipe box like you would really use it. It’s the app you’re going to rebuild.',
+      seeit: ['See your search run', 'Search for a recipe in your app. This time your code finds it.'],
+      next: ['Saving recipes', 'save_recipe, load_recipes and delete_recipe. Three more functions.'],
+      piece: 'the recipes',
+      fns: ['find_recipes', 'scale_servings', 'total_time']
+    },
+    habits: {
+      name: 'Habit Tracker', file: 'habits.py', total: 19, rest: 13,
+      idea: 'A habit tracker that keeps my streaks going',
+      react: 'Tracking habits teaches lists and dates. Good pick.',
+      files: ['app.py', 'habits.py', 'storage.py', 'templates/today.html', 'static/style.css', 'tests/test_habits.py'],
+      mini: ['My Habits', '+ New habit', [['Drink water', '12 days', '#9DB7D5'], ['Read 10 pages', '5 days', '#C6B6D8'], ['Walk 20 minutes', '2 days', '#A8CBA6']]],
+      tryText: 'Tick off a habit or two in your new tracker. It’s the app you’re going to rebuild.',
+      seeit: ['See it run', 'Tick off a habit in your app. This time your code records it.'],
+      next: ['Reminders', 'due_now, snooze and next_reminder. Three more functions.'],
+      piece: 'the habits',
+      fns: ['done_today', 'mark_done', 'current_streak']
+    },
+    money: {
+      name: 'Bill Splitter', file: 'money.py', total: 17, rest: 11,
+      idea: 'A bill splitter for trips with my friends',
+      react: 'Money apps teach careful math. Nice.',
+      files: ['app.py', 'money.py', 'storage.py', 'templates/trip.html', 'static/style.css', 'tests/test_money.py'],
+      mini: ['Trip Money', '+ Add expense', [['Fuel, paid by Sam', '$60.00', '#E2BE98'], ['Groceries, paid by Lea', '$42.50', '#B9CC9C'], ['Cabin, paid by Max', '$300.00', '#A3B5D6']]],
+      tryText: 'Add an expense in your new bill splitter. It’s the app you’re going to rebuild.',
+      seeit: ['See it run', 'Add an expense in your app. This time your code does the math.'],
+      next: ['Settling up', 'who_pays_whom, round_cents and summary. Three more functions.'],
+      piece: 'the money math',
+      fns: ['total_spent', 'share_per_person', 'balances']
+    },
+    polyvault: {
+      name: 'Polyvault', file: 'auth.py', total: 28, rest: 22, built: true,
+      idea: 'An online store for 3D models',
+      react: 'Good news: that one already exists. It’s called Polyvault, and it’s ready to take apart.',
+      tryText: 'Shop around Polyvault like a customer would. It’s the app you’re going to rebuild.',
+      seeit: ['See your login run', 'Log in to Polyvault again. This time your code checks the password.'],
+      next: ['Rewrite the cart', 'add_item, remove_item and cart_total. Three more functions.'],
+      piece: 'the login',
+      fns: ['hash_password', 'check_login', 'is_logged_in']
+    }
+  };
+  // Every function's card. Polyvault's come from tutor/pieces.py; the samples are written the same way.
+  const CARDS = {
+    find_recipes: {
+      lines: 6, short: 'It finds recipes by name or ingredient when someone searches.',
+      sig: 'find_recipes(recipes: list[dict], text: str) -> list[dict]',
+      doc: 'Recipes whose name or ingredients contain the text, in any case.',
+      desc: 'Each recipe is a dict with a "name" and a list of "ingredients". Return the recipes whose name, or one of whose ingredients, contains the text, ignoring upper and lower case. An empty search returns every recipe.',
+      pass: ['Finds a recipe by part of its name', 'Finds a recipe by one of its ingredients', 'Ignores upper and lower case', 'An empty search returns every recipe'],
+      used: ['The search box on the home page calls it with what you type.', 'The "What can I cook?" page uses it to find recipes by ingredient.'],
+      hint: 'Lower-case both sides before you compare. Then check the name, and each ingredient.',
+      react: [[/\.lower\(\)/, 'Good, lower-casing makes the search ignore capitals.'], [/for \w+ in recipes/, 'Going through the recipes one by one. Nice.'], [/ingredients/, 'Checking the ingredients too. That’s what the tests want.'], [/\breturn\b/, 'Looks close. Press Check my code when you’re ready.']],
+      q: 'Why lower-case both the search text and the recipe before comparing?',
+      a: 'To Python, "Cake" and "cake" are different strings. Lower-casing both sides means the search finds the recipe however the person typed it.'
+    },
+    scale_servings: {
+      lines: 3, short: 'It changes the amounts when you cook for more or fewer people.',
+      sig: 'scale_servings(amounts: dict[str, float], serves: int, wanted: int) -> dict[str, float]',
+      doc: 'The amounts for wanted people instead of serves, rounded to 1 decimal.',
+      desc: 'amounts maps each ingredient to how much the recipe needs for serves people. Return a new dict with the amounts for wanted people, each rounded to 1 decimal.',
+      pass: ['Doubles every amount when wanted is twice serves', 'Halves every amount when wanted is half of serves', 'Rounds each amount to 1 decimal', 'Leaves the original amounts unchanged'],
+      used: ['The "Cooking for" box on a recipe page calls it whenever you change the number of people.'],
+      hint: 'Work out the ratio once: wanted divided by serves. Then build a new dict with every amount times that ratio.',
+      react: [[/wanted\s*\/\s*serves/, 'That ratio is the heart of it.'], [/round\(/, 'Rounding. Good, nobody wants 0.3333 eggs.'], [/\.items\(\)/, 'Going through each ingredient and its amount. Nice.']],
+      q: 'Why build a new dict instead of changing the amounts you were given?',
+      a: 'The recipe still needs its real amounts. If you changed that dict, cooking for 8 once would quietly change the recipe for everyone after.'
+    },
+    total_time: {
+      lines: 7, short: 'It adds up the cooking time and writes it nicely.',
+      sig: 'total_time(steps: list[dict]) -> str',
+      doc: 'The total cooking time as text, like "1 h 15 min" or "40 min".',
+      desc: 'Each step is a dict with its "minutes". Add them up and return the total as text: "1 h 15 min" from an hour on, or "40 min" under an hour.',
+      pass: ['Adds up the minutes of every step', 'Writes 75 minutes as "1 h 15 min"', 'Writes 40 minutes as "40 min"', 'No steps gives "0 min"'],
+      used: ['Every recipe card shows it under the recipe’s name.'],
+      hint: 'Add up the minutes first. Then // 60 gives the hours and % 60 the minutes left over.',
+      react: [[/sum\(/, 'Adding it all up first. Good start.'], [/\/\/\s*60|divmod/, 'Hours with // 60. Exactly.'], [/%\s*60/, 'And the minutes left over with % 60.']],
+      q: 'What do 75 // 60 and 75 % 60 give you?',
+      a: '75 // 60 is 1, the whole hours. 75 % 60 is 15, the minutes left over. Together they turn 75 minutes into 1 h 15 min.'
+    },
+    done_today: {
+      lines: 2, short: 'It lists the habits you’ve already done today.',
+      sig: 'done_today(log: dict[str, list[str]], today: str) -> list[str]',
+      doc: 'The habits done today, in alphabetical order.',
+      desc: 'log maps each habit to the days it was done, written like "2026-10-25". Return the habits done today, sorted alphabetically.',
+      pass: ['Lists every habit done today', 'Leaves out habits not done today', 'Sorts them alphabetically', 'An empty log gives an empty list'],
+      used: ['The Today screen calls it to tick off what you’ve already done.'],
+      hint: 'Go through log.items() and keep a habit when today is in its days. sorted() does the rest.',
+      react: [[/\.items\(\)/, 'Going through each habit and its days. Nice.'], [/today in/, 'Checking for today. That’s the key test.'], [/sorted\(/, 'Sorted. The tests will like that.']],
+      q: 'Why sort the habits before returning them?',
+      a: 'A dict keeps habits in the order they were added, which can look random to the person. Sorting gives the same order every time, and makes the tests reliable too.'
+    },
+    mark_done: {
+      lines: 5, short: 'It records a habit as done for a day.',
+      sig: 'mark_done(log: dict[str, list[str]], habit: str, day: str) -> dict[str, list[str]]',
+      doc: 'A new log with day added for habit. The same day twice changes nothing.',
+      desc: 'Return a new log where day is added to the habit’s list of days. A habit seen for the first time gets a new list. Marking the same day twice changes nothing.',
+      pass: ['Adds the day to that habit', 'Starts a list for a new habit', 'Marking the same day twice changes nothing', 'Leaves the original log unchanged'],
+      used: ['Tapping a habit on the Today screen calls it, then saves the new log.'],
+      hint: 'Copy the log, then copy the habit’s list, or start an empty one. Only add the day if it isn’t there yet.',
+      react: [[/dict\(|\.copy\(\)|\{\*\*/, 'Copying first. Good, the original stays untouched.'], [/\.get\(habit/, 'get with a default handles new habits. Nice.'], [/not in/, 'Checking for duplicates. Exactly.']],
+      q: 'Why ignore a second "done" for the same day?',
+      a: 'A habit is either done on a day or not. Counting it twice would break streaks and totals, for example after a double tap.'
+    },
+    current_streak: {
+      lines: 9, short: 'It counts how many days in a row you kept a habit.',
+      sig: 'current_streak(days: list[str], today: str) -> int',
+      doc: 'How many days in a row the habit was done, ending today or yesterday.',
+      desc: 'days are the dates a habit was done, like "2026-10-25". Count the days in a row it was done, ending today. If it isn’t done yet today, a streak ending yesterday still counts.',
+      pass: ['Three days in a row ending today gives 3', 'A streak ending yesterday still counts', 'A missed day breaks the streak', 'No days gives 0'],
+      used: ['Each habit shows its streak next to its name.'],
+      hint: 'Turn the strings into a set of dates with date.fromisoformat. Then step back one day at a time while the day is in the set.',
+      react: [[/fromisoformat/, 'Real dates instead of strings. Smart.'], [/set\(|\{\s*\w+.*\bfor\b/, 'A set makes the "is this day there" check instant.'], [/timedelta/, 'timedelta(days=1), one step back at a time. Nice.'], [/while/, 'A loop that walks back through the days. Exactly.']],
+      q: 'Why put the days in a set before checking them?',
+      a: 'Asking "is this day in the list" scans the whole list every time. A set answers straight away, which adds up when you check day after day.'
+    },
+    total_spent: {
+      lines: 1, short: 'It adds up everything the group has spent.',
+      sig: 'total_spent(expenses: list[dict]) -> float',
+      doc: 'The total of all expenses, rounded to 2 decimals.',
+      desc: 'Each expense is a dict with an "amount". Return the total of all amounts, rounded to 2 decimals. No expenses gives 0.0.',
+      pass: ['Adds up every amount', 'Rounds the total to 2 decimals', 'No expenses gives 0.0'],
+      used: ['The top of the trip page shows it as "Spent so far".'],
+      hint: 'sum() can take one amount for each expense. Round once, at the end.',
+      react: [[/sum\(/, 'sum() does the adding. Nice.'], [/\[\s*["']amount["']\s*\]/, 'Picking the amount out of each expense. Exactly.'], [/round\(/, 'Rounding to cents. Good.']],
+      q: 'Why round once at the end instead of rounding each amount?',
+      a: 'Rounding every amount first lets small errors pile up, a cent here and there. Adding the exact amounts and rounding once keeps the total as close to the truth as possible.'
+    },
+    share_per_person: {
+      lines: 3, short: 'It splits the total evenly between friends.',
+      sig: 'share_per_person(total: float, people: int) -> float',
+      doc: 'Each person’s even share, rounded to 2 decimals.',
+      desc: 'Split the total evenly between people and round to 2 decimals. Zero people raises ValueError.',
+      pass: ['Splits 90.00 between 3 as 30.0', 'Rounds to 2 decimals', 'Zero people raises ValueError'],
+      used: ['The "Each pays" line under the total calls it with the number of friends on the trip.'],
+      hint: 'Check for zero people first and raise ValueError. Then divide and round.',
+      react: [[/raise ValueError/, 'Raising ValueError for zero people. Exactly right.'], [/people\s*==\s*0|not people|people\s*<=?\s*0/, 'Checking for zero people first. Good thinking.'], [/round\(/, 'Rounding to cents. Nice.']],
+      q: 'Why raise an error for zero people instead of returning 0?',
+      a: 'Dividing by zero has no sensible answer, and a quiet 0 would hide a bug in the app. Raising ValueError makes the mistake loud, right where it happens.'
+    },
+    balances: {
+      lines: 6, short: 'It works out who gets money back and who owes.',
+      sig: 'balances(expenses: list[dict], people: list[str]) -> dict[str, float]',
+      doc: 'What each person paid minus their fair share, rounded to 2 decimals.',
+      desc: 'Each expense has a "payer" and an "amount". For each person, return what they paid minus their fair share of the total, rounded to 2 decimals. Positive means they get money back.',
+      pass: ['Someone who paid everything gets the rest back', 'Someone who paid nothing owes their share', 'All the balances add up to 0', 'Rounds to 2 decimals'],
+      used: ['The "Who owes who" box calls it, then turns the balances into payments.'],
+      hint: 'Work out the fair share once. Then, for each person, add up what they paid and take away the share.',
+      react: [[/total_spent\(|share_per_person\(/, 'Reusing your own functions. That’s how the pieces connect.'], [/for \w+ in people/, 'One balance per person. Good.'], [/payer/, 'Matching expenses to who paid them. Exactly.']],
+      q: 'Why should all the balances add up to zero?',
+      a: 'Money only moves between the friends. Whatever some are owed, the others owe in total, so the pluses and minuses cancel out. If they don’t, something is miscounted.'
+    },
+    hash_password: {
+      lines: 3, short: 'It turns a password into a scrambled code, called a hash, so the real password is never saved.',
+      sig: 'hash_password(password: str) -> str',
+      doc: 'Return the SHA-256 hex digest of the password.',
+      desc: 'Turn the plain password into its SHA-256 hash, written as a 64-character hex string. Python’s hashlib module does the hashing.',
+      pass: ['Returns the SHA-256 hex digest of the password', 'Same password gives the same hash, and different passwords give different hashes'],
+      used: ['POST /signup in app.py calls it to save a new account’s password hash.', 'On first start, init in db.py calls it to save the demo user’s password hash.', 'Your next function, check_login, will use it to hash the password someone types.'],
+      hint: 'Look at Python’s hashlib module. One thing to figure out first: does it want text, or bytes?',
+      react: [[/hashlib/, 'Good pick. hashlib is the right module for this.'], [/\.encode\(/, 'Yes, turn the text into bytes first.'], [/sha256/, 'sha256 is exactly the one the tests check.'], [/hexdigest\(\)/, 'That looks complete. Press Check my code when you’re ready.']],
+      q: 'Why does the store keep a hash of the password instead of the password itself?',
+      a: 'So the real password is never stored. Anyone who reads the database only sees hashes, and a hash can’t be turned back into the password. Logging in still works because the same password always gives the same hash, so the store hashes what you type and compares the two hashes.'
+    },
+    check_login: {
+      lines: 10, short: 'It checks the username and password when someone logs in.',
+      sig: 'check_login(username: str, password: str, users: dict[str, str]) -> bool',
+      doc: 'True only if the user exists and the password hashes to the stored hash.',
+      desc: 'users maps each username to its stored password hash. Return True only if the username exists and the typed password hashes to the stored hash. Compare the two hashes with hmac.compare_digest.',
+      pass: ['Right username and password returns True', 'Wrong password returns False', 'A username that doesn’t exist returns False', 'An empty username or password returns False'],
+      used: ['POST /login in app.py loads the users from the database with get_users and calls check_login. On True, it saves the username in the session.'],
+      hint: 'What does users.get(username) give back when the name isn’t there? Handle that case before you compare anything.',
+      react: [[/users\.get\(|in users/, 'Nice, you’re looking the user up first.'], [/is None|== None/, 'Good, an unknown user should get False.'], [/compare_digest/, 'compare_digest, the safe way to compare. Nice.'], [/hash_password\(/, 'Reusing your own hash_password. That’s how the pieces connect.']],
+      q: 'Why compare the two hashes with hmac.compare_digest instead of ==?',
+      a: '== stops at the first character that differs, so a guess that matches more of the hash takes slightly longer to reject. An attacker timing many attempts could learn the hash piece by piece. hmac.compare_digest takes the same time whatever the input, so the timing gives nothing away.'
+    },
+    is_logged_in: {
+      lines: 3, short: 'It tells the store whether someone is logged in.',
+      sig: 'is_logged_in(session: dict) -> bool',
+      doc: 'True if the session holds a username.',
+      desc: 'session is a dict with the visitor’s session data. Return True if it holds a "username".',
+      pass: ['A session holding a username returns True', 'An empty session, or one without a username, returns False'],
+      used: ['Every page calls it, through render in app.py, to show Log in or Profile in the header.', 'checkout, profile and download call it to turn away visitors who aren’t logged in.'],
+      hint: 'A session works like a dict. How can you check for a key without crashing when it’s missing?',
+      react: [[/session\.get\(|in session/, 'Checking the session without crashing. Good.'], [/\breturn\b/, 'Looks close. Press Check my code when you’re ready.']],
+      q: 'Where does the "username" in the session come from?',
+      a: 'The login route puts it there. When check_login returns True, login saves the username in the session, a signed cookie. Logging out removes it, so if it’s there, someone logged in.'
+    }
+  };
+
+  const S = { project: null, custom: false, quizDone: false, seenTour: false, per: {} };
+  const P = () => PROJECTS[S.project];
+  const ps = () => (S.per[S.project] = S.per[S.project] || { done: {}, drafts: {}, tryOpen: false, seeOpen: false });
+  function steps() {
+    const p = P();
+    return [
+      ['quiz', 'Answer 3 quick questions', 'So Chip knows where to start.'],
+      ['try', p.built ? 'Try the store' : 'Try your app', p.tryText],
+      ...p.fns.map((k) => [k, `Write ${k}`, CARDS[k].short]),
+      ['seeit', p.seeit[0], p.seeit[1]],
+      ['next', p.next[0], p.next[1]],
+      ['rest', `The rest of ${p.name}`, `${p.rest} more functions, whenever you want them.`]
+    ];
+  }
+  const isDone = (k) => (k === 'quiz' ? S.quizDone : Boolean(ps().done[k]));
+  const current = () => steps().find(([k]) => !isDone(k))[0];
+  const owned = () => P().fns.filter((k) => ps().done[k]).length;
+  const isFn = (k) => Boolean(CARDS[k]);
+  const stub = (k) => `def ${CARDS[k].sig}:\n    """${CARDS[k].doc}"""\n    # Your code here\n    raise NotImplementedError\n`;
+  function miniApp(key, yours) {
+    const p = PROJECTS[key];
+    if (key === 'polyvault') {
+      return `<div class="mini glass-strong"><div class="mh"><b>Polyvault</b><span class="mb dark">Log in</span></div>
+        <div class="ms-grid"><span><img src="${IMG.chest}" alt=""></span><span><img src="${IMG.lantern}" alt=""></span><span><img src="${IMG.boombox}" alt=""></span></div>${yours ? '<span class="my">your code</span>' : ''}${POINTER}</div>`;
+    }
+    const [title, add, rows] = p.mini;
+    return `<div class="mini glass-strong"><div class="mh"><b>${esc(title)}</b><span class="mb">${esc(add)}</span></div><div class="ml">${
+      rows.map(([a, b, color]) => `<div class="mr"><span class="mt" style="background: ${color}"></span><span class="mn">${esc(a)}</span><span class="mm">${esc(b)}</span></div>`).join('')
+    }</div>${yours ? '<span class="my">your code</span>' : ''}${POINTER}</div>`;
+  }
+  function setOwn(bump) {
+    const n = owned(), t = P().total;
+    $$('.own-n').forEach((el) => { el.textContent = n; });
+    $$('.own-t').forEach((el) => { el.textContent = t; });
+    $$('.own .val').forEach((c) => { c.style.strokeDashoffset = ringOffset(n / t); });
+    if (bump) $$('.own').forEach((o) => { o.classList.remove('bump'); void o.offsetWidth; o.classList.add('bump'); });
+  }
+
+  // ---------- What do you want to build? ----------
+  const ideaIn = $('#idea-in'), ideaGo = $('#idea-go'), cChip = $('#c-chip'), cSay = $('#c-say');
+  const KNOWN = /store|shop|sell|product|cart|market|recipe|cook|food|meal|dish|kitchen|bake|cake|dinner|split|bill|money|budget|expense|rent|pay|cost|trip|spend|owe|habit|streak|track|routine|workout|gym|goal|daily/i;
+  let picked = null, fired = new Set(), typer = 0;
+  function pickTemplate(text) {
+    const t = text.toLowerCase();
+    if (/store|shop|sell|product|cart|market/.test(t)) return 'polyvault';
+    if (/recipe|cook|food|meal|dish|kitchen|bake|cake|dinner/.test(t)) return 'recipes';
+    if (/split|bill|money|budget|expense|rent|pay|cost|trip|spend|owe/.test(t)) return 'money';
+    return 'habits';
+  }
+  function updateGo() {
+    const text = ideaIn.value.trim();
+    ideaGo.disabled = text.length < 4;
+    $('#idea-go-label').textContent = (picked || (text.length >= 4 && pickTemplate(text))) === 'polyvault' ? 'Open Polyvault' : 'Build it';
+  }
+  function enterChoose() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    ideaIn.value = '';
+    picked = null;
+    fired = new Set();
+    $$('.pill').forEach((p) => p.classList.remove('on'));
+    $('#drop').hidden = true;
+    $('#own-open').setAttribute('aria-expanded', 'false');
+    updateGo();
+    show('#s-choose');
+    setTimeout(() => {
+      speak(cSay, 'So, what do you want to build?', cChip);
+      ideaIn.focus({ preventScroll: true });
+    }, RM ? 0 : 420);
+  }
+  ideaIn.addEventListener('input', () => {
+    if (!typer) picked = null;
+    $$('.pill').forEach((p) => p.classList.toggle('on', p.dataset.idea === picked));
+    updateGo();
+    lookAt(cChip, ideaIn);
+    const text = ideaIn.value.trim();
+    if (typer || text.length < 4) return;
+    const key = KNOWN.test(text) ? pickTemplate(text) : null;
+    if (key && !fired.has(key)) { fired.add(key); speak(cSay, PROJECTS[key].react, cChip); return; }
+    if (!key && text.length > 14 && !fired.has('more')) { fired.add('more'); speak(cSay, 'Ooh. Tell me a little more.', cChip); return; }
+    if (text.length > 44 && !fired.has('picture')) { fired.add('picture'); speak(cSay, 'I can picture it already.', cChip); }
+  });
+  ideaIn.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!ideaGo.disabled) ideaGo.click(); } });
+  $$('.pill').forEach((pill) => pill.addEventListener('click', () => {  // fill the box, typed out, and let Chip react
+    const key = pill.dataset.idea;
+    const text = PROJECTS[key].idea;
+    picked = key;
+    $$('.pill').forEach((p) => p.classList.toggle('on', p === pill));
+    clearInterval(typer);
+    let i = 0;
+    ideaIn.value = '';
+    typer = setInterval(() => {
+      i += 2;
+      ideaIn.value = text.slice(0, i);
+      if (i >= text.length) { clearInterval(typer); typer = 0; updateGo(); }
+    }, RM ? 0 : 22);
+    speak(cSay, PROJECTS[key].react, cChip);
+    lookAt(cChip, ideaIn);
+    setTimeout(() => lookAt(cChip, null), 1500);
+  }));
+  $('#idea-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = ideaIn.value.trim();
+    if (text.length < 4) return;
+    startProject(picked || pickTemplate(text), !picked);
+  });
+  $('#own-open').addEventListener('click', () => {
+    const drop = $('#drop');
+    drop.hidden = !drop.hidden;
+    $('#own-open').setAttribute('aria-expanded', String(!drop.hidden));
+    if (!drop.hidden) speak(cSay, 'Your own code works too. Drop it in and I’ll find its pieces.', cChip);
+  });
+  const ownCode = () => speak(cSay, 'Got it. In the real app I check it for harmful code first, then find its functions. This preview can’t open files.', cChip);
+  $('#zip-in').addEventListener('change', (e) => { if (e.target.files.length) ownCode(); e.target.value = ''; });
+  $('#gh-form').addEventListener('submit', (e) => { e.preventDefault(); if ($('#gh-in').value.trim()) ownCode(); });
+  const zone = $('#drop-zone');
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('over'); ownCode(); });
+
+  // ---------- Building, while three questions get asked ----------
+  let buildPct = 0, buildTimer = 0;
+  function renderBuild() {
+    const p = P();
+    const done = p.built || buildPct >= 100;
+    $('#build-text').textContent = done ? `${p.name} is ready` : `Building your ${p.name.toLowerCase()}…`;
+    $('#build-ring').style.strokeDashoffset = ringOffset(done ? 1 : buildPct / 100);
+  }
+  function startProject(key, custom) {
+    S.project = key;
+    S.custom = custom && key !== 'polyvault';
+    ps();
+    clearInterval(buildTimer);
+    buildPct = 0;
+    if (!P().built) buildTimer = setInterval(() => { buildPct = Math.min(92, buildPct + 2 + Math.random() * 4); renderBuild(); }, 450);
+    renderBuild();
+    if (!S.quizDone) startQuiz();
+    else if (P().built) enterHome();
+    else enterBuild();
+  }
+
+  const Q = {
+    python: 'Have you written your own Python functions before?',
+    web_hard: 'Have you built a web app with a login form?',
+    web_easy: 'Have you made a web page before?',
+    data_hard: 'Have you stored passwords safely, with hashing?',
+    data_easy: 'Have you saved data in a database before?'
+  };
+  const NEXT_Q = { python: ['web_hard', 'web_easy'], web_hard: ['data_hard', 'data_easy'], web_easy: ['data_hard', 'data_easy'] };
+  const quiz = { q: 'python', answers: [] };
+  const qText = $('#q-text'), qChip = $('#q-chip'), qReact = $('#q-react'), qYes = $('#q-yes'), qNo = $('#q-no');
+  function renderQ(animate) {
+    const n = quiz.answers.length;
+    $('#q-count').textContent = `Question ${n + 1} of 3`;
+    $$('#q-dots i').forEach((d, i) => { d.classList.toggle('done', i < n); d.classList.toggle('on', i === n); });
+    if (!animate || RM) { qText.textContent = Q[quiz.q]; return; }
+    qText.classList.add('out');
+    setTimeout(() => {
+      qText.classList.remove('out');
+      qText.classList.add('pre');
+      qText.textContent = Q[quiz.q];
+      void qText.offsetWidth;
+      qText.classList.remove('pre');
+    }, 260);
+  }
+  function startQuiz() {
+    quiz.q = 'python';
+    quiz.answers = [];
+    qYes.disabled = qNo.disabled = false;
+    renderQ(false);
+    show('#s-quiz');
+    setTimeout(() => speak(qReact, P().built ? 'Polyvault is ready. Three quick questions first.' : 'Great idea. While I build it, three quick questions.', qChip), RM ? 0 : 450);
+  }
+  function quizDone() {
+    S.quizDone = true;
+    if (P().built) enterHome(); else enterBuild();
+  }
+  function answer(yes) {
+    quiz.answers.push([quiz.q, yes]);
+    qChip.classList.add('happy');
+    setTimeout(() => qChip.classList.remove('happy'), 1100);
+    buildPct = Math.min(92, buildPct + 12);
+    renderBuild();
+    const next = NEXT_Q[quiz.q] ? NEXT_Q[quiz.q][yes ? 0 : 1] : null;
+    if (next) {
+      quiz.q = next;
+      speak(qReact, yes ? 'Nice.' : 'No problem at all.', qChip);
+      renderQ(true);
+      return;
+    }
+    qYes.disabled = qNo.disabled = true;
+    $$('#q-dots i').forEach((d) => { d.classList.add('done'); d.classList.remove('on'); });
+    qChip.classList.add('jump');
+    speak(qReact, 'That’s all I need.', qChip);
+    setTimeout(() => { qChip.classList.remove('jump'); quizDone(); }, RM ? 300 : 1500);
+  }
+  qYes.addEventListener('click', () => answer(true));
+  qNo.addEventListener('click', () => answer(false));
+  for (const b of [qYes, qNo]) {  // Chip looks at the answer you're about to give
+    b.addEventListener('pointerenter', () => lookAt(qChip, b));
+    b.addEventListener('pointerleave', () => lookAt(qChip, null));
+    b.addEventListener('focus', () => lookAt(qChip, b));
+    b.addEventListener('blur', () => lookAt(qChip, null));
+  }
+  $('#q-skip').addEventListener('click', quizDone);
+
+  function enterBuild() {
+    const p = P();
+    const chip = $('#b-chip');
+    $('#b-files').innerHTML = p.files.map((f) => `<li data-state="idle"><span class="ck" aria-hidden="true"></span><span>${esc(f)}</span></li>`).join('');
+    $('#b-ready').hidden = true;
+    $('#b-files').hidden = false;
+    $('#b-note').hidden = !S.custom;
+    chip.classList.remove('happy');
+    chip.classList.add('busy');
+    show('#s-build');
+    setTimeout(() => speak($('#b-say'), `Building your ${p.name.toLowerCase()}…`, null), RM ? 0 : 350);
+    const items = $$('#b-files li');
+    const step = RM ? 0 : 520;
+    items.forEach((li, i) => {
+      setTimeout(() => { li.dataset.state = 'run'; }, 500 + i * step);
+      setTimeout(() => { li.dataset.state = 'pass'; buildPct = Math.max(buildPct, 92 + (i + 1) * 8 / items.length); }, 500 + i * step + (RM ? 0 : 380));
+    });
+    const end = 500 + items.length * step + 300;
+    setTimeout(() => speak($('#b-say'), 'Running it to make sure it works…', null), end);
+    setTimeout(() => {
+      clearInterval(buildTimer);
+      buildPct = 100;
+      chip.classList.remove('busy');
+      chip.classList.add('happy', 'jump');
+      setTimeout(() => chip.classList.remove('jump'), 750);
+      speak($('#b-say'), `It works. Your ${p.name.toLowerCase()} is ready.`, null);
+      $('#b-mini').innerHTML = miniApp(S.project, false);
+      $('#b-files').hidden = true;
+      $('#b-ready').hidden = false;
+    }, end + (RM ? 0 : 1300));
+  }
+  $('#b-go').addEventListener('click', () => { $('#b-chip').classList.remove('happy'); enterHome(); });
+
+  // ---------- Home ----------
+  function homeLine(c) {
+    const p = P(), st = ps();
+    if (c === 'try') return st.tryOpen ? 'Take a few minutes in there. Come back when you’re done.' : `You’re all set. First, have a play with ${p.built ? 'the store' : 'your new app'}.`;
+    if (c === p.fns[0]) return `Now the fun part. Your first function is ${c}, about ${CARDS[c].lines} line${CARDS[c].lines === 1 ? '' : 's'}.`;
+    if (c === p.fns[1]) return `${p.fns[0]} is yours. Next up is ${c}.`;
+    if (c === p.fns[2]) return `Two down. One more and ${p.piece} are all yours.`;
+    if (c === 'seeit') return st.seeOpen ? 'If it works, that’s your code at work.' : 'That piece is yours now. Go try it in your app. Your code does the work this time.';
+    return `That’s a whole piece, written by you. Next up: ${p.next[0].toLowerCase()}.`;
+  }
+  function visual(c) {
+    const p = P();
+    if (c === 'try' || c === 'seeit') return miniApp(S.project, c === 'seeit');
+    if (isFn(c)) {
+      return `<div class="mini-code glass-strong"><div class="mc-head"><span class="mono">${esc(p.file)}</span><span class="mc-lines">about ${CARDS[c].lines} line${CARDS[c].lines === 1 ? '' : 's'}</span></div>
+        <pre><span class="kw">def</span> <span class="fn">${c}</span>(…):\n    <span class="caret"></span></pre></div>`;
+    }
+    const names = p.next[1].split('.')[0].replace(' and ', ', ').split(', ');
+    return `<div class="mini-code glass-strong"><div class="mc-head"><span class="mono">next piece</span><span class="mc-lines">3 functions</span></div>
+      <pre>${names.map((n) => `<span class="kw">def</span> <span class="fn">${esc(n)}</span>(…)`).join('\n')}</pre></div>`;
+  }
+  function actions(c) {
+    const st = ps();
+    if (c === 'try') return st.tryOpen ? `<button class="btn primary lg" data-act="tried">I’ve tried it ${ARROW}</button>`
+      : `<button class="btn primary lg" data-act="open-try">Open ${P().built ? 'the store' : 'my app'} ${ARROW}</button><button class="btn ghost lg" data-act="tried">Skip for now</button>`;
+    if (isFn(c)) return `<button class="btn primary lg" data-act="write" data-arg="${c}">${st.drafts[c] ? 'Continue writing' : 'Start writing'} ${ARROW}</button>`;
+    if (c === 'seeit') return st.seeOpen ? `<button class="btn primary lg" data-act="seen">It worked ${ARROW}</button>` : `<button class="btn primary lg" data-act="open-see">Open ${P().built ? 'the store' : 'my app'} ${ARROW}</button>`;
+    return `<button class="btn primary lg" data-act="later">Start the next piece ${ARROW}</button>`;
+  }
+  function renderHome(animate) {
+    const p = P(), st = ps(), list = steps(), c = current();
+    const i = list.findIndex(([k]) => k === c);
+    $('#h-project').textContent = p.name;
+    $('#next-step').textContent = `Step ${i + 1} of ${list.length}`;
+    $('#next-title').textContent = list[i][1];
+    $('#next-text').textContent = list[i][2];
+    $('#next-visual').innerHTML = visual(c);
+    $('#next-actions').innerHTML = actions(c);
+    const opened = (c === 'try' && st.tryOpen) || (c === 'seeit' && st.seeOpen);
+    $('#next-note').hidden = !opened;
+    $('#next-note').innerHTML = !opened ? '' : p.built ? 'In the app, Polyvault opens in a new tab. Log in as <b>learner</b>, password <b>carve123</b>.' : 'In the app, your project opens in a new tab, running in your browser.';
+    const card = $('#next');
+    if (animate) { card.classList.remove('in'); void card.offsetWidth; card.classList.add('in'); }
+    speak($('#home-say'), homeLine(c), $('#home-chip'));
+    $('#journey').innerHTML = list.map(([k, title], n) => {
+      const state = isDone(k) ? 'done' : k === c ? 'now' : 'next';
+      const node = `<span class="jn ${state}">${state === 'done' ? CHECK : ''}<span class="tip">${esc(title)}</span>${state === 'now' ? '<span class="jl">You are here</span>' : ''}</span>`;
+      return node + (n < list.length - 1 ? `<span class="jline${isDone(k) ? ' done' : ''}"></span>` : '');
+    }).join('');
+    $('#plan').innerHTML = list.map(([k, title, text]) => {
+      const state = isDone(k) ? 'done' : k === c ? 'now' : 'next';
+      return `<li class="${state}"><span class="pi">${state === 'done' ? CHECK : ''}</span><span><b>${esc(title)}</b><span class="muted">${esc(text)}</span></span></li>`;
+    }).join('');
+    setOwn(false);
+  }
+  function enterHome() {
+    renderHome(true);
+    show('#s-home');
+  }
+  $('#s-home').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const act = b.dataset.act, st = ps();
+    if (act === 'open-try') { st.tryOpen = true; renderHome(false); }
+    if (act === 'tried') { st.done.try = true; renderHome(true); }
+    if (act === 'write') enterWork(b.dataset.arg);
+    if (act === 'open-see') { st.seeOpen = true; renderHome(false); }
+    if (act === 'seen') { st.done.seeit = true; renderHome(true); }
+    if (act === 'later') toast('This preview ends here. The next piece works the same way.');
+    if (act === 'plan') {
+      const plan = $('#plan');
+      plan.hidden = !plan.hidden;
+      b.setAttribute('aria-expanded', String(!plan.hidden));
+      b.textContent = plan.hidden ? 'See the whole plan' : 'Hide the plan';
+    }
+  });
+
+  // ---------- Writing a function ----------
+  const W = { fn: null, fired: new Set(), idle: 0, lookTimer: 0, saveTimer: 0 };
+  const wCode = $('#w-code'), wGutter = $('#w-gutter'), wSay = $('#w-say'), wChip = $('#w-chip'), wEditor = $('#w-editor'), wCheck = $('#w-check'), wHint = $('#w-hint');
+  const numbers = () => { wGutter.textContent = wCode.value.split('\n').map((_, i) => i + 1).join('\n'); };
+  function armIdle() {
+    clearTimeout(W.idle);
+    W.idle = setTimeout(() => {
+      if (screen.id === 's-work' && !ps().done[W.fn] && /NotImplementedError/.test(wCode.value)) speak(wSay, 'Stuck? Press Get a hint and I’ll nudge you.', wChip);
+    }, 25000);
+  }
+  function enterWork(k) {
+    const p = P(), card = CARDS[k], list = steps();
+    const i = list.findIndex(([key]) => key === k);
+    const swapping = screen.id === 's-work';
+    W.fn = k;
+    W.fired = new Set();
+    $('#w-crumb').innerHTML = `${esc(p.name)} / <b class="mono">${k}</b>`;
+    $('#w-step').textContent = `Step ${i + 1} of ${list.length}`;
+    $('#w-name').textContent = k;
+    $('#w-sig').textContent = card.sig;
+    $('#w-desc').textContent = card.desc;
+    $('#w-file').textContent = p.file;
+    $('#w-checks').innerHTML = card.pass.map((t) => `<li data-state="idle"><span class="ck" aria-hidden="true"></span><span>${esc(t)}</span></li>`).join('');
+    $('#w-used').innerHTML = card.used.map((u) => `<li>${esc(u)}</li>`).join('');
+    wCode.value = ps().drafts[k] != null ? ps().drafts[k] : stub(k);
+    wCode.readOnly = false;
+    numbers();
+    wEditor.classList.remove('ok', 'bad');
+    wChip.classList.remove('happy');
+    wCheck.disabled = wHint.disabled = false;
+    $('#w-saved').textContent = 'Saved';
+    setOwn(false);
+    if (swapping && !RM) $('#w-main').animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 500, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+    show('#s-work');
+    setTimeout(() => speak(wSay, `Your turn. Write ${k} in the editor. I’ll be right here.`, wChip), RM ? 0 : 450);
+    if (!S.seenTour) setTimeout(startTour, RM ? 50 : 950);
+    armIdle();
+  }
+  $('#w-back').addEventListener('click', enterHome);
+
+  wCode.addEventListener('input', () => {
+    ps().drafts[W.fn] = wCode.value;
+    numbers();
+    $('#w-saved').textContent = 'Saving…';
+    clearTimeout(W.saveTimer);
+    W.saveTimer = setTimeout(() => { $('#w-saved').textContent = 'Saved'; }, 700);
+    armIdle();
+    lookAt(wChip, wCode);  // Chip watches you type, then looks back at you
+    clearTimeout(W.lookTimer);
+    W.lookTimer = setTimeout(() => lookAt(wChip, null), 1600);
+    if (!W.fired.has('first')) { W.fired.add('first'); speak(wSay, 'Nice start. Take your time.', wChip); return; }
+    const react = CARDS[W.fn].react;
+    const n = react.findIndex(([test], i) => !W.fired.has(i) && test.test(wCode.value));
+    if (n >= 0) { W.fired.add(n); speak(wSay, react[n][1], wChip); }
+  });
+  wCode.addEventListener('scroll', () => { wGutter.scrollTop = wCode.scrollTop; });
+  wCode.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && !e.shiftKey && !wCode.readOnly) {
+      e.preventDefault();
+      wCode.setRangeText('    ', wCode.selectionStart, wCode.selectionEnd, 'end');
+      wCode.dispatchEvent(new Event('input'));
+    }
+    if (e.key === 'Escape') wCode.blur();  // so Tab can leave the editor again
+  });
+  wHint.addEventListener('click', () => {
+    speak(wSay, CARDS[W.fn].hint, wChip);
+    wChip.classList.add('think');
+    setTimeout(() => wChip.classList.remove('think'), 1800);
+  });
+  $('#w-ask').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('#w-ask-in');
+    if (!input.value.trim()) return;
+    input.value = '';
+    speak(wSay, 'Good question. In the full app I answer it right here, explaining the idea without writing your code for you.', wChip);
+  });
+
+  wCheck.addEventListener('click', () => {
+    const code = wCode.value;
+    const stubbed = /NotImplementedError/.test(code);
+    const ok = !stubbed && /\breturn\b/.test(code);
+    wCheck.disabled = wHint.disabled = true;
+    wEditor.classList.remove('bad');
+    speak(wSay, 'Running the tests on your code…', wChip);
+    const items = $$('#w-checks li');
+    items.forEach((li) => { li.dataset.state = 'run'; });
+    items.forEach((li, i) => setTimeout(() => {
+      li.dataset.state = ok ? 'pass' : 'fail';
+      if (i === items.length - 1) setTimeout(() => (ok ? passed() : failed(stubbed)), 300);
+    }, RM ? 0 : 650 + i * 420));
+  });
+  function failed(stubbed) {
+    wCheck.disabled = wHint.disabled = false;
+    wEditor.classList.add('bad');
+    setTimeout(() => wEditor.classList.remove('bad'), 800);
+    speak(wSay, stubbed ? 'Not yet. Your function still raises NotImplementedError, so nothing passes. Replace that line with your own code.'
+      : 'Not yet. Your function never returns anything, so every test gets None back.', wChip);
+  }
+  function passed() {
+    const k = W.fn;
+    ps().done[k] = true;
+    wCode.readOnly = true;
+    wEditor.classList.add('ok');
+    wChip.classList.add('happy', 'jump');
+    setTimeout(() => wChip.classList.remove('jump'), 750);
+    speak(wSay, `It works. ${k} now runs inside your app.`, wChip);
+    $('#w-saved').textContent = 'Saved. This version runs in your app now.';
+    fly(k, () => { setOwn(true); setTimeout(() => showWin(k), RM ? 0 : 380); });
+  }
+  function fly(k, done) {  // the finished function travels up into the "yours" counter
+    const own = $('#w-own');
+    if (RM || !own) { done(); return; }
+    const a = wEditor.getBoundingClientRect(), b = own.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'flyer';
+    el.innerHTML = `<span class="fc">${CHECK}</span><span class="mono">${esc(k)}</span>`;
+    document.body.append(el);
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const x0 = a.left + a.width / 2 - w / 2, y0 = a.top + Math.min(a.height / 2, 260) - h / 2;
+    const x1 = b.left + b.width / 2 - w / 2, y1 = b.top + b.height / 2 - h / 2;
+    el.animate([
+      { transform: `translate(${x0}px, ${y0 + 24}px) scale(.8)`, opacity: 0 },
+      { transform: `translate(${x0}px, ${y0}px) scale(1.06)`, opacity: 1, offset: 0.25 },
+      { transform: `translate(${x0}px, ${y0 - 8}px) scale(1)`, opacity: 1, offset: 0.45 },
+      { transform: `translate(${x1}px, ${y1}px) scale(.35)`, opacity: 0.3 }
+    ], { duration: 1500, easing: 'cubic-bezier(.45, 0, .25, 1)', fill: 'forwards' }).onfinish = () => { el.remove(); done(); };
+  }
+
+  // ---------- The win: a question, then onwards ----------
+  function showWin(k) {
+    const list = steps();
+    const next = list[list.findIndex(([key]) => key === k) + 1][0];
+    $('#win-title').textContent = `${k} is yours.`;
+    $('#win-sub').textContent = `${owned()} of ${P().total} functions in ${P().name} run your code now.`;
+    $('#win-q').textContent = CARDS[k].q;
+    $('#win-answer').value = '';
+    $('#win-qa').hidden = false;
+    $('#win-after').hidden = true;
+    $('#win-next').innerHTML = `${isFn(next) ? `Next: ${next}` : 'Next: see it run'} ${ARROW}`;
+    $('#win-next').dataset.next = next;
+    const w = $('#win');
+    w.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('on')));
+    setTimeout(() => $('#win-answer').focus({ preventScroll: true }), 500);
+  }
+  function reveal(mine) {
+    $('#win-qa').hidden = true;
+    $('#win-mine').hidden = !mine;
+    $('#win-mine').innerHTML = mine ? `<span class="muted">You said</span>${esc(mine)}` : '';
+    $('#win-a').textContent = CARDS[W.fn].a;
+    $('#win-after').hidden = false;
+    $('#win-next').focus({ preventScroll: true });
+  }
+  function closeWin(then) {
+    const w = $('#win');
+    w.classList.remove('on');
+    setTimeout(() => { w.hidden = true; then(); }, RM ? 0 : 260);
+  }
+  $('#win-qa').addEventListener('submit', (e) => { e.preventDefault(); reveal($('#win-answer').value.trim()); });
+  $('#win-skip').addEventListener('click', () => reveal(''));
+  $('#win-next').addEventListener('click', () => {
+    const next = $('#win-next').dataset.next;
+    closeWin(() => (isFn(next) ? enterWork(next) : enterHome()));
+  });
+  $('#win-home').addEventListener('click', () => closeWin(enterHome));
+
+  // ---------- A short tour of the workspace, the first time only ----------
+  const TOUR = [
+    ['#w-task', 'Start here. This is what your function has to do, and the checks it has to pass.'],
+    ['#w-editor', 'Then write your code in here. Just this one function.'],
+    ['#w-check', 'When you think it works, press Check my code. I’ll run the tests for you.'],
+    ['#w-buddy', 'Stuck? I’m right here. Ask me anything, or ask for a hint.']
+  ];
+  let stop = -1, spotted = null;
+  function startTour() {
+    if (screen.id !== 's-work') return;
+    S.seenTour = true;
+    stop = -1;
+    $('#shield').hidden = false;
+    $('#coach').hidden = false;
+    tourNext();
+  }
+  function placeCoach() {
+    if (!spotted) return;
+    const card = $('#coach'), r = spotted.getBoundingClientRect(), cw = card.offsetWidth, ch = card.offsetHeight, m = 16;
+    let x, y;
+    if (r.right + 20 + cw < innerWidth - m) { x = r.right + 20; y = r.top + 12; }
+    else if (r.left - 20 - cw > m) { x = r.left - 20 - cw; y = r.top + 12; }
+    else if (r.bottom + 16 + ch < innerHeight - m) { x = r.left + (r.width - cw) / 2; y = r.bottom + 16; }
+    else if (r.top - 16 - ch > m) { x = r.left + (r.width - cw) / 2; y = r.top - 16 - ch; }
+    else { x = (innerWidth - cw) / 2; y = innerHeight - ch - 40; }
+    x = Math.max(m, Math.min(x, innerWidth - cw - m));
+    y = Math.max(m, Math.min(y, innerHeight - ch - m));
+    card.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+  }
+  function tourNext() {
+    if (spotted) spotted.classList.remove('spot');
+    stop += 1;
+    if (stop >= TOUR.length) { endTour(); return; }
+    const [sel, text] = TOUR[stop];
+    spotted = $(sel);
+    spotted.scrollIntoView({ block: 'nearest' });
+    spotted.classList.add('spot');
+    $('#coach-count').textContent = `${stop + 1} of ${TOUR.length}`;
+    $('#coach-next').textContent = stop === TOUR.length - 1 ? 'Got it' : 'Next';
+    speak($('#coach-say'), text, $('#coach-chip'));
+    placeCoach();
+    lookAt($('#coach-chip'), spotted);
+  }
+  function endTour() {
+    if (spotted) spotted.classList.remove('spot');
+    spotted = null;
+    $('#shield').hidden = true;
+    $('#coach').hidden = true;
+    speak(wSay, 'Your turn. Take your time, I’m right here.', wChip);
+    wCode.focus({ preventScroll: true });
+  }
+  $('#coach-next').addEventListener('click', tourNext);
+  $('#coach-skip').addEventListener('click', endTour);
+  addEventListener('resize', placeCoach);
+
+  // ---------- Small things anywhere ----------
+  function restart() {
+    Object.assign(S, { project: null, custom: false, quizDone: false, seenTour: false, per: {} });
+    clearInterval(buildTimer);
+    $('#plan').hidden = true;
+    goBeat(1);
+    show('#s-story');
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const act = b.dataset.act;
+    if (act === 'soon') toast('This preview covers the main path only.');
+    if (act === 'restart') restart();
+    if (act === 'new') enterChoose();
+    if (act === 'home' && S.project) enterHome();
+    if (act === 'run-app') toast(P().built ? 'In the app, Polyvault opens in a new tab. Log in as learner, password carve123.' : 'In the app, your project opens in a new tab, running in your browser.');
+  });
+
+  // Python loads while the story plays, so nobody waits on a blank screen.
+  setTimeout(() => { $('#py').innerHTML = '<span class="ready" aria-hidden="true"></span>Python is ready'; }, RM ? 0 : 6500);
+
+  fitStage();
+  goBeat(1);
+  look();
+})();
+</script>
