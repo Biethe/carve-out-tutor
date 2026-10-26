@@ -16,8 +16,8 @@ const Story = (() => {
         <div class="hello"><span class="hello-glow"></span><span class="chip xl hop" id="big-chip" data-chip></span></div>
 
         <div class="idea-box">
-          <span class="ib-label">Your idea</span>
-          <div class="ib-field panel raised"><span class="ib-text"><span id="ib-typed"></span><span class="caret"></span></span><span class="ib-go" id="ib-go">Build it</span></div>
+          <span class="ib-label">Source code</span>
+          <div class="ib-field panel raised"><span class="ib-text"><span id="ib-typed"></span><span class="caret"></span></span><span class="ib-go" id="ib-go">Open</span></div>
         </div>
 
         <div class="app-win panel raised">
@@ -32,14 +32,14 @@ const Story = (() => {
           <div class="aw-toast"><span class="tk"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>Search runs your code now</div>
         </div>
 
-        <div class="code-win panel"><div class="cw-head"><span>Your app’s code</span><span class="muted">23 functions</span></div></div>
+        <div class="code-win panel"><div class="cw-head"><span>Its source code</span><span class="muted">9 files</span></div></div>
         <div class="slot-ghost"></div>
         <div class="blk b0" style="--i: 0; --y: 98px"><span class="bd"></span><span class="bn">find_recipes</span><span class="bf">recipes.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
         <div class="blk" style="--i: 1; --y: 145px"><span class="bd"></span><span class="bn">scale_servings</span><span class="bf">recipes.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
-        <div class="blk" style="--i: 2; --y: 192px"><span class="bd"></span><span class="bn">total_time</span><span class="bf">recipes.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
-        <div class="blk" style="--i: 3; --y: 239px"><span class="bd"></span><span class="bn">save_recipe</span><span class="bf">storage.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
-        <div class="blk" style="--i: 4; --y: 286px"><span class="bd"></span><span class="bn">load_recipes</span><span class="bf">storage.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
-        <div class="blk" style="--i: 5; --y: 333px"><span class="bd"></span><span class="bn">delete_recipe</span><span class="bf">storage.py</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 2; --y: 192px"><span class="bd"></span><span class="bn">total_time</span><span class="bf">timer.js</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 3; --y: 239px"><span class="bd"></span><span class="bn">saveRecipe</span><span class="bf">Storage.java</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 4; --y: 286px"><span class="bd"></span><span class="bn">loadRecipes</span><span class="bf">Storage.java</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
+        <div class="blk" style="--i: 5; --y: 333px"><span class="bd"></span><span class="bn">delete_recipe</span><span class="bf">queries.sql</span><span class="bc"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></div>
 
         <div class="desk panel raised">
           <div class="dk-head"><span class="dk-name">find_recipes</span><span class="dk-tag">Your turn</span></div>
@@ -66,17 +66,17 @@ const Story = (() => {
     </div>
   </div>`;
   const STORY = [
-    ["Hi, I’m Chip. Let’s build something you actually care about.", "Show me"],
-    ["It starts with your idea. Any idea.", "Next"],
-    ["I build the whole app for you, and it already works.", "Next"],
-    ["Inside, it’s made of small pieces of code called functions.", "Next"],
-    ["We take one piece out, and you write it back. I give hints, never answers.", "Next"],
-    ["Your piece goes back in, and the app keeps working on your code.", "Next"],
-    ["Piece by piece, the app you dreamed up becomes yours.", "What will you build?"],
+    ["Hi, I’m Chip. Ever wanted to know how a big project really works?", "Show me"],
+    ["You have its source code. Hundreds of files. Where do you even start?", "Next"],
+    ["Bring it here, and it keeps working, just like before.", "Next"],
+    ["Inside, it’s small pieces of code called functions, spread over many files.", "Next"],
+    ["I take one piece out, at your level, and you write it back. I give hints, never answers.", "Next"],
+    ["Checks prove your piece works exactly like the original, so nothing breaks.", "Next"],
+    ["Piece by piece, the whole system becomes yours.", "Choose a project"],
   ];
   const FULL = 'words = text.lower()\n    return [r for r in recipes if words in r["name"].lower()]';
   const FULL_HTML = 'words = text.<span class="fn">lower</span>()\n    <span class="kw">return</span> [r <span class="kw">for</span> r <span class="kw">in</span> recipes <span class="kw">if</span> words <span class="kw">in</span> r[<span class="str">"name"</span>].<span class="fn">lower</span>()]';
-  const IDEAS = ["a game where you dodge falling stars", "a tracker for my morning runs", "a recipe box for my family"];
+  const IDEAS = ["chess-engine-main.zip", "bank-system-java.zip", "family-recipes-main.zip"];  // projects being picked
   let root = null, beat = 1, timers = [], finish = null;
 
   const seen = () => { try { return localStorage.getItem("seenStory") === "1"; } catch { return false; } };
@@ -146,7 +146,7 @@ const Story = (() => {
     }
 
     const PLAY = {
-      2() {  // ideas get typed, changed, and one gets built
+      2() {  // project names get typed, changed, and one gets opened
         let t = 350;
         IDEAS.forEach((idea, n) => {
           for (let i = 1; i <= idea.length; i++) later(t + i * 38, () => { ibTyped.textContent = idea.slice(0, i); });

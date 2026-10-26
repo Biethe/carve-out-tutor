@@ -25,13 +25,13 @@ LINES = {
 
 # The first-visit story (tutor/static/story.js), one clip per beat, said the way the screen shows it.
 STORY_LINES = {
-    "story1": "Hi, I'm Chip! Let's build something you actually care about.",
-    "story2": "It starts with your idea. Any idea.",
-    "story3": "I build the whole app for you, and it already works.",
-    "story4": "Inside, it's made of small pieces of code, called functions.",
-    "story5": "We take one piece out, and you write it back. I give hints, never answers.",
-    "story6": "Your piece goes back in, and the app keeps working on your code.",
-    "story7": "Piece by piece, the app you dreamed up becomes yours. So, what will you build?",
+    "story1": "Hi, I'm Chip! Ever wanted to know how a big project really works?",
+    "story2": "You have its source code. Hundreds of files. Where do you even start?",
+    "story3": "Bring it here, and it keeps working, just like before.",
+    "story4": "Inside, it's small pieces of code, called functions, spread over many files.",
+    "story5": "I take one piece out, at your level, and you write it back. I give hints, never answers.",
+    "story6": "Checks prove your piece works exactly like the original, so nothing breaks.",
+    "story7": "Piece by piece, the whole system becomes yours. So, which project will you take apart?",
 }
 
 def tree() -> dict:

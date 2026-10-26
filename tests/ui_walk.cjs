@@ -56,13 +56,13 @@ async function boot() {  // the published site, a later visit: Chip waits with y
 }
 
 const BEATS = [
-  "Hi, I’m Chip. Let’s build something you actually care about.",
-  "It starts with your idea. Any idea.",
-  "I build the whole app for you, and it already works.",
-  "Inside, it’s made of small pieces of code called functions.",
-  "We take one piece out, and you write it back. I give hints, never answers.",
-  "Your piece goes back in, and the app keeps working on your code.",
-  "Piece by piece, the app you dreamed up becomes yours.",
+  "Hi, I’m Chip. Ever wanted to know how a big project really works?",
+  "You have its source code. Hundreds of files. Where do you even start?",
+  "Bring it here, and it keeps working, just like before.",
+  "Inside, it’s small pieces of code called functions, spread over many files.",
+  "I take one piece out, at your level, and you write it back. I give hints, never answers.",
+  "Checks prove your piece works exactly like the original, so nothing breaks.",
+  "Piece by piece, the whole system becomes yours.",
 ];
 // Chip introduces himself out loud, or, if the browser blocks sound before a click, the speaker asks for a tap.
 const introduces = (where) => where.waitForFunction(() => (window.played || []).some((src) => src.endsWith("/voice/story1.wav"))
@@ -77,7 +77,7 @@ async function story() {  // the published site, first visit: the story plays wh
     await page.click("#story-next");
     await see(page, "#story-say", BEATS[i]);
   }
-  await see(page, "#story-next", "What will you build?");
+  await see(page, "#story-next", "Choose a project");
   await page.click("#story-back");
   await see(page, "#story-say", BEATS[5]);
   await page.keyboard.press("ArrowRight");
@@ -110,21 +110,13 @@ async function start() {  // a first local visit: the story plays on the start p
   if (await page.locator("#py").count()) fail("no Python status when Python isn't loading");
   await shot(page, "story-1");
   await page.click("#skip-intro");
-  await see(page, "#c-say", "So, what do you want to build?");
+  await see(page, "#c-say", "Which project do you want to understand?");
   await shot(page, "choose");
 }
-async function choose() {  // the idea box reacts, Polyvault opens, a zip uploads and deletes
+async function choose() {  // a zip uploads and deletes, then Polyvault opens
   const t = await T();
-  await t.fill("#idea-in", "an online shop for posters");
-  await see(t, "#c-say", "Good news: that one already exists. It’s called Polyvault");
-  await t.click("#idea-go");
-  await see(t, "#open-store.nudge");
-  await t.fill("#idea-in", "a game about frogs");
-  await see(t, "#c-say", "Ooh. Tell me a little more.");
-  await t.click("#idea-go");
-  await see(t, "#c-say", "I can’t build new ideas yet. That’s coming soon.");
-  await t.click("#own-open");
-  await see(t, "#c-say", "Your own code works too. Drop it in and I’ll find its pieces.");
+  if (!(await t.locator("#drop-zone").isVisible())) fail("the upload comes first and is open");
+  await see(t, ".idea-later", "Coming soon");
   await t.focus("#zip-in");  // the drop zone can be reached from the keyboard
   if (!(await t.evaluate(() => document.activeElement?.id === "zip-in"))) fail("the zip picker can't get keyboard focus");
   await t.setInputFiles("#zip-in", makeZip("mini", { "shapes.py": AREA }));
@@ -210,14 +202,13 @@ async function returning() {  // coming back: the start page sends you home, New
   await t.waitForURL(/\/project/);
   await see(t, "#next-title", "Write hash_password");
   await t.click('a[aria-label="New project"]');
-  await see(t, "#c-say", "What do you want to build next?");
+  await see(t, "#c-say", "Which project next?");
   await t.click("#open-store");
   await t.waitForURL(/\/project/);
 }
 async function upload() {  // your own project with nothing to run, whose function needs the AI to get ready
   const t = await T();
   await t.goto(new URL("./?new", t.url()).href);
-  await t.click("#own-open");
   await t.setInputFiles("#zip-in", makeZip("mini", { "shapes.py": AREA }));
   await t.click('.p-mine[data-name="mini"] a.btn');
   await t.waitForURL(/\/project/);
@@ -239,7 +230,6 @@ async function upload() {  // your own project with nothing to run, whose functi
 async function partial() {  // your own project where one file needs a library browsers can't run
   const t = await T();
   await t.goto(new URL("./?new", t.url()).href);
-  await t.click("#own-open");
   const db = "import psycopg2\n\n\ndef connect():\n    return psycopg2.connect('')\n";
   await t.setInputFiles("#zip-in", makeZip("duo", { "shapes.py": AREA, "db.py": db }));
   await see(t, "#upload-result", "Partly runs here", 60000);  // the check asks PyPI about psycopg2

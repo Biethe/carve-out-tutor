@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Carve-Out Tutor</title>
-  <meta name="description" content="Learn to code by rebuilding small pieces of apps that already work.">
+  <meta name="description" content="Understand how a big project works by rebuilding it yourself, one function at a time, while it keeps working.">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -22,20 +22,18 @@
     <main class="choose gut">
       <div class="greet"><span class="chip lg" id="c-chip" data-chip></span><p class="say" id="c-say" aria-live="polite"></p></div>
 
-      <form class="idea panel raised" id="idea-form">
-        <label class="sr" for="idea-in">Your idea</label>
-        <textarea id="idea-in" rows="2" placeholder="Describe your idea in one sentence"></textarea>
-        <div class="idea-foot">
-          <span class="muted">Anything you’d use or enjoy.</span>
-          <span class="row">
-            <span class="tag">Coming soon</span>
-            <button class="btn primary lg" type="submit" id="idea-go" disabled>Build it <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i></button>
-          </span>
+      <div class="drop panel raised" id="drop">
+        <div class="own-project">
+          <span class="op-icon"><i class="ph-bold ph-upload-simple" aria-hidden="true"></i></span>
+          <span class="op-text"><b>Bring a project you want to understand</b><span class="muted">A .zip of its source code, from GitHub or your own computer: Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML or CSS.</span></span>
         </div>
-      </form>
+        <label class="drop-zone" id="drop-zone" for="zip-in"><input type="file" id="zip-in" class="sr" accept=".zip,application/zip"><b>Drop a .zip here</b><span class="muted">or click to choose one</span></label>
+        <p class="muted small">Only upload projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
+        <div id="upload-result" role="status"></div>
+      </div>
 
       <div class="known">
-        <span class="muted">Or start from an app that already works</span>
+        <span class="muted">Or start with one that’s ready</span>
         <div class="example panel">
           <span class="ex-pics" aria-hidden="true"><img src="/store-assets/chest.webp" alt=""><img src="/store-assets/lantern.webp" alt=""><img src="/store-assets/boombox.webp" alt=""></span>
           <span class="op-text"><b>Polyvault</b><span class="muted">An online store for 3D models, written in Python. 28 functions to rebuild.</span></span>
@@ -43,16 +41,7 @@
         </div>
       </div>
 
-      <div class="own-project panel">
-        <span class="op-icon"><i class="ph-bold ph-upload-simple" aria-hidden="true"></i></span>
-        <span class="op-text"><b>Already have a project?</b><span class="muted">Bring your own code as a .zip, and learn on that.</span></span>
-        <button class="btn" id="own-open" aria-expanded="false" aria-controls="drop">Bring my project</button>
-      </div>
-      <div class="drop panel" id="drop" hidden>
-        <label class="drop-zone" id="drop-zone" for="zip-in"><input type="file" id="zip-in" class="sr" accept=".zip,application/zip"><b>Drop a .zip here</b><span class="muted">or click to choose one</span></label>
-        <p class="muted small">Only upload projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
-        <div id="upload-result" role="status"></div>
-      </div>
+      <p class="muted small idea-later"><span class="tag">Coming soon</span> Only have an idea? Chip will build it first, so you can take it apart.</p>
 
       <section id="uploads" aria-labelledby="uploads-title" hidden>
         <h2 id="uploads-title">Your projects</h2>
@@ -83,55 +72,10 @@
       $("intro").hidden = true;
       $("choose").hidden = false;
       Chip.mount($("choose"));
-      setTimeout(() => say(params.has("new") ? "What do you want to build next?" : "So, what do you want to build?"), 420);
-      if (matchMedia("(pointer: fine)").matches) $("idea-in").focus({ preventScroll: true });  // no phone keyboard popping up
+      setTimeout(() => say(params.has("new") ? "Which project next?" : "Which project do you want to understand?"), 420);
     }
-
-    // ---- Your own idea: Chip reacts as you type. Building it is coming soon, so Chip points to what works today.
-    const ideaIn = $("idea-in"), STORE = /store|shop|sell|product|cart|market/;
-    const KNOWN = /store|shop|sell|product|cart|market|recipe|cook|food|meal|dish|kitchen|bake|cake|dinner|split|bill|money|budget|expense|rent|pay|cost|trip|spend|owe|habit|streak|track|routine|workout|gym|goal|daily/i;
-    const REACT = {
-      polyvault: "Good news: that one already exists. It’s called Polyvault, and it’s ready to take apart.",
-      recipes: "Yum. Recipe apps have great pieces to learn from.",
-      habits: "Tracking habits teaches lists and dates. Good pick.",
-      money: "Money apps teach careful math. Nice.",
-    };
-    function pickTemplate(text) {
-      const t = text.toLowerCase();
-      if (STORE.test(t)) return "polyvault";
-      if (/recipe|cook|food|meal|dish|kitchen|bake|cake|dinner/.test(t)) return "recipes";
-      if (/split|bill|money|budget|expense|rent|pay|cost|trip|spend|owe/.test(t)) return "money";
-      return "habits";
-    }
-    let fired = new Set(), lookBack = 0;
-    ideaIn.addEventListener("input", () => {
-      const text = ideaIn.value.trim();
-      $("idea-go").disabled = text.length < 4;
-      Chip.lookAt(cChip, ideaIn);
-      clearTimeout(lookBack);
-      lookBack = setTimeout(() => Chip.lookAt(cChip, null), 1500);
-      if (text.length < 4) return;
-      const key = KNOWN.test(text) ? pickTemplate(text) : null;
-      if (key && !fired.has(key)) { fired.add(key); return say(REACT[key]); }
-      if (!key && text.length > 14 && !fired.has("more")) { fired.add("more"); return say("Ooh. Tell me a little more."); }
-      if (text.length > 44 && !fired.has("picture")) { fired.add("picture"); say("I can picture it already."); }
-    });
-    ideaIn.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("idea-form").requestSubmit(); } });
-    $("idea-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      if (ideaIn.value.trim().length < 4) return;
-      say(STORE.test(ideaIn.value.toLowerCase()) ? REACT.polyvault
-        : "I can’t build new ideas yet. That’s coming soon. For now, try Polyvault below, or bring your own code.");
-      $("open-store").classList.add("nudge");
-    });
 
     // ---- Your own project: upload a zip, then open or delete it ----------------------------------
-    $("own-open").onclick = () => {
-      const drop = $("drop");
-      drop.hidden = !drop.hidden;
-      $("own-open").setAttribute("aria-expanded", String(!drop.hidden));
-      if (!drop.hidden) say("Your own code works too. Drop it in and I’ll find its pieces.");
-    };
     const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page", tests: "Python code, tests only" };
     const FIT = { full: ["good", "Runs in your browser"], partial: ["warn", "Partly runs in your browser"], none: ["bad", "Needs your own computer"] };
     const grid = $("mine-grid");
