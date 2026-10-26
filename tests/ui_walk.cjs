@@ -240,7 +240,51 @@ async function partial() {  // your own project where one file needs a library b
   await t.waitForURL(/\/project/);
 }
 
-const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, returning, upload, partial };
+const WRONG = "def hash_password(password: str) -> str:\n    return password\n";
+const RIGHT = 'import hashlib\n\n\ndef hash_password(password: str) -> str:\n    """Return the SHA-256 hex digest of the password."""\n    return hashlib.sha256(password.encode()).hexdigest()\n';
+const type = (t, code) => t.evaluate((c) => document.querySelector(".CodeMirror").CodeMirror.setValue(c), code);
+// Without a key, the local tutor tells you to add one in Settings; on the site the demo AI is blocked, so Chip is busy.
+const NO_AI = SITE ? "busy" : "Settings";
+async function workspace() {  // hash_password, first a wrong try
+  const t = await T();
+  if (!/\/learn/.test(t.url())) { await t.click('[data-act="write"]'); await t.waitForURL(/\/learn/); }
+  await has(t, "#w-crumb", "Polyvault / hash_password");
+  await see(t, "#w-step", "Function 1 of 6");
+  if ((await t.locator("#w-checks li").count()) !== 2) fail("hash_password has two checks");
+  await shot(t, "workspace");
+  await type(t, WRONG);
+  await t.click("#submit");
+  await see(t, '#w-checks li[data-state="fail"]');
+  await see(t, "#results", "Not quite yet");
+  await see(t, "#w-say", NO_AI);  // the hint after a failed check needs the AI
+  await t.locator("#submit:not([disabled])").waitFor();
+}
+async function pass() {  // then the right code
+  const t = await T();
+  await type(t, RIGHT);
+  await t.click("#submit");
+  await see(t, '#w-checks li:last-child[data-state="pass"]');  // the checks tick one after another
+  if ((await t.locator('#w-checks li[data-state="pass"]').count()) !== 2) fail("both checks should pass");
+  await see(t, "#w-editor.ok");
+  await see(t, "#w-own", "1 of 28 yours");
+}
+async function passed() {  // back on a function you passed: it's yours, the next one is a click away, Chip still helps
+  const t = await T();
+  await t.goto(t.url());
+  await see(t, "#w-say", "hash_password is yours.");
+  await see(t, "#save-state", "This function is yours now.");
+  await see(t, "#next", "Next function");
+  await t.fill("#chat-input", "What does encode do?");
+  await t.click("#ask");
+  await see(t, "#w-asked", "You asked: What does encode do?");
+  await see(t, "#w-say", NO_AI);
+  await t.click("#clean");
+  await t.locator("#w-asked").waitFor({ state: "hidden" });  // Clean's reply replaced the answer
+  await see(t, "#w-say", NO_AI);
+  await t.locator("#clean:not([disabled])").waitFor();
+}
+
+const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, returning, upload, partial, workspace, pass, passed };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });

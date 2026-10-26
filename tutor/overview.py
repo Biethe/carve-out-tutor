@@ -218,7 +218,7 @@ def _reply(p: Project, app: str, node: ast.AST) -> str | None:
     return "sends back the answer"
 
 
-YOURS = "rgba(255, 214, 0, 0.35)"  # the highlighter yellow, see-through so it reads on every theme
+YOURS = "rgba(61, 127, 119, 0.18)"  # the accent teal, see-through so the diagram stays readable
 
 
 def flow(verb: str, path: str, current: tuple[str, str] | None = None, project: Project | None = None) -> tuple[str, set]:

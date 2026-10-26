@@ -4,127 +4,97 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Workspace | Carve-Out Tutor</title>
-  <script src="/static/theme.js"></script>
-  <script src="/static/settings.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
-  <link rel="stylesheet" href="/static/old.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="workspace-body">
-  <header class="top">
-    <a class="brand" href="/" aria-label="Carve-Out tutor"><span class="brand-word">Carve</span><span class="brand-piece"><i class="ph-bold ph-scissors" aria-hidden="true"></i>out</span><span class="brand-hand">tutor</span></a>
-    <span class="round" id="round"></span>
-    <label class="pick"><i class="ph-bold ph-list-numbers" aria-hidden="true"></i>
-      <select id="pick" aria-label="Choose the function to work on"></select></label>
-    <span class="top-spacer"></span>
-    <div class="ownership" title="Share of the project's lines of code you wrote">
-      <span class="label">your code</span>
-      <div class="bar"><div class="fill" id="own-fill"></div></div>
-      <strong id="own-pct">0%</strong>
-    </div>
-    <div class="theme-switch" role="radiogroup" aria-label="Theme">
-      <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="night" title="Blueprint" aria-label="Blueprint theme"><i class="ph-bold ph-ruler" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
+<body>
+  <header class="top gut">
+    <a class="btn ghost sm" id="w-back" href="/project"><i class="ph-bold ph-arrow-left" aria-hidden="true"></i>Home</a>
+    <span class="crumb" id="w-crumb"></span>
+    <div class="top-right">
+      <span class="own panel" id="w-own"><svg class="ring" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"></circle><circle class="val" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="44" transform="rotate(-90 9 9)"></circle></svg><span><span class="own-n">0</span> of <span class="own-t">0</span> yours</span></span>
+      <button class="btn sm" id="run" hidden>Open my app</button>
+      <button class="navb" data-open-settings>Settings</button>
     </div>
   </header>
-  <main class="workspace">
-    <section class="left">
-      <div class="panel" id="task">
-        <div class="tabs" role="tablist">
-          <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-task" id="tab-btn-task">Your task</button>
-          <button class="tab" role="tab" aria-selected="false" aria-controls="tab-read" id="tab-btn-read">Read first</button>
-          <button class="tab" role="tab" aria-selected="false" aria-controls="tab-files" id="tab-btn-files">Files</button>
-          <button class="tab" role="tab" aria-selected="false" aria-controls="tab-map" id="tab-btn-map">Map</button>
+  <p class="status gut run-line" id="run-status" role="status"></p>
+
+  <main class="work gut screen" id="w-main">
+    <section class="task card panel raised" id="w-task" aria-labelledby="w-name">
+      <span class="w-step" id="w-step"></span>
+      <h1 id="w-name"></h1>
+      <p class="w-sig" id="w-sig"></p>
+      <p class="w-desc" id="w-desc"></p>
+      <h2 class="w-h">It passes when</h2>
+      <ul class="checks" id="w-checks"></ul>
+      <details><summary>Where this code is used</summary><ul id="w-used"></ul></details>
+      <details><summary>If it’s wrong</summary><p class="muted" id="w-breaks"></p></details>
+      <details><summary>Code to read</summary><div id="w-refs"></div></details>
+      <details id="files-details"><summary>Files in the project</summary>
+        <p class="muted small">Every folder and file, by name. You meet the code one function at a time.</p>
+        <ul class="file-tree" id="file-tree"><li class="muted">Loading…</li></ul>
+      </details>
+      <details id="map-details"><summary>How data flows</summary>
+        <div class="row map-bar">
+          <select id="map-view" aria-label="Diagram to show"><option value="system">The whole system</option></select>
+          <button class="btn sm" id="map-expand" type="button"><i class="ph-bold ph-arrows-out" aria-hidden="true"></i>Expand</button>
         </div>
-        <div id="tab-task" role="tabpanel">
-          <p class="step-label" id="step-label"></p>
-          <h1><code id="fn-signature"></code></h1>
-          <p id="fn-description"></p>
-          <h2>To pass, it must...</h2>
-          <ul class="criteria" id="criteria"></ul>
-          <p class="muted small">Write <em>just this function</em> in the editor. Imports go right above it.</p>
-        </div>
-        <div id="tab-read" role="tabpanel" hidden>
-          <h2>Where it's used</h2>
-          <ul id="task-calls"></ul>
-          <h2>If it's wrong...</h2>
-          <p id="task-breaks"></p>
-          <h2>Code to read</h2>
-          <div id="task-refs"></div>
-        </div>
-        <div id="tab-files" role="tabpanel" hidden>
-          <h2>What's in the project</h2>
-          <p class="muted small">Every folder and file, by name. You'll meet the code one function at a time.</p>
-          <ul class="file-tree" id="file-tree"><li class="muted">Loading…</li></ul>
-        </div>
-        <div id="tab-map" role="tabpanel" hidden>
-          <h2>How data flows</h2>
-          <div class="map-bar">
-            <select id="map-view" aria-label="Diagram to show"><option value="system">The whole system</option></select>
-            <button class="btn small secondary" id="map-expand" type="button"><i class="ph-bold ph-arrows-out" aria-hidden="true"></i> Expand</button>
-          </div>
-          <p class="muted small" id="map-caption"></p>
-          <div class="diagram" id="diagram"><p class="muted">Loading…</p></div>
-        </div>
+        <p class="muted small" id="map-caption"></p>
+        <div class="diagram" id="diagram"><p class="muted">Loading…</p></div>
+      </details>
+    </section>
+
+    <section class="editor card panel raised" id="w-editor" aria-label="Code editor">
+      <div class="ed-head">
+        <span class="mono" id="w-file"></span><span class="muted">Only this function. Imports go right above it.</span>
+        <span class="ed-tools">
+          <label class="editor-font" title="Code font"><span aria-hidden="true">Aa</span>
+            <select id="code-font" aria-label="Code font">
+              <option value="mono">Classic mono</option>
+              <option value="hand">Handwritten</option>
+              <option value="legible">Extra readable</option>
+            </select></label>
+          <button class="icon-btn" id="editor-size" type="button" title="Make the editor taller" aria-pressed="false"><i class="ph-bold ph-arrows-out" aria-hidden="true"></i></button>
+        </span>
+      </div>
+      <div class="ed-body"><textarea id="editor" spellcheck="false"></textarea></div>
+      <div class="results" id="results" hidden></div>
+      <div class="ed-foot">
+        <button class="btn primary" id="submit"><i class="ph-bold ph-check" aria-hidden="true"></i><span>Check my code</span></button>
+        <button class="btn" id="hint">Get a hint</button>
+        <button class="btn" id="clean" hidden>Clean</button>
+        <button class="btn primary" id="next" hidden>Next function <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i></button>
+        <span class="saved" id="save-state"></span>
       </div>
     </section>
-    <section class="right">
-      <div class="editor-wrap">
-        <textarea id="editor" spellcheck="false"></textarea>
-        <label class="editor-font" title="Code font">
-          <span aria-hidden="true">Aa</span>
-          <select id="code-font" aria-label="Code font">
-            <option value="hand">Handwritten</option>
-            <option value="mono">Classic mono</option>
-            <option value="legible">Extra readable</option>
-          </select>
-        </label>
-        <button class="editor-size" id="editor-size" type="button" title="Make the editor taller" aria-pressed="false"><i class="ph-bold ph-arrows-out" aria-hidden="true"></i></button>
-      </div>
-      <div class="toolbar">
-        <button class="btn" id="submit"><i class="ph-bold ph-check-fat" aria-hidden="true"></i> Submit</button>
-        <button class="btn secondary" id="hint"><i class="ph-bold ph-lightbulb" aria-hidden="true"></i> Hint</button>
-        <button class="btn secondary" id="clean" hidden><i class="ph-bold ph-broom" aria-hidden="true"></i> Clean</button>
-        <button class="btn secondary" id="run"><i class="ph-bold ph-play" aria-hidden="true"></i> Run project</button>
-        <button class="btn" id="next" hidden>Next function →</button>
-        <span class="save-state" id="save-state"></span>
-      </div>
-      <p class="status" id="run-status"></p>
-      <div class="panel results" id="results">
-        <p class="empty">Write your function, then hit <strong>Submit</strong>. Each check on the left turns green as you pass it.</p>
+
+    <section class="buddy card panel raised" id="w-buddy" aria-label="Chip, your tutor">
+      <span class="chip md" id="w-chip" data-chip></span>
+      <div class="buddy-body">
+        <p class="muted small" id="w-asked" hidden></p>
+        <div class="say sm" id="w-say" aria-live="polite"></div>
+        <form class="ask" id="ask-form">
+          <label class="sr" for="chat-input">Ask Chip a question</label>
+          <input id="chat-input" autocomplete="off" placeholder="Ask me anything">
+          <button class="btn sm" id="ask" type="submit">Ask</button>
+          <button class="icon-btn" id="tutor-mic" type="button" aria-pressed="false" title="Talk: your words go in the box and are sent when you pause" aria-label="Talk to Chip"><i class="ph-bold ph-microphone" aria-hidden="true"></i></button>
+          <button class="icon-btn" id="speak-toggle" type="button" aria-pressed="false" title="Read Chip’s replies out loud" aria-label="Read Chip’s replies out loud"><i class="ph-bold ph-speaker-slash" aria-hidden="true"></i></button>
+        </form>
       </div>
     </section>
   </main>
-  <dialog class="map-dialog" id="map-dialog">
-    <button class="close" id="map-close" aria-label="Close"><i class="ph-bold ph-x" aria-hidden="true"></i></button>
+
+  <dialog class="sheet map-dialog" id="map-dialog">
+    <button class="icon-btn close" id="map-close" aria-label="Close"><i class="ph-bold ph-x" aria-hidden="true"></i></button>
     <div class="diagram" id="diagram-big"></div>
   </dialog>
-  <button class="tutor-fab" id="tutor-fab" title="Drag me anywhere. Click to open the tutor." aria-expanded="false" aria-controls="tutor-win">
-    <i class="ph-bold ph-chat-teardrop-dots" aria-hidden="true"></i>
-    <span>Chip</span>
-  </button>
-  <section class="tutor-win" id="tutor-win" hidden aria-label="Tutor">
-    <header>
-      <strong>Chip</strong>
-      <span class="tutor-mode" id="tutor-mode">Hints</span>
-      <button class="close" id="speak-toggle" aria-pressed="false" title="Read the tutor's replies out loud" aria-label="Read replies out loud"><i class="ph-bold ph-speaker-slash" aria-hidden="true"></i></button>
-      <button class="close" id="tutor-close" aria-label="Close tutor"><i class="ph-bold ph-x" aria-hidden="true"></i></button>
-    </header>
-    <div class="messages" id="messages"></div>
-    <form class="chat" id="chat">
-      <textarea id="chat-input" rows="2" placeholder="Ask about a library, a method, or a concept…"></textarea>
-      <div class="chat-buttons">
-        <button class="btn" id="explain" type="button" hidden>Send answer</button>
-        <button class="btn secondary" id="ask" type="button">Ask</button>
-        <button class="icon-btn" id="tutor-mic" type="button" aria-pressed="false" title="Talk: your words go in the box and are sent when you pause" aria-label="Talk to the tutor"><i class="ph-bold ph-microphone" aria-hidden="true"></i></button>
-      </div>
-    </form>
-  </section>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js" defer></script>
+  <script src="/static/chip.js"></script>
+  <script src="/static/settings.js"></script>
   <script src="/static/voice.js"></script>
   <script src="/static/run.js"></script>
   <script src="/static/learn.js"></script>
