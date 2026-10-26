@@ -245,7 +245,7 @@
     function startQuiz() {
       mode = "onboarding";
       answers = [];
-      ["build-pill", "q-dots", "q-why"].forEach((id) => ($(id).hidden = false));
+      ["build-pill", "q-dots", "q-why", "q-skip"].forEach((id) => ($(id).hidden = false));
       document.querySelector(".q-yn").hidden = false;
       answerButtons(true);
       show("quiz");
@@ -258,7 +258,7 @@
       await api("POST", "api/interview/more");
       mode = "ai";
       unlocked = true;
-      ["build-pill", "q-dots", "q-why"].forEach((id) => ($(id).hidden = true));
+      ["build-pill", "q-dots", "q-why", "q-skip"].forEach((id) => ($(id).hidden = true));  // skipping is for the first three only
       document.querySelector(".q-yn").hidden = false;
       $("q-react").textContent = "";
       show("quiz");

@@ -73,7 +73,10 @@ function formatReply(text) {
 const chip = $("w-chip");
 
 // Chip's latest words: plain text arrives word by word, a formatted reply all at once. A question asked shows above it.
+// replyShowing: Chip's panel holds a hint or an answer, so the small talk while you type waits.
+let replyShowing = false;
 function buddy(content, { html = false, asked = "" } = {}) {
+  replyShowing = html;
   $("w-asked").hidden = !asked;
   $("w-asked").textContent = asked ? "You asked: " + asked : "";
   const el = $("w-say");
@@ -449,7 +452,7 @@ addEventListener("resize", placeCoach);
 // ---- Chip watches you type, and says a little once in a while --------------------------
 const said = new Set();
 let idle = 0, lookBack = 0;
-function sayOnce(key, text) { if (!said.has(key)) { said.add(key); buddy(text); } }
+function sayOnce(key, text) { if (!said.has(key) && !replyShowing) { said.add(key); buddy(text); } }
 function armIdle() {
   clearTimeout(idle);
   idle = setTimeout(() => {

@@ -22,6 +22,7 @@
  "tests/test_auth.py",
  "tests/test_cart.py",
  "tests/test_pieces.py",
+ "tests/test_tutor_onboarding.py",
  "tutor/app.py",
  "tutor/cards.py",
  "tutor/compat.py",

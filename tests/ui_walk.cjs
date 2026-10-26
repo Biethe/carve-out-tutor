@@ -255,7 +255,12 @@ async function workspace() {  // hash_password, first a wrong try
   await see(t, "#w-step", "Function 1 of 6");
   if ((await t.locator("#w-checks li").count()) !== 2) fail("hash_password has two checks");
   await shot(t, "workspace");
-  await type(t, WRONG);
+  await t.fill("#chat-input", "What does sha256 do?");
+  await t.click("#ask");
+  await see(t, "#w-say", NO_AI);
+  await type(t, WRONG);  // starting to type keeps Chip's answer on screen
+  await page.waitForTimeout(400);
+  if ((await t.locator("#w-asked").innerText()) !== "You asked: What does sha256 do?") fail("typing wiped Chip's answer");
   await t.click("#submit");
   await see(t, '#w-checks li[data-state="fail"]');
   await see(t, "#results", "Not quite yet");

@@ -342,6 +342,8 @@ def finish_onboarding(answers: list[tuple[str, bool]] = Body(embed=True)):
     """Builds the profile straight from the answers: no AI, no key."""
     if (answers and answers[0][0] != "python") or not all(q in onboarding.QUESTIONS for q, _ in answers):  # [] = skipped
         return {"error": "Those answers don't match the questions."}
+    if not answers and progress.load_profile()["done"]:  # skipping is for a first visit, never a wipe
+        return {"error": "You already have a profile."}
     profile = {**onboarding.profile(answers), "limit": len(answers)}
     progress.save_profile(profile)
     return profile
