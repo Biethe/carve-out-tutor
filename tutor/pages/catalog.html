@@ -5,208 +5,191 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Carve-Out Tutor</title>
   <meta name="description" content="Learn to code by rebuilding small pieces of apps that already work.">
-  <script src="/static/theme.js"></script>
-  <script src="/static/settings.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
-  <link rel="stylesheet" href="/static/old.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="top">
-    <a class="brand" href="/" aria-label="Carve-Out tutor"><span class="brand-word">Carve</span><span class="brand-piece"><i class="ph-bold ph-scissors" aria-hidden="true"></i>out</span><span class="brand-hand">tutor</span></a>
-    <span class="top-spacer"></span>
-    <div class="theme-switch" role="radiogroup" aria-label="Theme">
-      <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="night" title="Blueprint" aria-label="Blueprint theme"><i class="ph-bold ph-ruler" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
-    </div>
-  </header>
+  <div id="intro" class="screen" hidden></div>
 
-  <main class="home">
-    <section class="hero">
-      <div>
-        <p class="hero-note rise-in"><i class="ph-bold ph-scissors" aria-hidden="true"></i>made for people who learn by doing</p>
-        <h1 class="rise-in" style="--i:1">Learn to code inside apps that <span class="carved">already work</span>.</h1>
-        <p class="lead rise-in" style="--i:2">Pick a project, or <em>soon</em> your own idea. We cut out one small piece. You write it back in.</p>
-        <a class="btn rise-in" style="--i:3" href="#projects">Pick a project <i class="ph-bold ph-arrow-down" aria-hidden="true"></i></a>
+  <section id="choose" class="screen" hidden>
+    <header class="top gut">
+      <a class="brand" href="/"><span class="chip xs" data-chip></span>Carve-Out</a>
+      <div class="top-right">
+        <a class="navb" href="/interview" id="to-profile" hidden>Profile</a>
+        <button class="navb" data-open-settings>Settings</button>
+      </div>
+    </header>
+    <main class="choose gut">
+      <div class="greet"><span class="chip lg" id="c-chip" data-chip></span><p class="say" id="c-say" aria-live="polite"></p></div>
+
+      <form class="idea panel raised" id="idea-form">
+        <label class="sr" for="idea-in">Your idea</label>
+        <textarea id="idea-in" rows="2" placeholder="Describe your idea in one sentence"></textarea>
+        <div class="idea-foot">
+          <span class="muted">Anything you’d use or enjoy.</span>
+          <span class="row">
+            <span class="tag">Coming soon</span>
+            <button class="btn primary lg" type="submit" id="idea-go" disabled>Build it <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i></button>
+          </span>
+        </div>
+      </form>
+
+      <div class="known">
+        <span class="muted">Or start from an app that already works</span>
+        <div class="example panel">
+          <span class="ex-pics" aria-hidden="true"><img src="/store-assets/chest.webp" alt=""><img src="/store-assets/lantern.webp" alt=""><img src="/store-assets/boombox.webp" alt=""></span>
+          <span class="op-text"><b>Polyvault</b><span class="muted">An online store for 3D models, written in Python. 28 functions to rebuild.</span></span>
+          <a class="btn" id="open-store" href="/project?open=store">Open Polyvault <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i></a>
+        </div>
       </div>
 
-      <div class="hero-art" aria-hidden="true">
-        <figure class="card art-store" style="--i:0; margin:0">
-          <figcaption><i class="ph-bold ph-circle"></i>Polyvault, running</figcaption>
-          <img class="model" src="/store-assets/chest.webp" alt="">
-        </figure>
-        <div class="card art-code" style="--i:1">
-          <span class="tab">store/pieces/auth.py</span>
-<pre><span class="k">def</span> <span class="d">hash_password</span>(password):
-    <span class="s">"""Return the SHA-256 hex digest."""</span>
-    <span class="you"># your code goes here</span></pre>
-        </div>
-        <span class="art-scribble" style="--i:2"><i class="ph-bold ph-arrow-bend-left-up"></i> you write this bit</span>
-        <div class="card art-pass" style="--i:3"><i class="ph-bold ph-check-circle"></i> All tests pass</div>
+      <div class="own-project panel">
+        <span class="op-icon"><i class="ph-bold ph-upload-simple" aria-hidden="true"></i></span>
+        <span class="op-text"><b>Already have a project?</b><span class="muted">Bring your own code as a .zip, and learn on that.</span></span>
+        <button class="btn" id="own-open" aria-expanded="false" aria-controls="drop">Bring my project</button>
       </div>
-    </section>
-
-    <section class="moves" aria-labelledby="moves-title">
-      <h2 id="moves-title">Three moves, <span class="squiggle">on repeat</span>.</h2>
-      <div class="move-row">
-        <div class="move">
-          <h3><i class="ph-bold ph-play-circle" aria-hidden="true"></i>Run it.</h3>
-          <p>Open the finished app and click around. Nothing is broken, nothing is missing.</p>
-        </div>
-        <div class="move">
-          <h3><i class="ph-bold ph-scissors" aria-hidden="true"></i>Rebuild one piece.</h3>
-          <p>We blank out a single function. You get its job, what it must pass, and only the code worth reading.</p>
-        </div>
-        <div class="move">
-          <h3><i class="ph-bold ph-sparkle" aria-hidden="true"></i>Watch it still work.</h3>
-          <p>Your function goes straight back in. Same app, except now <em>part of it is yours</em>.</p>
-        </div>
+      <div class="drop panel" id="drop" hidden>
+        <label class="drop-zone" id="drop-zone" for="zip-in"><input type="file" id="zip-in" accept=".zip,application/zip" hidden><b>Drop a .zip here</b><span class="muted">or click to choose one</span></label>
+        <p class="muted small">Only upload projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
+        <div id="upload-result" role="status"></div>
       </div>
-    </section>
 
-    <section class="projects" id="projects" aria-labelledby="projects-title">
-      <h2 id="projects-title">Projects you can learn from.</h2>
-      <p class="lead">Each one is a complete app that runs from day one. Start with Polyvault, or bring your own.</p>
-      <div class="bento">
-        <a class="card p-main" href="/project?open=store">
-          <div class="mosaic">
-            <img class="model" src="/store-assets/chest.webp" alt="Treasure chest 3D model" width="400" height="300">
-            <img src="/store-assets/forest.webp" alt="Autumn forest environment" width="400" height="300">
-            <img class="model" src="/store-assets/boombox.webp" alt="Boombox 3D model" width="400" height="300">
-          </div>
-          <h3>Polyvault</h3>
-          <p>A 3D asset store in Python, with real models and 360° environments. Log in, fill a cart, check out and download what you bought.</p>
-          <div class="chips"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">SQLite</span><span class="chip">28 functions to rebuild</span></div>
-          <div class="go">
-            <span class="btn small">Open project <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></span>
-            <span class="mine" id="mine" hidden></span>
-          </div>
-        </a>
-        <div class="card p-recipe" aria-disabled="true">
-          <span class="chip soon">Coming soon</span>
-          <i class="ph-bold ph-cooking-pot icon" aria-hidden="true"></i>
-          <h3>Recipe Box</h3>
-          <p>Save recipes, search them, and scale servings up or down.</p>
-          <div class="chips"><span class="chip">Python</span></div>
-        </div>
-        <div class="card p-habit" aria-disabled="true">
-          <span class="chip soon">Coming soon</span>
-          <i class="ph-bold ph-check-square-offset icon" aria-hidden="true"></i>
-          <h3>Habit Tracker</h3>
-          <p>Tick off daily habits and keep your streaks alive.</p>
-          <div class="chips"><span class="chip">JavaScript</span></div>
-        </div>
-        <div class="card p-pong" aria-disabled="true">
-          <span class="chip soon">Coming soon</span>
-          <i class="ph-bold ph-game-controller icon" aria-hidden="true"></i>
-          <h3>Pixel Pong</h3>
-          <p>A tiny two-player game that runs in the browser.</p>
-          <div class="chips"><span class="chip">JavaScript</span><span class="chip">Canvas</span></div>
-        </div>
-        <div class="card p-idea" aria-disabled="true">
-          <span class="chip soon">Coming soon</span>
-          <i class="ph-bold ph-lightbulb icon" aria-hidden="true"></i>
-          <h3>Your own idea</h3>
-          <p>Describe what you want to build. The tutor makes it, then carves it up for you.</p>
-        </div>
-      </div>
-    </section>
+      <section id="uploads" aria-labelledby="uploads-title" hidden>
+        <h2 id="uploads-title">Your projects</h2>
+        <div class="mine-grid" id="mine-grid"></div>
+      </section>
+    </main>
+  </section>
 
-    <!-- Your own projects: upload a zip, then open or delete them. -->
-    <section class="mine" id="mine" aria-labelledby="mine-title">
-      <h2 id="mine-title">Your projects</h2>
-      <p class="lead">Bring a working project, for example one you downloaded from GitHub as a <strong>.zip</strong>. Python web apps and plain web pages run right here; other Python code gets tests.</p>
-      <div class="mine-grid" id="uploads">
-        <div class="card drop-card">
-          <label class="dropzone" id="dropzone">
-            <input type="file" id="upload" accept=".zip,application/zip" hidden>
-            <i class="ph-bold ph-file-zip" aria-hidden="true"></i>
-            <strong>Drop a .zip here</strong>
-            <span>or click to choose one</span>
-          </label>
-          <p class="small muted">Only upload projects you trust: Chip checks for harmful code first, but no check catches everything.</p>
-          <div class="upload-result" id="upload-result" role="status"></div>
-        </div>
-      </div>
-    </section>
-
-    <footer class="foot">
-      <span>Carve-Out Tutor, built for <em>Build With AI: Basics</em> on Devpost.</span>
-      <span class="hand" style="font-size:20px">keep the quick wins, still learn the craft</span>
-    </footer>
-  </main>
-
+  <script src="/static/chip.js"></script>
+  <script src="/static/story.js"></script>
+  <script src="/static/settings.js"></script>
   <script src="/static/compat.js"></script>
   <script>
-    // First launch: the interview comes first, so the tutor knows who it's teaching.
-    fetch("api/profile").then(r => r.json()).then(p => { if (!p.done) location.replace("interview"); }).catch(() => {});
-    // ---- Your projects: upload, open, delete --------------------------------------------
-    const esc = t => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
+    const params = new URLSearchParams(location.search);
+    const cChip = $("c-chip"), say = (text) => Chip.say($("c-say"), text, cChip);
+
+    // A learner with a profile goes home, unless they asked for a new project (or the story again).
+    fetch("api/profile").then((r) => r.json()).then((profile) => {
+      if (profile.done && !params.has("new") && !params.has("intro")) return location.replace("project");
+      $("to-profile").hidden = !profile.done;
+      if (params.has("intro") || (!profile.done && !Story.seen())) Story.play($("intro"), { onDone: choose });
+      else choose();
+    });
+
+    function choose() {
+      $("intro").hidden = true;
+      $("choose").hidden = false;
+      Chip.mount($("choose"));
+      setTimeout(() => say(params.has("new") ? "What do you want to build next?" : "So, what do you want to build?"), 420);
+      if (matchMedia("(pointer: fine)").matches) $("idea-in").focus({ preventScroll: true });  // no phone keyboard popping up
+    }
+
+    // ---- Your own idea: Chip reacts as you type. Building it is coming soon, so Chip points to what works today.
+    const ideaIn = $("idea-in"), STORE = /store|shop|sell|product|cart|market/;
+    const KNOWN = /store|shop|sell|product|cart|market|recipe|cook|food|meal|dish|kitchen|bake|cake|dinner|split|bill|money|budget|expense|rent|pay|cost|trip|spend|owe|habit|streak|track|routine|workout|gym|goal|daily/i;
+    const REACT = {
+      polyvault: "Good news: that one already exists. It’s called Polyvault, and it’s ready to take apart.",
+      recipes: "Yum. Recipe apps have great pieces to learn from.",
+      habits: "Tracking habits teaches lists and dates. Good pick.",
+      money: "Money apps teach careful math. Nice.",
+    };
+    function pickTemplate(text) {
+      const t = text.toLowerCase();
+      if (STORE.test(t)) return "polyvault";
+      if (/recipe|cook|food|meal|dish|kitchen|bake|cake|dinner/.test(t)) return "recipes";
+      if (/split|bill|money|budget|expense|rent|pay|cost|trip|spend|owe/.test(t)) return "money";
+      return "habits";
+    }
+    let fired = new Set(), lookBack = 0;
+    ideaIn.addEventListener("input", () => {
+      const text = ideaIn.value.trim();
+      $("idea-go").disabled = text.length < 4;
+      Chip.lookAt(cChip, ideaIn);
+      clearTimeout(lookBack);
+      lookBack = setTimeout(() => Chip.lookAt(cChip, null), 1500);
+      if (text.length < 4) return;
+      const key = KNOWN.test(text) ? pickTemplate(text) : null;
+      if (key && !fired.has(key)) { fired.add(key); return say(REACT[key]); }
+      if (!key && text.length > 14 && !fired.has("more")) { fired.add("more"); return say("Ooh. Tell me a little more."); }
+      if (text.length > 44 && !fired.has("picture")) { fired.add("picture"); say("I can picture it already."); }
+    });
+    ideaIn.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("idea-form").requestSubmit(); } });
+    $("idea-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (ideaIn.value.trim().length < 4) return;
+      say(STORE.test(ideaIn.value.toLowerCase()) ? REACT.polyvault
+        : "I can’t build new ideas yet. That’s coming soon. For now, try Polyvault below, or bring your own code.");
+      $("open-store").classList.add("nudge");
+    });
+
+    // ---- Your own project: upload a zip, then open or delete it ----------------------------------
+    $("own-open").onclick = () => {
+      const drop = $("drop");
+      drop.hidden = !drop.hidden;
+      $("own-open").setAttribute("aria-expanded", String(!drop.hidden));
+      if (!drop.hidden) say("Your own code works too. Drop it in and I’ll find its pieces.");
+    };
     const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page", tests: "Python code, tests only" };
-    const FIT = { full: "✅ Runs fully in your browser", partial: "⚠️ Partly runs in your browser", none: "❌ Needs your own computer" };
-    const grid = document.getElementById("uploads"), drop = grid.querySelector(".drop-card");
+    const FIT = { full: ["good", "Runs in your browser"], partial: ["warn", "Partly runs in your browser"], none: ["bad", "Needs your own computer"] };
+    const grid = $("mine-grid");
 
     function showUploads({ projects }) {
-      grid.querySelectorAll(".p-mine").forEach(card => card.remove());
-      drop.insertAdjacentHTML("afterend", projects.map(p => `
-        <article class="card p-mine${p.blocked ? " blocked" : ""}" data-name="${esc(p.name)}">
-          <h3><i class="ph-bold ${p.blocked ? "ph-shield-warning" : "ph-folder-open"}" aria-hidden="true"></i>${esc(p.name)}</h3>
-          <p class="meta">${KIND[p.kind]} · ${p.functions} function${p.functions === 1 ? "" : "s"} in ${p.files} file${p.files === 1 ? "" : "s"}</p>
-          <p class="fit">${p.blocked ? "🛡️ Blocked by the safety check" : FIT[p.fit] || ""}</p>
-          ${p.blocked ? `<ul class="small">${p.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+      $("uploads").hidden = !projects.length;
+      grid.innerHTML = projects.map((p) => {
+        const [kind, fit] = p.blocked ? ["bad", "Blocked by the safety check"] : FIT[p.fit] || ["warn", "Couldn’t check where it runs"];
+        return `<article class="p-mine panel" data-name="${esc(p.name)}">
+          <h3>${esc(p.name)}</h3>
+          <p class="muted">${KIND[p.kind]} · ${p.functions} function${p.functions === 1 ? "" : "s"} in ${p.files} file${p.files === 1 ? "" : "s"}</p>
+          <span class="tag ${kind}">${fit}</span>
+          ${p.blocked ? `<ul class="small">${p.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
           <div class="row">
-            ${p.blocked ? "" : `<a class="btn small" href="project?open=${encodeURIComponent(p.name)}">Open <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>`}
-            <button class="link danger" data-ask-delete>Delete</button>
+            ${p.blocked ? "" : `<a class="btn sm" href="project?open=${encodeURIComponent(p.name)}">Open <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i></a>`}
+            <button class="link" data-ask-delete>Delete</button>
           </div>
           <div class="confirm" hidden>
             <p>Delete <strong>${esc(p.name)}</strong>? Its files and your progress on it go too.</p>
-            <div class="row"><button class="btn small danger" data-delete>Delete</button><button class="link" data-cancel>Cancel</button></div>
+            <div class="row"><button class="btn sm danger" data-delete>Delete</button><button class="link" data-cancel>Cancel</button></div>
           </div>
-        </article>`).join(""));
+        </article>`;
+      }).join("");
     }
-    fetch("api/projects").then(r => r.json()).then(showUploads);
+    fetch("api/projects").then((r) => r.json()).then(showUploads);
 
     // Delete asks first, right on the card.
-    grid.addEventListener("click", async e => {
+    grid.addEventListener("click", async (e) => {
       const card = e.target.closest(".p-mine");
       if (!card) return;
       if (e.target.closest("[data-ask-delete]")) { card.querySelector(".confirm").hidden = false; card.querySelector("[data-delete]").focus(); }
       if (e.target.closest("[data-cancel]")) card.querySelector(".confirm").hidden = true;
       if (e.target.closest("[data-delete]")) {
-        card.classList.add("leaving");
-        showUploads(await fetch(`api/projects/${encodeURIComponent(card.dataset.name)}`, { method: "DELETE" }).then(r => r.json()));
+        showUploads(await fetch(`api/projects/${encodeURIComponent(card.dataset.name)}`, { method: "DELETE" }).then((r) => r.json()));
       }
     });
 
     async function upload(file) {
-      const out = document.getElementById("upload-result");
+      const out = $("upload-result");
       if (!file) return;
-      if (!/\.zip$/i.test(file.name)) { out.innerHTML = `<p class="bad">That's not a .zip file.</p>`; return; }
-      out.innerHTML = `<p class="hand">Unpacking ${esc(file.name)} and checking it…</p>`;
+      if (!/\.zip$/i.test(file.name)) { out.innerHTML = `<p class="bad">That’s not a .zip file.</p>`; return; }
+      out.innerHTML = `<p class="muted">Unpacking ${esc(file.name)} and checking it…</p>`;
+      Chip.mood(cChip, "busy");
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("api/projects", { method: "POST", body: form }).then(r => r.json());
+      const res = await fetch("api/projects", { method: "POST", body: form }).then((r) => r.json());
+      cChip.classList.remove("busy");
       if (res.error) { out.innerHTML = `<p class="bad">${esc(res.error)}</p>`; return; }
       out.innerHTML = res.blocked
-        ? `<p class="bad"><strong>Blocked.</strong> It won't run:</p><ul class="small">${res.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>`
+        ? `<p class="bad"><strong>Blocked.</strong> It won’t run:</p><ul class="small">${res.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`
         : `<p class="good"><strong>${esc(res.name)}</strong> is ready. ${esc(Compat.verdict(res.compat))}</p>`;
-      showUploads(await fetch("api/projects").then(r => r.json()));
+      showUploads(await fetch("api/projects").then((r) => r.json()));
     }
-    document.getElementById("upload").onchange = e => { upload(e.target.files[0]); e.target.value = ""; };
-    // Drag and drop a zip onto the drop zone.
-    const zone = document.getElementById("dropzone");
-    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("over"); });
+    $("zip-in").onchange = (e) => { upload(e.target.files[0]); e.target.value = ""; };
+    const zone = $("drop-zone");
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("over"); });
     zone.addEventListener("dragleave", () => zone.classList.remove("over"));
-    zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("over"); upload(e.dataTransfer.files[0]); });
-
-    // If they've started, say how much of Polyvault is already theirs.
-    fetch("api/state").then(r => r.json()).then(s => {
-      if (s.builtin && s.ownership > 0) {  // only when Polyvault is the open project: the % belongs to it
-        const el = document.getElementById("mine");
-        el.textContent = `${s.ownership}% of it is yours`;
-        el.hidden = false;
-      }
-    }).catch(() => {});
+    zone.addEventListener("drop", (e) => { e.preventDefault(); zone.classList.remove("over"); upload(e.dataTransfer.files[0]); });
   </script>
 </body>
 </html>

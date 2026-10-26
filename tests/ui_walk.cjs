@@ -80,7 +80,48 @@ async function story() {  // the published site, first visit: the story plays wh
   await T();
 }
 
-const STEPS = { boot, story };
+// A small project of your own, zipped the way GitHub zips a repository: one top folder named after it.
+function makeZip(name, files) {
+  const zip = `${SHOTS}/${name}.zip`;
+  const entries = Object.fromEntries(Object.entries(files).map(([path, text]) => [`${name}/${path}`, text]));
+  execFileSync(process.env.PYTHON || "python3", ["-c",
+    "import json, sys, zipfile\nwith zipfile.ZipFile(sys.argv[1], 'w') as z:\n    for path, text in json.loads(sys.argv[2]).items(): z.writestr(path, text)",
+    zip, JSON.stringify(entries)]);
+  return zip;
+}
+const AREA = 'def area(width, height):\n    """Width times height."""\n    return width * height\n';
+async function start() {  // a first local visit: the story plays on the start page, Skip goes to the choice
+  await see(page, "#story-say", BEATS[0]);
+  if (await page.locator("#py").count()) fail("no Python status when Python isn't loading");
+  await page.click("#skip-intro");
+  await see(page, "#c-say", "So, what do you want to build?");
+  await shot(page, "choose");
+}
+async function choose() {  // the idea box reacts, Polyvault opens, a zip uploads and deletes
+  const t = await T();
+  await t.fill("#idea-in", "an online shop for posters");
+  await see(t, "#c-say", "Good news: that one already exists. It’s called Polyvault");
+  await t.click("#idea-go");
+  await see(t, "#open-store.nudge");
+  await t.fill("#idea-in", "a game about frogs");
+  await see(t, "#c-say", "Ooh. Tell me a little more.");
+  await t.click("#idea-go");
+  await see(t, "#c-say", "I can’t build new ideas yet. That’s coming soon.");
+  await t.click("#own-open");
+  await see(t, "#c-say", "Your own code works too. Drop it in and I’ll find its pieces.");
+  await t.setInputFiles("#zip-in", makeZip("mini", { "shapes.py": AREA }));
+  await see(t, "#upload-result", "mini is ready");
+  await see(t, '.p-mine[data-name="mini"]', "Python code, tests only");
+  await shot(t, "uploaded");
+  await t.click('.p-mine[data-name="mini"] [data-ask-delete]');
+  await see(t, '.p-mine[data-name="mini"] .confirm', "Delete mini?");
+  await t.click('.p-mine[data-name="mini"] [data-delete]');
+  await t.locator('.p-mine[data-name="mini"]').waitFor({ state: "detached" });
+  await t.click("#open-store");
+  await t.waitForURL(/\/interview/);  // a new learner answers three questions first
+}
+
+const STEPS = { boot, story, start, choose };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });

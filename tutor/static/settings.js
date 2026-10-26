@@ -1,4 +1,4 @@
-// Settings: the learner's own AI provider, model and key. Adds a gear to the header of every page.
+// Settings: the learner's own AI provider, model and key, opened from the Settings button on every page.
 const PROVIDERS = {
   groq: { name: "Groq (free key)", url: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-120b", keys: "https://console.groq.com/keys" },
   openrouter: { name: "OpenRouter (free models)", url: "https://openrouter.ai/api/v1", model: "openai/gpt-oss-120b:free", keys: "https://openrouter.ai/settings/keys" },
@@ -7,17 +7,22 @@ const PROVIDERS = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  const gear = document.createElement("button");
-  gear.className = "gear";
-  gear.title = gear.ariaLabel = "Settings: your AI provider";
-  gear.innerHTML = `<i class="ph-bold ph-gear-six" aria-hidden="true"></i>`;
-  document.querySelector(".theme-switch")?.before(gear);
-  const me = Object.assign(document.createElement("a"), { className: "gear", href: "interview", title: "Your profile" });
-  me.innerHTML = `<i class="ph-bold ph-user-circle" aria-hidden="true"></i>`;
-  gear.before(me);
+  // Any button with data-open-settings opens Settings. Pages still on the old look get the gear they had.
+  const openers = [...document.querySelectorAll("[data-open-settings]")];
+  if (!openers.length && document.querySelector(".theme-switch")) {
+    const gear = document.createElement("button");
+    gear.className = "gear";
+    gear.title = gear.ariaLabel = "Settings: your AI provider";
+    gear.innerHTML = `<i class="ph-bold ph-gear-six" aria-hidden="true"></i>`;
+    document.querySelector(".theme-switch").before(gear);
+    const me = Object.assign(document.createElement("a"), { className: "gear", href: "interview", title: "Your profile" });
+    me.innerHTML = `<i class="ph-bold ph-user-circle" aria-hidden="true"></i>`;
+    gear.before(me);
+    openers.push(gear);
+  }
 
   const dialog = document.createElement("dialog");
-  dialog.className = "settings-dialog";
+  dialog.className = "sheet settings-dialog";
   dialog.innerHTML = `
     <form method="dialog">
       <h2>Your AI tutor</h2>
@@ -27,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <label>Model <input name="model" required spellcheck="false"></label>
       <label>Key <input name="api_key" type="password" autocomplete="off" spellcheck="false"></label>
       <p class="small"><a class="get-key" target="_blank" rel="noopener">Get a free key</a> <span class="key-state muted"></span></p>
-      <div class="chat-buttons"><button class="btn" value="save">Save</button><button class="btn secondary" value="cancel" formnovalidate>Cancel</button></div>
+      <div class="row"><button class="btn primary" value="save">Save</button><button class="btn ghost" value="cancel" formnovalidate>Cancel</button></div>
     </form>`;
   document.body.append(dialog);
   const form = dialog.querySelector("form"), field = name => form.elements[name];
@@ -41,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   field("provider").onchange = () => pick(field("provider").value);
 
-  gear.onclick = async () => {
+  const open = async () => {
     const s = await fetch("api/settings").then(r => r.json());
     const key = Object.keys(PROVIDERS).find(k => PROVIDERS[k].url && s.base_url.startsWith(PROVIDERS[k].url)) || "other";
     pick(key, true);
@@ -53,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? "No key needed to try it: you're using the shared demo. Add your own for unlimited use." : "No key yet.";
     dialog.showModal();
   };
+  openers.forEach((b) => (b.onclick = open));
 
   form.onsubmit = async e => {
     if (e.submitter?.value !== "save") return;

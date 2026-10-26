@@ -123,6 +123,8 @@
         }
         document.title = `${info.name} | Carve-Out Tutor`;
       });
+    // A learner without a profile answers the three questions first.
+    ready.then(() => fetch("api/profile")).then((r) => r.json()).then((p) => { if (!p.done) location.replace("interview"); });
     // The zip is fetched, then saved as a file: a plain download link is cancelled inside the tutor's frame.
     document.getElementById("download").onclick = async () => {
       const res = await fetch("api/download");
