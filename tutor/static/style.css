@@ -524,8 +524,10 @@ h1, h2, h3 { font-family: var(--display); }
 .CodeMirror-matchingbracket { color: var(--good-ink) !important; }
 
 /* ---------- Results of a check ---------- */
-.results { padding: 14px 18px; border-top: 1px solid var(--line); font-size: 15px; }
-.results .summary { margin: 0 0 6px; font-weight: 600; }
+.results { position: relative; flex-shrink: 0; max-height: 40%; overflow-y: auto; padding: 14px 18px; border-top: 1px solid var(--line); font-size: 15px; }
+.results-close { position: absolute; top: 8px; right: 10px; width: 32px; height: 32px; font-size: 20px; line-height: 1; }
+.ed-body { min-height: 200px; }
+.results .summary { margin: 0 0 6px; padding-right: 36px; font-weight: 600; }
 .results .tests { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .results pre { margin: 4px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--bg); font: 400 12.5px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .done-note { margin: 8px 0 0; }

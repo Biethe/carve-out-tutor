@@ -262,14 +262,19 @@ function showResults(results, passed) {
   // Focus on this function's checks; other tests only show if this function broke them.
   const all = results.filter(r => !r.passed), mine = all.filter(r => r.name in criteriaText);
   const failing = mine.length ? mine : all;
+  // One error behind every failing check (code that doesn't compile or crashes): show it once, not under each check.
+  const same = failing.length > 1 && failing.every(r => r.message && r.message === failing[0].message);
   $("results").hidden = false;
   $("results").innerHTML =
+    `<button class="icon-btn results-close" id="results-close" aria-label="Close the results" title="Close the results">×</button>` +
     `<p class="summary ${passed ? "good" : "bad"}">${passed
       ? `It works. Your function is part of ${escapeHtml(project)} now.`
-      : "Not quite yet. Here’s what to look at:"}</p>` +
-    (failing.length ? `<ul class="tests">${failing.map(r => `<li>
+      : same ? "Not quite yet. Every check stops at the same error:" : "Not quite yet. Here’s what to look at:"}</p>` +
+    (same ? `<pre>${escapeHtml(failing[0].message)}</pre>`
+      : failing.length ? `<ul class="tests">${failing.map(r => `<li>
         <span>${escapeHtml(criteriaText[r.name] || r.name.replace(/^test_/, "").replaceAll("_", " "))}</span>
         ${r.message ? `<pre>${escapeHtml(r.message)}</pre>` : ""}</li>`).join("")}</ul>` : "");
+  $("results-close").onclick = () => { $("results").hidden = true; editor.focus?.(); };
 }
 
 // ---- Editor and steps ----------------------------------------------------------
