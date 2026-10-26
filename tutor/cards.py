@@ -91,7 +91,9 @@ def notes() -> str:
     return {
         "wsgi": f"- A Flask app (the app object is `{kind.get('var')}` in module `{kind.get('module')}`).\n"
                 "- Plain functions: call them directly. A route: call it inside "
-                f"`with {kind.get('var')}.test_request_context(path, method=..., data={{...}}):` and check the response.",
+                f"`with {kind.get('var')}.test_request_context(path, method=..., data={{...}}):` and check the response.\n"
+                "- If the file opens a sqlite database, that file and its tables already exist when the tests import the module. "
+                "Call the function. Do not create the database yourself.",
         "asgi": "- A FastAPI/Starlette app. Plain functions: call them directly. For a route, prefer testing the plain "
                 "functions it relies on; if you must call the route, pass simple fake arguments.",
         "static": "- A web page: Python files here are helpers. Call their functions directly.",

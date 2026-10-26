@@ -47,12 +47,29 @@ async def run_test_code(file: str, test_name: str, test_code: str, code: str) ->
     return await asyncio.to_thread(_run_tests, file, test_name, test_code, code)
 
 
+_installed: set[str] = set()
+
+
+def _ensure_packages(store: Path) -> None:
+    """Uploaded projects import libraries the store doesn't need. Install them once, before the tests."""
+    if store.resolve() == pieces.BUILTIN.resolve():
+        return
+    from tutor import projects
+    missing = [name for name in projects.needs(store) if name.lower() not in _installed]
+    if not missing:
+        return
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--disable-pip-version-check", *missing],
+                   check=False, timeout=180)
+    _installed.update(name.lower() for name in missing)
+
+
 def _run_tests(file: str, test_name: str, test_code: str, code: str) -> list[dict]:
     """The tests run against a copy of the whole store with `file` (e.g. pieces/auth.py) replaced by `code`."""
     with tempfile.TemporaryDirectory() as tmp:
         store = Path(tmp, pieces.STORE.name)
         shutil.copytree(pieces.STORE, store, ignore=shutil.ignore_patterns("__pycache__", "*.db", ".git", "node_modules"))
         (store / file).write_text(code)
+        _ensure_packages(pieces.STORE)
         Path(tmp, "tests").mkdir()
         shutil.copy(ROOT / "tests" / "conftest.py", Path(tmp, "tests"))
         Path(tmp, "tests", test_name).write_text(test_code)
