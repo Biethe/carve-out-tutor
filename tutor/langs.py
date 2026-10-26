@@ -250,7 +250,7 @@ def _sql_pieces(source: str) -> list[dict]:
         last = end + 1
         if not head:
             continue
-        obj = _SQL_OBJECT.match(head)
+        obj = _SQL_OBJECT.match(" ".join(source[start:end].split()))  # the real text: quoted names are blanked in the mask
         named = re.findall(r"--\s*name:\s*([\w-]+)", before)
         verb = head.split()[0].upper()
         if obj:
@@ -722,6 +722,7 @@ public class Account {
     assert all(r["passed"] for r in check_html('<main id="m"><p>Hi  there</p></main>', '<main id="m">\n  <p>Hi there</p>\n</main>'))
     sql = "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);\nINSERT INTO users VALUES (1, 'a;b');\n-- name: user_names\nSELECT name FROM users ORDER BY name;\nSELECT * FROM users WHERE id = ?;\n"
     assert [(f["name"], f["kind"]) for f in find(sql, "sql")] == [("users", "table"), ("user_names", "query")]
+    assert [f["name"] for f in find('CREATE UNIQUE INDEX "Article_slug_key" ON "Article"("slug");', "sql")] == ["Article_slug_key"]
     with tempfile.TemporaryDirectory() as tmp:
         Path(tmp, "schema.sql").write_text(sql)
         assert all(r["passed"] for r in check_sql(Path(tmp), "schema.sql", "user_names", "query", "SELECT name FROM users ORDER BY name"))

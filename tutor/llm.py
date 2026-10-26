@@ -274,7 +274,7 @@ async def answer(piece: str, name: str, question: str, code: str) -> str:
 
 
 INTERVIEW_RULES = """You are Chip, a friendly coding tutor. You interview a learner to find their real level before they
-rebuild parts of a working Python project, such as a web app with logins, sessions and a database.
+rebuild parts of a working project (in Python, JavaScript, Java, C, SQL or another language), such as a web app with logins, sessions and a database.
 Every question is a YES-OR-NO question, short (under 15 words), plain, read aloud. One concrete skill each.
 Good: "Have you written a Python function that returns a dictionary?" Bad: "How good are you at Python?"
 The first three questions each cover a DIFFERENT area, in this order: 1) Python itself, 2) web apps (forms, logins,
