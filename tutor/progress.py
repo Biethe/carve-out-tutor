@@ -51,13 +51,13 @@ def plan(progress: dict) -> list[tuple[str, str]]:
     """The functions the learner will write, in order: their saved plan, or else the default (Polyvault: the six
     hand-made rounds; an uploaded project: everything)."""
     if progress.get("plan"):
-        return [tuple(key.rsplit(".", 1)) for key in progress["plan"]["order"] if progress["plan"]["marks"].get(key) == "write"]
+        return [pieces.split_key(key) for key in progress["plan"]["order"] if progress["plan"]["marks"].get(key) == "write"]
     from tutor import overview
     builtin = pieces.STORE == pieces.BUILTIN  # an uploaded project starts with every function to write
     from tutor import compat
     keys = [f"{piece}.{f['name']}" for piece in PIECES if (piece in HAND or not builtin) and not compat.blocked_file(PIECES[piece]["file"])
             for f in PIECES[piece]["functions"]]
-    return [tuple(key.rsplit(".", 1)) for key in overview.roadmap(keys)]
+    return [pieces.split_key(key) for key in overview.roadmap(keys)]
 
 
 def all_done(progress: dict) -> bool:
@@ -73,7 +73,7 @@ def write_learner_file(progress: dict, piece: str):
 
 def count_lines(code: str) -> int:
     """Non-blank lines that aren't comments."""
-    return sum(1 for line in code.splitlines() if line.strip() and not line.strip().startswith("#"))
+    return sum(1 for line in code.splitlines() if line.strip() and not line.strip().startswith(("#", "//", "--", "/*", "*", "<!--")))
 
 
 def ownership(progress: dict) -> float:
@@ -81,15 +81,14 @@ def ownership(progress: dict) -> float:
     (Imports and setup lines between functions aren't counted: there's nothing to carve there.)"""
     mine = total = 0
     for piece, p in PIECES.items():
-        source = (pieces.STORE / p["file"]).read_text()
-        lines = source.splitlines()
-        for name, (first, last) in _function_spans(source, decorators=False).items():
+        source = (pieces.STORE / p["file"]).read_text(errors="replace")
+        for name, original in pieces.function_texts(p["file"], source).items():
             f = progress["pieces"][piece].get(name)
             if f and f["status"] == "passed":
                 mine += count_lines(f["draft"])
                 total += count_lines(f["draft"])
             else:
-                total += count_lines("\n".join(lines[first - 1:last]))
+                total += count_lines(original)
     return round(100 * mine / total, 1) if total else 0.0
 
 

@@ -76,7 +76,7 @@
     }
 
     // ---- Your own project: upload a zip, then open or delete it ----------------------------------
-    const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page", tests: "Python code, tests only" };
+    const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page" };
     const FIT = { full: ["good", "Runs in your browser"], partial: ["warn", "Partly runs in your browser"], none: ["bad", "Needs your own computer"] };
     const grid = $("mine-grid");
 
@@ -86,7 +86,7 @@
         const [kind, fit] = p.blocked ? ["bad", "Blocked by the safety check"] : FIT[p.fit] || ["warn", "Couldn’t check where it runs"];
         return `<article class="p-mine panel" data-name="${esc(p.name)}">
           <h3>${esc(p.name)}</h3>
-          <p class="muted">${KIND[p.kind]} · ${p.functions} function${p.functions === 1 ? "" : "s"} in ${p.files} file${p.files === 1 ? "" : "s"}</p>
+          <p class="muted">${esc(p.kind === "tests" ? `${(p.languages || []).join(", ") || "Code"}, checked piece by piece` : KIND[p.kind])} · ${p.functions} piece${p.functions === 1 ? "" : "s"} in ${p.files} file${p.files === 1 ? "" : "s"}</p>
           <span class="tag ${kind}">${fit}</span>
           ${p.blocked ? `<ul class="small">${p.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
           <div class="row">

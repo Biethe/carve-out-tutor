@@ -24,7 +24,11 @@ HIGH = {
         ("sends data out quietly", r"navigator\.sendBeacon"),
     ],
 }
-HIGH[".html"] = HIGH[".js"]
+HIGH[".html"] = HIGH[".ts"] = HIGH[".js"]
+# Compiled languages only run in the local tutor, on the learner's own computer: the same rules about other programs.
+NATIVE = [("runs system commands", r"\b(?:system|popen|execv\w*|execl\w*|fork)\s*\(|Runtime\.getRuntime\(\)\.exec|\bProcessBuilder\b|std::process::Command"),
+          ("deletes whole folders", r"remove_dir_all|rm\s+-rf|deleteRecursively")]
+HIGH.update({ext: NATIVE for ext in (".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".java", ".rs")})
 MEDIUM = {
     ".py": [
         ("connects to the internet", r"\b(?:requests|httpx|urllib\.request|socket|aiohttp)\b"),
@@ -37,14 +41,16 @@ MEDIUM = {
         ("decodes hidden text", r"\batob\("),
     ],
 }
-MEDIUM[".html"] = MEDIUM[".js"]
+MEDIUM[".html"] = MEDIUM[".ts"] = MEDIUM[".js"]
+MEDIUM.update({ext: [("connects to the internet", r"\bsocket\s*\(|java\.net\.|std::net::|\bcurl_")]
+               for ext in (".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".java", ".rs")})
 
 
 def scan(root: Path) -> tuple[list[dict], list[dict]]:
     """(high, medium) findings: [{file, line, what, code}]. Very long or packed lines count as hidden code (high)."""
     high, medium = [], []
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or path.suffix not in (".py", ".js", ".html", ".mjs"):
+        if not path.is_file() or (path.suffix not in HIGH and path.suffix != ".mjs") or "node_modules" in path.parts:
             continue
         rel = str(path.relative_to(root))
         lines = path.read_text(errors="replace").splitlines()

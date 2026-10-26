@@ -2,7 +2,10 @@
 Six functions have hand-written cards (below). Every other function is found with ast, and its card and tests are
 written by the learner's AI the first time it's opened (tutor/cards.py). Reference code is pulled live from the store."""
 import ast
+import re
 from pathlib import Path
+
+from tutor import langs
 
 ROOT = Path(__file__).parent.parent
 BUILTIN = ROOT / "store"
@@ -155,6 +158,26 @@ def python_files(root: Path) -> list[Path]:
             and not p.name.startswith("test_") and p.name not in ("conftest.py", "setup.py")]
 
 
+OTHER_SKIP = SKIP_DIRS | {"vendor", "third_party", "target", "out", "bin", "obj", "coverage", ".next", "public/vendor"}
+
+
+def other_files(root: Path) -> list[Path]:
+    """The project's own files in the other languages (tutor/langs.py): no tests, no minified or vendored code."""
+    return [p for p in sorted(root.rglob("*")) if p.is_file() and langs.lang(p) not in ("", "python")
+            and not OTHER_SKIP & set(p.relative_to(root).parts) and ".min." not in p.name
+            and not re.search(r"(\.|_)(test|spec)\.\w+$|Test\.java$", p.name) and p.stat().st_size < 300_000]
+
+
+def source_files(root: Path) -> list[Path]:
+    return python_files(root) + other_files(root)
+
+
+def split_key(key: str) -> tuple[str, str]:
+    """"piece.function" -> (piece, function). Piece keys can hold dots (src.cart.js), so the longest known one wins."""
+    piece = max((p for p in PIECES if key.startswith(p + ".")), key=len, default=key.rsplit(".", 1)[0])
+    return piece, key[len(piece) + 1:]
+
+
 def _discover() -> dict:
     """Every file of the project is a piece, every top-level function in it carvable. Hand-written cards win."""
     pieces = {}
@@ -175,6 +198,14 @@ def _discover() -> dict:
         if functions:
             pieces[key] = {"title": hand.get("title") or (TITLES.get(file, file) if builtin else file), "file": file,
                            "test": hand.get("test"), "functions": functions}
+    if not builtin:
+        for path in other_files(STORE):
+            file = str(path.relative_to(STORE))
+            language = langs.lang(file)
+            source = path.read_text(errors="replace")
+            functions = [_auto_other(source, f, language) for f in langs.find(source, language)]
+            if functions:
+                pieces[file.replace("/", ".")] = {"title": file, "file": file, "test": None, "lang": language, "functions": functions}
     first = [k for k in HAND if k in pieces]  # the hand-made rounds first
     return {k: pieces[k] for k in [*first, *sorted(set(pieces) - set(first))]}
 
@@ -187,6 +218,13 @@ def _auto(node: ast.FunctionDef) -> dict:
     return {"name": node.name, "signature": signature, "description": doc, "auto": True,
             "stub": _stub(signature, doc.split("\n")[0] or "Your code here."),
             "criteria": [], "call_sites": [], "breaks": "", "references": [], "question": "", "answer": ""}
+
+
+def _auto_other(source: str, found: dict, language: str) -> dict:
+    """A card for a piece in another language, from the code alone (tutor/cards.py adds the rest later)."""
+    return {"name": found["name"], "signature": langs.signature(source, found, language), "description": "", "auto": True,
+            "stub": langs.stub(source, found, language), "criteria": [], "call_sites": [], "breaks": "", "references": [],
+            "question": "", "answer": ""}
 
 
 PIECES = _discover()
@@ -218,8 +256,18 @@ def _function_spans(source: str, decorators: bool = True) -> dict[str, tuple[int
             for n in ast.parse(source).body if isinstance(n, ast.FunctionDef)}
 
 
+def function_texts(file: str, source: str) -> dict[str, str]:
+    """{name: original code} of every piece in one file, in any language. Decorators stay outside (the learner writes the def)."""
+    if langs.lang(file) != "python":
+        return {f["name"]: source[f["start"]:f["end"]] for f in langs.find(source, langs.lang(file))}
+    lines = source.splitlines()
+    return {name: "\n".join(lines[a - 1:b]) for name, (a, b) in _function_spans(source, decorators=False).items()}
+
+
 def reference_code(file: str, name: str) -> str:
     """Source of one top-level function in a store file, read live so it never goes stale."""
+    if langs.lang(file) != "python":
+        return langs.code_of((STORE / file).read_text(errors="replace"), langs.lang(file), name) or f"// {name} not found in {file}"
     source = (STORE / file).read_text()
     span = _function_spans(source).get(name)
     if span is None:
@@ -230,7 +278,9 @@ def reference_code(file: str, name: str) -> str:
 def assemble(piece: str, snippets: dict[str, str]) -> str:
     """The piece's file with the learner's functions swapped in for the AI's.
     Anything in a snippet (imports, helpers) goes where the original function was."""
-    source = (STORE / PIECES[piece]["file"]).read_text()
+    source = (STORE / PIECES[piece]["file"]).read_text(errors="replace")
+    if PIECES[piece].get("lang"):
+        return langs.assemble(source, PIECES[piece]["lang"], snippets)
     lines = source.splitlines()
     spans = _function_spans(source, decorators=False)  # a route's @app.get(...) stays; the learner writes the def
     for name in sorted(snippets, key=lambda n: spans[n][0], reverse=True):  # bottom-up keeps line numbers valid
@@ -251,5 +301,8 @@ def task(piece: str, name: str) -> dict:
         "criteria": [{"test": t, "text": c} for t, c in f["criteria"]],
         "call_sites": f["call_sites"],
         "breaks": f["breaks"],
-        "references": [{"file": f"{STORE.name}/{file}", "name": n, "code": reference_code(file, n)} for file, n in f["references"]],
+        "references": [{"file": f"{STORE.name}/{file}", "name": n, "code": reference_code(file, n), "lang": langs.lang(file)}
+                       for file, n in f["references"]],
+        "lang": p.get("lang", "python"),
+        "lang_name": langs.NAMES[p.get("lang", "python")],
     }

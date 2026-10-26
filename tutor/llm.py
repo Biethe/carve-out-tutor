@@ -9,6 +9,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from tutor import langs
 from tutor.pieces import PIECES, function
 from tutor.progress import DATA, load_profile
 
@@ -140,7 +141,8 @@ def _task_text(piece: str, name: str) -> str:
     calls = "\n".join(f"- {c}" for c in f["call_sites"])
     profile = load_profile()
     about = f"\n\nAbout the learner ({profile['level']}): {profile['summary']} Pitch your reply at their level." if profile["done"] else ""
-    return (f"The learner is writing ONE function of the {PIECES[piece]['title']} piece ({PIECES[piece]['file']}):\n"
+    language = langs.NAMES[PIECES[piece].get("lang", "python")]
+    return (f"The learner is writing ONE function of the {PIECES[piece]['title']} piece ({PIECES[piece]['file']}), in {language}:\n"
             f"{f['signature']}: {f['description']}\n\nWhere it's used:\n{calls}{about}")
 
 
@@ -149,7 +151,7 @@ def _strip_code(text: str) -> str:
     return re.sub(r"```.*?(```|$)", "", text, flags=re.S).strip()
 
 
-HINT_RULES = """You are a coding tutor for a beginner who is rebuilding one function of a working Python project.
+HINT_RULES = """You are a coding tutor for a learner who is rebuilding one function (or SQL statement, CSS rule or HTML section) of a working project.
 Nudge, don't solve. Rules:
 - Give 1 to 3 hints, one per line, each starting with "- ". Each hint is ONE short sentence, under 15 words.
 - Straight to the point: no greeting, no praise, no restating the task, no summary at the end.
@@ -212,13 +214,13 @@ async def grade(piece: str, name: str, explanation: str, code: str, earlier: lis
     return None
 
 
-CLEAN_RULES = """A beginner's Python function already passes all its tests. Review it as production code:
-- shorter: fewer lines, no wasted variables or steps, idiomatic Python;
+CLEAN_RULES = """A learner's function (in the language named below) already passes all its checks. Review it as production code:
+- shorter: fewer lines, no wasted variables or steps, idiomatic for its language;
 - efficient: no needless loops, copies or repeated work;
 - robust: handles odd inputs (empty, missing, wrong type) the way its callers need;
 - secure: nothing an attacker could exploit (timing leaks, injection, trusting user input);
-- typed: type hints on every parameter and the return value, and on local variables whose type isn't obvious,
-  written with built-in types (list[int], dict[str, str], X | None), never typing.List or typing.Dict;
+- typed: precise types where the language has them (in Python: type hints on every parameter and the return value,
+  written with built-in types like list[int], dict[str, str] or X | None, never typing.List or typing.Dict);
 Keep the behavior the tests check exactly the same, and keep the exact signature from the task.
 The shortest correct version wins: only guard against inputs the callers listed under "Where it's used" can really send,
 and never change what happens on bad input (an error stays an error) unless that is a security fix.
@@ -226,7 +228,7 @@ Reply with JSON only, with these keys:
 "clean": true if it is already about as clean as it gets, else false,
 "hints": 1 to 3 points, the most important first, each ONE short sentence under 20 words that starts with its kind
 ("Shorter:", "Faster:", "Robust:", "Secure:" or "Typed:") and says what the cleaner version changes and why it's better, no code ([] if clean),
-"code": the cleaner version of the whole function, same signature, plain Python, no markdown fences ("" if clean).
+"code": the cleaner version of the whole function, same signature, plain code in the same language, no markdown fences ("" if clean).
 If the code is already clean, say so: "clean": true, with no hints and no code. Don't invent changes."""
 
 
@@ -249,7 +251,7 @@ async def clean(piece: str, name: str, code: str) -> dict | None:
     return None
 
 
-ANSWER_RULES = """You are a coding tutor answering a beginner's question while they write ONE Python function.
+ANSWER_RULES = """You are a coding tutor answering a learner's question while they write ONE function of a working project (the language is named below).
 They ask so they can understand what their function should do. Answer only what they need for that. Rules:
 - At most 3 short sentences, under 60 words in all. No lists of facts, no history, nothing they didn't ask.
 - Everyday words, like explaining to a friend. No jargon (not "deterministic", "idempotent"): say what it means instead.
@@ -377,7 +379,7 @@ async def card(piece: str, name: str, context: dict, problem: str = "") -> dict 
     return None
 
 
-PLAN_RULES = """You plan which functions of a small Python project a learner rewrites, from their profile.
+PLAN_RULES = """You plan which functions of a project a learner rewrites, from their profile.
 Mark "write" for what's worth learning for them: their gaps and goals first, then the project's key spots
 (its core logic, the parts everything else relies on). Mark "keep" for plain glue or things they clearly know.
 Pick 1 or 2 functions that test a skill they CLAIMED as "spot_checks", marked "write" too, to check the claim.
@@ -404,5 +406,78 @@ async def plan(profile: dict, functions: list[dict]) -> dict | None:
         except NoKey:
             raise
         except Exception:
+            return None
+    return None
+
+
+# ---- Other languages (tutor/langs.py): the original code is the reference ------------------------------------
+CARD_OTHER_RULES = """A learner will rewrite ONE piece of a working {lang} project from an empty start. They know some programming
+but not this project. Write their task card{check_part}.
+Card, in plain words, never giving away the code:
+- "description": 2-3 sentences: {what}. No implementation steps.
+- "breaks": one sentence: what goes wrong in the project if this piece is wrong.
+- "question": ONE narrow question about why it's written this way (asked after they pass). "answer": 2-3 sentences.
+{check_rules}Reply in exactly this format, nothing else:
+CARD:
+{{"description": "...", "breaks": "...", "question": "...", "answer": "..."}}{check_format}"""
+
+WHAT = {"sql": "what the statement creates, returns or changes", "css": "what the rule makes the page look like",
+        "html": "what this part of the page shows and how it's organised"}
+CHECK_RULES = """The check program ("check"): a short {lang} program that calls the function with 2 to 5 well-chosen inputs and
+prints one line per check: a short label in plain words, a colon and a space, then the result, like `empty cart totals 0: 0`.
+- Labels are unique and say what is checked, never the expected value. They're shown to the learner as the goals.
+- It runs on the original code first; the learner's version must print exactly the same lines. Print values in a
+  stable form: no memory addresses, times, random numbers or object ids.
+- At most 5 lines in all. Pick inputs a wrong or empty version gets wrong: the normal case, and one edge case the project relies on.
+- No test framework, no reading input, no network, no files.
+- {contract}
+"""
+CONTRACT = {
+    "javascript": "It is added to the end of the same file, so it can call every function in it, exported or not. Print "
+                  "with console.log (JSON.stringify for arrays and objects). For a method, create the object first.",
+    "typescript": "It is added to the end of the same file, so it can call every function in it, exported or not. Print "
+                  "with console.log (JSON.stringify for arrays and objects). For a method, create the object first.",
+    "java": "Write a complete file: public class CarveCheck { public static void main(String[] args) { ... } }, printing "
+            "with System.out.println. If the class you call is in a package, start with the same package line, so "
+            "package-private methods can be called too. Private methods: check them through a public method that uses them.",
+    "c": "Write a function int carve_check(void) that runs the checks and returns 0. Don't write main. It is added to the "
+         "end of the same file, so it can call static functions. Print with printf; #include what you need first.",
+    "cpp": "Write a function int carve_check() that runs the checks and returns 0. Don't write main. It is added to the "
+           "end of the same file, so it can call everything in it. Print with std::cout; #include what you need first.",
+    "rust": "Write fn main() that runs the checks, printing with println!. It is added to the end of the same file (the "
+            "file's own main is renamed), so it can call private functions too.",
+}
+
+
+async def card_other(language: str, context: dict, problem: str = "") -> dict | None:
+    """{description, breaks, question, answer, check} for one piece in another language. None if the AI is unavailable."""
+    name = langs.NAMES[language]
+    code = language in langs.CODE
+    rules = CARD_OTHER_RULES.format(
+        lang=name, check_part=" and a check program" if code else "",
+        what=WHAT.get(language, "what the function receives, what it must do and give back"),
+        check_rules=CHECK_RULES.format(lang=name, contract=CONTRACT[language]) if code else "",
+        check_format=f"\nCHECK:\n```{language}\n<the check program>\n```" if code else "")
+    user = (f"The file {context['file']}:\n{context['source']}\n\nThe piece to rewrite:\n{context['function']}\n\n"
+            "Where it's used:\n" + "\n".join(f"- {c}" for c in context["call_sites"])
+            + (f"\n\nThe code that uses it:\n{context['callers']}" if context["callers"] else ""))
+    if problem:
+        user += f"\n\nYour previous check program had a problem. Fix it:\n{problem}"
+    for _ in range(3):
+        try:
+            reply = await _chat(rules, user)
+            end = reply.index("CHECK:") if code else reply.rindex("}") + 1
+            data = json.loads(reply[reply.index("{"):end].strip().rstrip("`").strip())
+            check = re.search(r"```[\w+#-]*\n(.*?)```", reply[end:], re.S)[1].strip() + "\n" if code else ""
+            return {"description": str(data["description"]), "breaks": str(data.get("breaks") or ""),
+                    "question": str(data["question"]), "answer": str(data.get("answer") or ""), "check": check}
+        except (ValueError, KeyError, TypeError, IndexError):
+            continue
+        except NoKey:
+            raise
+        except Exception as err:
+            if "429" in str(err) or "rate_limit" in str(err):
+                await asyncio.sleep(30)
+                continue
             return None
     return None

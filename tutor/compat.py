@@ -12,7 +12,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-from tutor import pieces, progress
+from tutor import langs, pieces, progress
 
 BUILTIN = json.loads((Path(__file__).parent / "pyodide_packages.json").read_text())
 STDLIB = set(sys.stdlib_module_names)
@@ -107,7 +107,11 @@ async def check(name: str, root: Path) -> dict:
                 changed = True
     source = "\n".join(p.read_text(errors="replace") for p in pieces.python_files(root))
     machine = [what for what, pattern in MACHINE if re.search(pattern, source)]
-    verdict = "none" if imports and len(blocked) == len(imports) else "partial" if blocked or machine else "full"
+    # Compiled languages need their compiler, which the browser version doesn't have (tutor/langs.py).
+    others = pieces.other_files(root)
+    blocked.update({str(p.relative_to(root)): [langs.TOOLS[langs.lang(p)]] for p in others if langs.lang(p) in langs.TOOLS})
+    files = len(imports) + len(others)
+    verdict = "none" if files and len(blocked) == files else "partial" if blocked or machine else "full"
     result = {"verdict": verdict, "libraries": [{"name": n, "status": s} for n, s in sorted(statuses.items())],
               "blocked": blocked, "machine": machine}
     path = progress.DATA / "work" / name / "compat.json"
@@ -125,11 +129,15 @@ def blocked_file(file: str) -> list[str] | None:
     """In the browser, the libraries that stop this file of the open project from loading (None if it loads)."""
     if not in_browser() or pieces.STORE == pieces.BUILTIN:
         return None
+    if langs.lang(file) in langs.TOOLS:
+        return [langs.TOOLS[langs.lang(file)]]
     report = load(pieces.STORE.name) or {}
     return report.get("blocked", {}).get(file)
 
 
 def why_blocked(file: str) -> str | None:
+    if in_browser() and langs.why_not_here(file):
+        return langs.why_not_here(file)
     libs = blocked_file(file)
     if not libs:
         return None

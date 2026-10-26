@@ -145,7 +145,7 @@ async def submit(code: str = Body(embed=True)):
     if not fn or fn["status"] not in ("in_progress", "passed"):
         return {"error": "No open step to submit to."}
     cleaning = fn["status"] == "passed"
-    results = await runner.run_tests(piece, name, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}))
+    results = await runner.run_tests(piece, name, assemble(piece, {**progress.passed_snippets(prog, piece), name: code}), snippet=code)
     prog = progress.load()  # re-read after the wait: anything saved meanwhile (a draft, a plan) must not be lost
     fn = prog["pieces"][piece][name]
     all_passed = all(r["passed"] for r in results)
@@ -206,7 +206,7 @@ async def clean():
         return {"error": llm.BUSY}
     if result["code"]:  # never show a "cleaner" answer that breaks the tests
         snippets = {**progress.passed_snippets(prog, piece), name: result["code"]}
-        if not all(r["passed"] for r in await runner.run_tests(piece, name, assemble(piece, snippets))):
+        if not all(r["passed"] for r in await runner.run_tests(piece, name, assemble(piece, snippets), snippet=result["code"])):
             result["code"] = ""
     return result
 
@@ -511,7 +511,7 @@ def download_project():
 async def open_function(key: str = Body(embed=True)):
     """Open any function, in any order: the roadmap is only a suggestion. A half-written one keeps its draft."""
     prog = progress.load()
-    piece, name = key.rsplit(".", 1)
+    piece, name = pieces.split_key(key)
     if piece not in PIECES or name not in prog["pieces"][piece]:
         return {"error": "That function isn't in this project."}
     if why := compat.why_blocked(PIECES[piece]["file"]):

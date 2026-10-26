@@ -32,9 +32,13 @@ def test_source(piece: str, name: str) -> tuple[str, str]:
     return cards.test_file(piece, name)
 
 
-async def run_tests(piece: str, name: str, code: str) -> list[dict]:
+async def run_tests(piece: str, name: str, code: str, snippet: str | None = None) -> list[dict]:
     """Run the piece's tests against the learner's code in a separate process. Returns [{name, passed, message}].
-    In the browser, web/bridge.py swaps this for a browser-Python worker."""
+    In the browser, web/bridge.py swaps this for a browser-Python worker.
+    Other languages (tutor/langs.py) are checked against the original instead, from the learner's piece (`snippet`)."""
+    if PIECES[piece].get("lang"):
+        from tutor import cards, langs
+        return await langs.check(pieces.STORE, PIECES[piece]["file"], name, code if snippet is None else snippet, cards.check_program(piece, name))
     return await run_test_code(PIECES[piece]["file"], *test_source(piece, name), code)
 
 

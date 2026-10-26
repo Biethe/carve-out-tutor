@@ -18,6 +18,10 @@ function escapeHtml(text) {
 // Pasting is allowed only while building the tutor on your own machine. The public site always blocks it.
 const PASTE_ALLOWED = ["localhost", "127.0.0.1"].includes(location.hostname);
 
+// Syntax colours for each language Carve-Out reads (tutor/langs.py).
+const MODES = { python: "python", javascript: "javascript", typescript: "text/typescript", java: "text/x-java", c: "text/x-csrc",
+  cpp: "text/x-c++src", rust: "rust", sql: "text/x-sqlite", css: "css", html: "htmlmixed" };
+
 // CodeMirror from the CDN, or the plain textarea if it didn't load (offline).
 let editor;
 if (window.CodeMirror) {
@@ -209,6 +213,8 @@ function showTask(s) {
   $("w-sig").textContent = t.signature;
   $("w-desc").textContent = t.description;
   $("w-file").textContent = t.file;
+  $("w-scope").textContent = t.lang === "python" ? "Only this function. Imports go right above it."
+    : `Only this piece, in ${t.lang_name}. The rest of the file stays as it is.`;
   $("w-checks").innerHTML = t.criteria
     .map(c => `<li data-test="${escapeHtml(c.test)}" data-state="idle"><span class="ck" aria-hidden="true"></span><span>${escapeHtml(c.text)}</span></li>`).join("");
   criteriaText = Object.fromEntries(t.criteria.map(c => [c.test, c.text]));
@@ -576,6 +582,7 @@ $("run").onclick = () => runProject($("run-status"));
   setOwn(passedCount, totalCount, false);
   $("w-own").title = `You wrote ${s.ownership}% of the code, by lines.`;
   showTask(s);
+  editor.setOption("mode", MODES[s.task.lang] || "python");
   editor.setValue(s.code);
   loaded = true;
   if (s.last_results) {

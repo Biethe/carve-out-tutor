@@ -121,7 +121,7 @@ async function choose() {  // a zip uploads and deletes, then Polyvault opens
   if (!(await t.evaluate(() => document.activeElement?.id === "zip-in"))) fail("the zip picker can't get keyboard focus");
   await t.setInputFiles("#zip-in", makeZip("mini", { "shapes.py": AREA }));
   await see(t, "#upload-result", "mini is ready");
-  await see(t, '.p-mine[data-name="mini"]', "Python code, tests only");
+  await see(t, '.p-mine[data-name="mini"]', "Python, checked piece by piece");
   await shot(t, "uploaded");
   await t.click('.p-mine[data-name="mini"] [data-ask-delete]');
   await see(t, '.p-mine[data-name="mini"] .confirm', "Delete mini?");

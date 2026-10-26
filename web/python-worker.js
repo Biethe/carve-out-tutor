@@ -54,6 +54,13 @@ self.runTests = job => new Promise(resolve => {
   postMessage({ type: "run-tests", id, job });
 });
 
+// JavaScript and TypeScript checks run in the page (tutor/langs.py, run_browser); same round trip as the tests.
+self.runJs = job => new Promise(resolve => {
+  const id = ++nextTest;
+  testReplies.set(id, resolve);
+  postMessage({ type: "run-js", id, job });
+});
+
 const handlers = {
   init: data => boot(data).then(() => ({ ready: true })),
   tests: async ({ job }) => {
@@ -62,6 +69,7 @@ const handlers = {
                                        job.files ? JSON.stringify(job.files) : ""));
   },
   "tests-done": ({ testId, results }) => { testReplies.get(testId)?.(results); testReplies.delete(testId); },
+  "js-done": ({ testId, results }) => { testReplies.get(testId)?.(results); testReplies.delete(testId); },
   http: async ({ req }) => {
     const res = await bridge.handle(req.mount, req.method, req.path, req.query, JSON.stringify(req.headers), new Uint8Array(req.body));
     const out = res.toJs({ dict_converter: Object.fromEntries });

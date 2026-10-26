@@ -4,7 +4,7 @@ import ast
 import re
 from pathlib import Path
 
-from tutor import pieces
+from tutor import langs, pieces
 
 SKIP = {"__pycache__"}
 VERBS = {"get", "post", "put", "delete", "patch"}
@@ -309,8 +309,10 @@ def flow(verb: str, path: str, current: tuple[str, str] | None = None, project: 
 def roadmap(keys: list[str]) -> list[str]:
     """Chip's suggested order for "piece.function" keys: roots first (functions that call nothing else in the
     project), then the ones built on them; within a level, the shortest first."""
+    other = [k for k in keys if pieces.PIECES.get(pieces.split_key(k)[0], {}).get("lang")]
+    keys = [k for k in keys if k not in other]
     p = Project()
-    module = {key: ".".join(Path(pieces.PIECES[key.rsplit(".", 1)[0]]["file"]).with_suffix("").parts) for key in keys}
+    module = {key: ".".join(Path(pieces.PIECES[pieces.split_key(key)[0]]["file"]).with_suffix("").parts) for key in keys}
     depth: dict[tuple[str, str], int] = {}
 
     def level(f: tuple[str, str], seen: frozenset = frozenset()) -> int:
@@ -323,14 +325,103 @@ def roadmap(keys: list[str]) -> list[str]:
         node = p.funcs[f]
         return node.end_lineno - node.lineno
 
-    found = {key: (module[key], key.rsplit(".", 1)[1]) for key in keys}
+    found = {key: (module[key], pieces.split_key(key)[1]) for key in keys}
     known = [k for k in keys if found[k] in p.funcs]
-    return sorted(known, key=lambda k: (level(found[k]), size(found[k]))) + [k for k in keys if k not in known]
+    return sorted(known, key=lambda k: (level(found[k]), size(found[k]))) + [k for k in keys if k not in known] + other_roadmap(other)
+
+
+def other_roadmap(keys: list[str]) -> list[str]:
+    """The same order for the other languages (tutor/langs.py): what a piece calls is found by name, not by imports."""
+    texts, by_name = {}, {}
+    for key in keys:
+        piece, name = pieces.split_key(key)
+        file = pieces.PIECES[piece]["file"]
+        texts[key] = pieces.function_texts(file, (pieces.STORE / file).read_text(errors="replace")).get(name, "")
+        by_name.setdefault(name, []).append(key)
+    depth: dict[str, int] = {}
+
+    def level(key: str, seen: frozenset = frozenset()) -> int:
+        if key not in depth:
+            language = pieces.PIECES[pieces.split_key(key)[0]]["lang"]
+            called = {k for n in langs.uses(texts[key], language, set(by_name)) for k in by_name[n]} - {key} - seen
+            depth[key] = 1 + max((level(k, seen | {key}) for k in called), default=-1)
+        return depth[key]
+
+    return sorted(keys, key=lambda k: (level(k), texts[k].count("\n")))
+
+
+def _web_names(text: str, language: str) -> set[str]:
+    """The ids and classes a page defines (HTML), styles (CSS) or reaches for (JavaScript): {"#list", ".count"}."""
+    if language == "html":
+        return ({f"#{i}" for i in re.findall(r"\bid\s*=\s*[\"']([\w-]+)", text)}
+                | {f".{c}" for group in re.findall(r"\bclass\s*=\s*[\"']([^\"']+)", text) for c in group.split()})
+    if language == "css":
+        return set(re.findall(r"[#.][A-Za-z_][\w-]*(?=[^{}]*\{)", re.sub(r"/\*.*?\*/", "", text, flags=re.S)))
+    if language in ("javascript", "typescript"):
+        return ({f"#{i}" for i in re.findall(r"getElementById\(\s*[\"'`]([\w-]+)", text)}
+                | set(re.findall(r"querySelector(?:All)?\(\s*[\"'`]([#.][\w-]+)", text)))
+    return set()
+
+
+def other_system(current_file: str | None = None, current_fn: str | None = None) -> str:
+    """The map for code in the other languages (tutor/langs.py): a box per file with the pieces other files use,
+    and arrows for what travels between files: calls found by name, a page loading its scripts and styles, styles
+    and scripts reaching the page's ids and classes, SQL reading tables."""
+    files = {p["file"]: p["lang"] for p in pieces.PIECES.values() if p.get("lang")}
+    files.update({str(f.relative_to(pieces.STORE)): langs.lang(f) for f in pieces.other_files(pieces.STORE) if langs.lang(f) in ("html", "css")})
+    texts = {f: (pieces.STORE / f).read_text(errors="replace") for f in files}
+    defined = {f: list(pieces.function_texts(f, texts[f])) for f in files}
+    owner = {}
+    for f, names in defined.items():
+        for n in names:
+            owner.setdefault(n, f)
+    arrows, used = {}, {}
+    for a, language in files.items():
+        for n in langs.uses(texts[a], language, set(owner)):
+            b = owner[n]
+            if b != a and n not in defined[a]:
+                arrows.setdefault((a, b), set()).add(n + ("" if language == "sql" else "()"))
+                used.setdefault(b, set()).add(n)
+        if language == "html":  # the page loads its scripts and styles
+            for ref in re.findall(r"(?:src|href)\s*=\s*[\"']([^\"':]+\.(?:js|mjs|ts|css))[\"']", texts[a]):
+                b = str(Path(Path(a).parent, ref).as_posix()).lstrip("./")
+                if b in files:
+                    arrows.setdefault((a, b), set()).add("loads")
+    pages = {f: _web_names(texts[f], "html") for f, language in files.items() if language == "html"}
+    for a, language in files.items():
+        if language in ("css", "javascript", "typescript"):
+            for page, names in pages.items():
+                shared = sorted(_web_names(texts[a], language) & names)
+                if shared:
+                    arrows.setdefault((a, page), set()).add(("styles " if language == "css" else "changes ") + ", ".join(shared))
+    mine = current_file and current_file.split("/", 1)[1]
+    lines = ["flowchart TB"]
+    for f in sorted(files):
+        rows = [("★ " if f == mine and n == current_fn else "") + n + ("" if files[f] in ("sql", "css", "html") else "()")
+                for n in sorted(used.get(f, set()) | ({current_fn} if f == mine and current_fn else set()))]
+        if len(rows) > BOX_MAX:
+            rows = rows[:BOX_MAX - 1] + [f"+{len(rows) - BOX_MAX + 1} more"]
+        kind = langs.NAMES[files[f]]
+        lines.append(f'  {_id(f)}["<b>{f}</b><br><i>{kind}</i>{"".join("<br>" + _entities(r) for r in rows)}"]')
+    for (a, b), names in sorted(arrows.items()):
+        thick = "==>" if mine in (a, b) else "-->"
+        lines.append(f'  {_id(a)} {thick}|"{_entities(_fit(sorted(names)))}"| {_id(b)}')
+    if mine in files:
+        lines += ["  classDef you stroke-width:4px,stroke-dasharray:6 4", f"  class {_id(mine)} you"]
+    return "\n".join(lines)
+
+
+def _entities(text: str) -> str:
+    """Characters Mermaid would read as its own, written as entities so they show as they are."""
+    return text.replace("#", "#35;").replace('"', "#quot;").replace(";", "#59;").replace("#35#59;", "#35;")
 
 
 def diagrams(current_file: str | None = None, current_fn: str | None = None) -> dict:
     """The system map, plus only the requests that matter to the learner now: those that reach their function,
     else those that reach their file. With nothing to work on, every request."""
+    others = any(p.get("lang") for p in pieces.PIECES.values())
+    if others and (not pieces.python_files(pieces.STORE) or (current_file and langs.lang(current_file) != "python")):
+        return {"system": other_system(current_file, current_fn), "flows": []}
     p = Project()
     module = current_file and ".".join(Path(current_file).relative_to(pieces.STORE.name).with_suffix("").parts)
     current = (module, current_fn) if module else None

@@ -26,6 +26,7 @@
  "tutor/app.py",
  "tutor/cards.py",
  "tutor/compat.py",
+ "tutor/langs.py",
  "tutor/llm.py",
  "tutor/onboarding.py",
  "tutor/overview.py",

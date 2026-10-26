@@ -6,7 +6,7 @@ import re
 import zipfile
 from pathlib import Path
 
-from tutor import pieces, progress
+from tutor import langs, pieces, progress
 from tutor.pieces import PIECES, assemble
 
 UPLOADS = progress.DATA / "uploads"
@@ -37,8 +37,9 @@ def unpack(filename: str, data: bytes) -> tuple[str | None, str | None]:
     tops = {Path(e.filename).parts[0] for e in entries}
     strip = len(tops) == 1 and all(len(Path(e.filename).parts) > 1 for e in entries)
     names = [str(Path(*Path(e.filename).parts[1:])) if strip else e.filename for e in entries]
-    if not any(n.endswith(".py") for n in names) and not any(Path(n).name == "index.html" for n in names):
-        return None, "There's no Python code and no web page (index.html) in that zip."
+    if not any(langs.lang(n) for n in names):
+        return None, ("There's no code Carve-Out can read in that zip. It reads Python, JavaScript, TypeScript, Java, "
+                      "C, C++, Rust, SQL, HTML and CSS.")
     name = slug(next(iter(tops)) if strip else filename)
     if name == "store":
         name = "store-upload"
@@ -116,7 +117,7 @@ def report(name: str) -> dict:
 
 
 def _count(root: Path) -> tuple[int, int]:
-    """(functions, files) in a project's own Python code."""
+    """(pieces, files) in a project's own code, in every language Carve-Out reads."""
     import ast
     files = pieces.python_files(root)
     functions = 0
@@ -125,7 +126,17 @@ def _count(root: Path) -> tuple[int, int]:
             functions += sum(isinstance(n, ast.FunctionDef) for n in ast.parse(f.read_text(errors="replace")).body)
         except SyntaxError:
             pass
-    return functions, len(files)
+    others = [f for f in pieces.other_files(root) if langs.find(f.read_text(errors="replace"), langs.lang(f))]
+    functions += sum(len(langs.find(f.read_text(errors="replace"), langs.lang(f))) for f in others)
+    return functions, len(files) + len(others)
+
+
+def languages(root: Path) -> list[str]:
+    """The languages of a project's own code, most files first: ["Java", "SQL"]."""
+    count: dict[str, int] = {}
+    for f in pieces.source_files(root):
+        count[langs.NAMES[langs.lang(f)]] = count.get(langs.NAMES[langs.lang(f)], 0) + 1
+    return sorted(count, key=lambda k: -count[k])
 
 
 def listing() -> list[dict]:
@@ -137,7 +148,7 @@ def listing() -> list[dict]:
             continue
         functions, files = _count(p)
         fit = compat.load(p.name)
-        out.append({"name": p.name, "kind": kind(p)["kind"], "functions": functions, "files": files,
+        out.append({"name": p.name, "kind": kind(p)["kind"], "functions": functions, "files": files, "languages": languages(p),
                     "fit": fit["verdict"] if fit else None,
                     **{k: v for k, v in report(p.name).items() if k in ("blocked", "reasons", "warnings")}})
     return out
