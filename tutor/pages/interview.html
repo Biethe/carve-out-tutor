@@ -64,8 +64,9 @@
     // ---- Voice ------------------------------------------------------------------
     // Two kinds of questions: onboarding's three, from a fixed tree with every line recorded in Chip's voice
     // (no AI, no key), and "Improve my profile", where the AI picks the questions.
-    // Browsers block sound until the first click on a page, so Chip only talks after the learner's first answer.
-    let sound = true, unlocked = false, mode = "onboarding", tree = null, asking = null, answers = [], last = null, clip = null;
+    // Chip tries to speak the first question straight away. Some browsers block sound until the first click on a
+    // page: then the words stay on screen, the speaker asks for a tap, and Chip talks from the first click on.
+    let sound = true, unlocked = true, mode = "onboarding", tree = null, asking = null, answers = [], last = null, clip = null;
     const voiceOn = () => sound && unlocked;
     const yes = (said) => /\b(yes|yeah|yep|yup|sure|of course|i have|i did|correct|definitely)\b/i.test(said);
     const no = (said) => /\b(no|nope|nah|not yet|never|haven't|have not|didn't)\b/i.test(said);
@@ -80,11 +81,22 @@
         clip = new Audio(`static/voice/${id}.wav`);
         chip.classList.add("talk");
         clip.onended = clip.onerror = () => { chip.classList.remove("talk"); done(); };
-        clip.play().catch(() => { chip.classList.remove("talk"); done(); });
+        clip.play().catch((err) => {
+          chip.classList.remove("talk");
+          if (err.name === "NotAllowedError") blocked();
+          done();
+        });
       });
     }
 
+    function blocked() {  // the browser wants a click before any sound
+      unlocked = false;
+      status("Tap the speaker to hear Chip.");
+      $("sound").classList.add("nudge");
+    }
+
     function setSound(on) {
+      $("sound").classList.remove("nudge");
       sound = on;
       $("sound").setAttribute("aria-pressed", on);
       $("sound").firstElementChild.className = "ph-bold " + (on ? "ph-speaker-high" : "ph-speaker-slash");

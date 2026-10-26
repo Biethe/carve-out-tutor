@@ -89,7 +89,7 @@ h1, h2, h3 { font-family: var(--display); }
 .btn.sm { height: 40px; padding: 0 15px; border-radius: 12px; font-size: 14.5px; }
 .btn .go { transition: transform .25s var(--ease); }
 .btn:hover .go { transform: translateX(3px); }
-.btn.nudge { animation: nudge 2s ease-in-out infinite; }
+.btn.nudge, .icon-btn.nudge { animation: nudge 2s ease-in-out infinite; }
 .btn.nudge .go { animation: arrow 2s ease-in-out infinite; }
 .link { padding: 4px 2px; border: 0; background: none; color: var(--muted); font-size: 15px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(91, 103, 112, .4); cursor: pointer; }
 .link:hover { color: var(--ink); text-decoration-color: currentColor; }

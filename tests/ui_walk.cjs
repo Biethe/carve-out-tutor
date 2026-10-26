@@ -134,6 +134,9 @@ async function quiz() {  // three yes/no questions after picking Polyvault; the 
   await see(t, "#q-react", "Polyvault is ready. Three quick questions first.");
   await see(t, "#q-count", "Question 1 of 3");
   await see(t, "#q-text", "Have you written your own Python functions before?");
+  // Chip speaks the first question right away, or, if the browser blocks sound, asks for a tap on the speaker.
+  await t.waitForFunction(() => (window.played || []).some((src) => src.endsWith("/voice/python.wav"))
+    || document.querySelector("#q-status").textContent.includes("Tap the speaker to hear Chip."), null, { timeout: 8000 });
   await shot(t, "quiz");
   await t.click("#sound");  // voice off, so the walk never waits on a microphone
   await t.click("#q-yes");
@@ -351,6 +354,11 @@ const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, retur
   const context = await browser.newContext({ viewport: view, reducedMotion: process.env.REDUCED ? "reduce" : "no-preference" });
   // With no key, the published build falls back to the shared demo AI. Block it: the walk never depends on the AI.
   if (SITE) await context.route(/workers\.dev/, (r) => r.abort());
+  // Remember which sounds the pages start playing, so the walk can tell whether Chip spoke.
+  await context.addInitScript(() => {
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function () { (window.played = window.played || []).push(this.src); return play.call(this); };
+  });
   page = await context.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error" && !m.text().startsWith("Failed to load resource")) errors.push(m.text()); });
