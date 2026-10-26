@@ -60,7 +60,7 @@
       boot.hidden = false;
       if (failed) showFailure(failed);
     }
-    if (told) next(); else Story.play(intro, { python: true, onDone() { told = true; next(); } });
+    if (told) next(); else Story.play(intro, { python: true, voice: "../tutor/static/voice/", onDone() { told = true; next(); } });
     Python.start().then(() => { ready = true; Story.python("ready"); next(); })
       .catch((err) => { failed = err; Story.python("failed"); next(); });
   </script>

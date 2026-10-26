@@ -55,6 +55,13 @@
  "tutor/static/voice/intro.wav",
  "tutor/static/voice/no.wav",
  "tutor/static/voice/python.wav",
+ "tutor/static/voice/story1.wav",
+ "tutor/static/voice/story2.wav",
+ "tutor/static/voice/story3.wav",
+ "tutor/static/voice/story4.wav",
+ "tutor/static/voice/story5.wav",
+ "tutor/static/voice/story6.wav",
+ "tutor/static/voice/story7.wav",
  "tutor/static/voice/web_easy.wav",
  "tutor/static/voice/web_hard.wav",
  "tutor/static/voice/yes.wav"

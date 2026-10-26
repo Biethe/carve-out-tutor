@@ -1,7 +1,7 @@
 // Walks the tutor's screens in a real browser. It fails on wrong text, a missing element, a console error, a failed
 // request, or a page that scrolls sideways, and saves a screenshot of every screen to $SHOTS. See
 // docs/superpowers/plans/2026-10-25-calm-redesign.md ("How to run the checks") for starting a fresh tutor first.
-// Usage: node tests/ui_walk.cjs <url> <desktop|phone> <step...>
+// Usage: node tests/ui_walk.cjs <url> <desktop|laptop|phone> <step...>
 const { chromium } = require("playwright");
 const { execFileSync } = require("child_process");
 
@@ -11,6 +11,7 @@ const SITE = url.includes("/web/");  // the published build: the tutor runs insi
 let page;
 const errors = [];
 const fail = (why) => { throw new Error(why); };
+const FITS = ["story-1", "story-7", "choose", "boot", "quiz"];
 
 // Where the tutor's pages are: the page itself, or the boot page's frame once Python has started.
 async function T() {
@@ -37,6 +38,8 @@ async function has(where, selector, text, timeout = 15000) {
 async function shot(where, name) {
   await page.waitForTimeout(800);  // let the entrance motion settle
   if (await where.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) fail(`${name}: the page scrolls sideways`);
+  // On a short laptop window, the first screens a visitor sees fit without scrolling.
+  if (size === "laptop" && FITS.includes(name) && await where.evaluate(() => document.documentElement.scrollHeight > innerHeight + 1)) fail(`${name}: has to scroll on a laptop screen`);
   await page.screenshot({ path: `${SHOTS}/${size}-${name}.png` });
 }
 
@@ -61,8 +64,12 @@ const BEATS = [
   "Your piece goes back in, and the app keeps working on your code.",
   "Piece by piece, the app you dreamed up becomes yours.",
 ];
+// Chip introduces himself out loud, or, if the browser blocks sound before a click, the speaker asks for a tap.
+const introduces = (where) => where.waitForFunction(() => (window.played || []).some((src) => src.endsWith("/voice/story1.wav"))
+  || document.querySelector("#story-sound")?.classList.contains("nudge"), null, { timeout: 8000 });
 async function story() {  // the published site, first visit: the story plays while Python loads
   await see(page, "#story-say", BEATS[0]);
+  await introduces(page);
   if (!(await page.locator("#story-back").isDisabled())) fail("Back should be off on the first beat");
   await see(page, "#story-next", "Show me");
   await shot(page, "story-1");
@@ -99,7 +106,9 @@ function makeZip(name, files) {
 const AREA = 'def area(width, height):\n    """Width times height."""\n    return width * height\n';
 async function start() {  // a first local visit: the story plays on the start page, Skip goes to the choice
   await see(page, "#story-say", BEATS[0]);
+  await introduces(page);
   if (await page.locator("#py").count()) fail("no Python status when Python isn't loading");
+  await shot(page, "story-1");
   await page.click("#skip-intro");
   await see(page, "#c-say", "So, what do you want to build?");
   await shot(page, "choose");
@@ -359,7 +368,7 @@ const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, retur
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });
-  const view = size === "phone" ? { width: 390, height: 844 } : { width: 1280, height: 800 };
+  const view = { phone: { width: 390, height: 844 }, laptop: { width: 1366, height: 657 } }[size] || { width: 1280, height: 800 };
   const context = await browser.newContext({ viewport: view, reducedMotion: process.env.REDUCED ? "reduce" : "no-preference" });
   // With no key, the published build falls back to the shared demo AI. Block it: the walk never depends on the AI.
   if (SITE) await context.route(/workers\.dev/, (r) => r.abort());

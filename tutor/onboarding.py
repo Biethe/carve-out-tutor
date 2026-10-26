@@ -23,6 +23,16 @@ LINES = {
     "closing": "Awesome, that's all I need! Let's build!",
 }
 
+# The first-visit story (tutor/static/story.js), one clip per beat, said the way the screen shows it.
+STORY_LINES = {
+    "story1": "Hi, I'm Chip! Let's build something you actually care about.",
+    "story2": "It starts with your idea. Any idea.",
+    "story3": "I build the whole app for you, and it already works.",
+    "story4": "Inside, it's made of small pieces of code, called functions.",
+    "story5": "We take one piece out, and you write it back. I give hints, never answers.",
+    "story6": "Your piece goes back in, and the app keeps working on your code.",
+    "story7": "Piece by piece, the app you dreamed up becomes yours. So, what will you build?",
+}
 
 def tree() -> dict:
     """What the page needs: the first question, and which question follows a yes or a no."""

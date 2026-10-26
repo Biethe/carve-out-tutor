@@ -250,6 +250,8 @@ h1, h2, h3 { font-family: var(--display); }
 
 .cursor { width: 26px; height: 26px; opacity: 0; transform: translate(960px, 450px); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .22)); }
 .py-status.failed { color: var(--bad-ink); }
+#story-sound.off .waves { opacity: 0; }
+.top-right .icon-btn { border-color: transparent; background: none; }
 @media (max-width: 760px) {
   .caption { min-height: 70px; }
   .py-status { display: none; }
@@ -551,6 +553,23 @@ h1, h2, h3 { font-family: var(--display); }
 .win-reply:empty { display: none; }
 .win-reply { font-size: 15px; }
 #answer-it { align-self: flex-start; }
+
+/* Short laptop windows: the first screens still fit without scrolling. */
+@media (max-height: 820px) {
+  .story { padding-block-end: 16px; gap: 12px; }
+  .choose { padding-block: 4px 20px; gap: 14px; }
+  .choose .chip.lg { --s: 72px; }
+  .idea { padding: 16px 18px; gap: 8px; }
+  .idea textarea { min-height: 56px; }
+  .known { gap: 6px; }
+  .example { padding-block: 10px; }
+  .own-project { padding-block: 12px; }
+  .quiz { padding-block: 4px 16px; gap: 10px; }
+  .quiz .chip.lg { --s: 72px; }
+  .q-text { font-size: clamp(24px, 3.4vw, 34px); }
+  .q-yn { margin-top: 4px; }
+  .q-yn .btn.xl { height: 56px; }
+}
 
 /* ---------- Dialogs: Settings, the map, the win sheet ---------- */
 dialog.sheet { width: min(600px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 28px; border: 0; border-radius: 28px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-xl); }

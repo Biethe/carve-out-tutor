@@ -6,6 +6,7 @@ const Story = (() => {
     <span class="brand"><span class="chip xs" data-chip></span>Carve-Out</span>
     <div class="top-right">
       <span class="py-status" id="py"><span class="spin" aria-hidden="true"></span>Getting Python ready</span>
+      <button class="icon-btn" id="story-sound" aria-pressed="true" aria-label="Chip’s voice" title="Chip’s voice"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z"></path><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"></path></svg></button>
       <button class="navb" id="skip-intro">Skip intro</button>
     </div>
   </header>
@@ -87,7 +88,7 @@ const Story = (() => {
     py.innerHTML = state === "ready" ? '<span class="ready" aria-hidden="true"></span>Python is ready' : "Python couldn’t start";
   }
 
-  function play(el, { python: withPython = false, onDone }) {
+  function play(el, { python: withPython = false, voice = "static/voice/", onDone }) {
     root = el;
     root.innerHTML = MARKUP;
     root.hidden = false;
@@ -98,16 +99,38 @@ const Story = (() => {
     const blocks = $$(".blk"), tests = $$(".dk-tests .t"), cursor = $("#cursor"), awAdd = $("#aw-add"), awNew = $("#aw-new");
     const typed = $("#dk-typed"), ibTyped = $("#ib-typed"), ibGo = $("#ib-go");
     const later = (ms, fn) => { timers.push(setTimeout(fn, RM ? 0 : ms)); };
+
+    // Chip says each beat out loud (recorded once, see tutor/record_intro.py). Some browsers block sound until the
+    // first click: then the speaker button pulses, and a tap on it plays the line.
+    const soundBtn = $("#story-sound");
+    let sound = true, clip = null;
+    function speakBeat() {
+      clip?.pause();
+      if (!sound) return;
+      clip = new Audio(`${voice}story${beat}.wav`);
+      clip.play().then(() => soundBtn.classList.remove("nudge"))
+        .catch((err) => { if (err.name === "NotAllowedError") soundBtn.classList.add("nudge"); });
+    }
+    soundBtn.addEventListener("click", () => {
+      if (soundBtn.classList.contains("nudge")) { soundBtn.classList.remove("nudge"); return speakBeat(); }
+      sound = !sound;
+      soundBtn.setAttribute("aria-pressed", String(sound));
+      soundBtn.classList.toggle("off", !sound);
+      sound ? speakBeat() : clip?.pause();
+    });
     const clear = () => { timers.forEach(clearTimeout); timers = []; };
     const setMeter = (n) => { $("#m-n").textContent = n; $("#m-fill").style.width = `${n / 23 * 100}%`; };
     const nudge = (ms) => later(ms, () => nextBtn.classList.add("nudge"));
 
-    function fitStage() {  // the stage is drawn at 1040px wide and scaled down to fit
+    function fitStage() {  // the stage is drawn at 1040 by 470 and scaled down to fit the window, so nothing scrolls
       const wrap = $("#stage-wrap");
       if (!wrap) return;
-      const k = Math.min(1, wrap.clientWidth / 1040);
+      wrap.style.width = "";
+      const rest = document.documentElement.scrollHeight - wrap.offsetHeight;  // the top bar, Chip's words, the buttons
+      const k = Math.min(1, wrap.clientWidth / 1040, Math.max(0.4, (innerHeight - rest) / 470));
       stage.style.setProperty("--k", k);
       wrap.style.height = `${470 * k}px`;
+      wrap.style.width = `${1040 * k}px`;  // narrower when scaled for height, so it stays centred
     }
     function clickAt(el, then) {  // the pointer walks to el and clicks it
       if (RM) return then();  // with reduced motion, the click just happens
@@ -187,6 +210,7 @@ const Story = (() => {
       $("#dk-hint").classList.remove("show");
       setMeter(n === 7 ? 1 : 0);
       Chip.say($("#story-say"), STORY[n - 1][0], n > 1 ? $("#story-chip") : null);
+      speakBeat();
       $("#story-next-label").textContent = STORY[n - 1][1];
       backBtn.disabled = n === 1;
       $$("#story-dots i").forEach((d, i) => { d.classList.toggle("on", i === n - 1); d.classList.toggle("done", i < n - 1); });
@@ -202,6 +226,7 @@ const Story = (() => {
     }
     finish = () => {
       clear();
+      clip?.pause();
       removeEventListener("resize", fitStage);
       document.removeEventListener("keydown", keys);
       try { localStorage.setItem("seenStory", "1"); } catch {}

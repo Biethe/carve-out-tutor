@@ -1,4 +1,4 @@
-"""Records everything Chip says during onboarding (tutor/onboarding.py LINES), once, into tutor/static/voice/<id>.wav:
+"""Records everything Chip says in the first-visit story and onboarding (tutor/onboarding.py STORY_LINES and LINES), once, into tutor/static/voice/<id>.wav:
 the same voice for every line, plays instantly, no AI call and no key needed when someone onboards.
 One natural take per line, at natural speed: stitching and speeding up are what sound artificial. The delivery is
 Orpheus' "excited" direction, chosen by ear from five versions: a welcome should sound happy to see you.
@@ -13,7 +13,7 @@ import wave
 from pathlib import Path
 
 from tutor import llm
-from tutor.onboarding import LINES
+from tutor.onboarding import LINES, STORY_LINES
 
 VOICE = "hannah"
 DIRECTION = "[excited]"
@@ -48,7 +48,7 @@ async def record(line_id: str, text: str) -> str | None:
 
 async def main(again: bool):
     DIR.mkdir(parents=True, exist_ok=True)
-    for line_id, text in LINES.items():
+    for line_id, text in {**LINES, **STORY_LINES}.items():
         if (DIR / f"{line_id}.wav").exists() and not again:
             continue
         problem = await record(line_id, text)
