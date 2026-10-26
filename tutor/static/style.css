@@ -624,3 +624,6 @@ dialog.sheet[open] { animation: sheetIn .55s var(--spring) both; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
 }
+
+.tools { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tools code { font-weight: 600; }

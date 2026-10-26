@@ -252,7 +252,14 @@ async def clean(piece: str, name: str, code: str) -> dict | None:
 
 
 ANSWER_RULES = """You are a coding tutor answering a learner's question while they write ONE function of a working project (the language is named below).
-They ask so they can understand what their function should do. Answer only what they need for that. Rules:
+They ask so they can understand what their function should do. Answer only what they need for that.
+Be polite like a friendly person, but stay on their function:
+- A message that is ONLY a greeting ("hi", "hello"): greet back warmly and offer help with their function, in one
+  short sentence, e.g. "Hi! What would you like help with on check_login?" Never greet when they ask a real question.
+- Thanks ("thanks", "that helped"): "You're welcome!" plus at most one short line, e.g. "Good luck with the rest."
+- Something unrelated to their function: one friendly sentence steering back to it. Don't answer the off-topic part.
+- After a real explanation, you may end with a short "Did that help?" now and then (not every time).
+For real questions, these rules:
 - At most 3 short sentences, under 60 words in all. No lists of facts, no history, nothing they didn't ask.
 - Everyday words, like explaining to a friend. No jargon (not "deterministic", "idempotent"): say what it means instead.
 - Give one small example as "what goes in → what comes out" (for example: "hello" → 2cf24d…, "hellp" → 1a9f…).
@@ -479,5 +486,35 @@ async def card_other(language: str, context: dict, problem: str = "") -> dict | 
             if "429" in str(err) or "rate_limit" in str(err):
                 await asyncio.sleep(30)
                 continue
+            return None
+    return None
+
+
+TOOLS_RULES = """A learner must write ONE function. Below is the ORIGINAL version (they never see it). List the outside tools it
+relies on that they may not know: modules or libraries, their functions and classes, methods and attributes of objects,
+built-in functions, and methods of built-in types (like a dictionary's .get() or a string's .lower()).
+Leave out the project's own functions, plain operators and keywords. 1 to 6 tools, most important first. For each: "name" as written in code, without arguments (e.g. "hashlib.sha256()",
+".hexdigest()", "len()"); "from": where it comes from in plain words (e.g. "hashlib, in Python's standard library");
+"what": ONE sentence on what it does or gives back, in everyday words.
+Name each tool on its own, never chained (".hexdigest()", not "hashlib.sha256().hexdigest()").
+Never show arguments, the order to use them in, how they combine, or any line of the solution.
+Reply with JSON only: {"tools": [{"name": "...", "from": "...", "what": "..."}]}"""
+
+
+async def tools(piece: str, name: str, original: str) -> list[dict] | None:
+    """The libraries, methods and attributes the original function uses, explained in a line each. None if the AI is unavailable."""
+    for _ in range(2):
+        try:
+            data = json.loads(await _chat(TOOLS_RULES, f"{_task_text(piece, name)}\n\nThe original function:\n{original}", json_mode=True))
+            found = [{k: str(t.get(k) or "") for k in ("name", "from", "what")} for t in data.get("tools") or [] if isinstance(t, dict) and t.get("name")]
+            for t in found:  # backstop: a chain like a().b() would show how the tools combine, so only its last link stays
+                if ")." in t["name"]:
+                    t["name"] = "." + t["name"].rsplit(").", 1)[1]
+            return found[:6]
+        except (ValueError, KeyError, TypeError, AttributeError):
+            continue
+        except NoKey:
+            raise
+        except Exception:
             return None
     return None

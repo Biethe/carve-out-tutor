@@ -254,6 +254,28 @@ async def explain(explanation: str = Body(embed=True)):
     return response
 
 
+@app.get("/api/tools")
+async def function_tools():
+    """What the current function needs from libraries and the language, so the learner doesn't have to go searching.
+    Written once per function by the learner's AI from the original code, then kept."""
+    prog = progress.load()
+    piece, name, _ = _current(prog)
+    if not piece:
+        return {"tools": []}
+    path = cards._path(piece, name, ".tools.json")
+    if path.exists():
+        return {"tools": json.loads(path.read_text())}
+    try:
+        found = await llm.tools(piece, name, pieces.reference_code(PIECES[piece]["file"], name))
+    except llm.NoKey:
+        return {"error": llm.NO_KEY}
+    if found is None:
+        return {"error": llm.BUSY}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(found))
+    return {"tools": found}
+
+
 @app.post("/api/ask")
 async def ask(question: str = Body(), code: str = Body("")):
     prog = progress.load()

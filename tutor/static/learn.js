@@ -169,6 +169,21 @@ async function loadOverview() {
     overview.flows.map((f, i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join("")}</optgroup>`);
   drawDiagram();
 }
+// The libraries, methods and attributes this function needs, a line each: loaded the first time the list opens.
+let toolsFor = null;
+async function loadTools() {
+  const key = $("w-name").textContent;
+  if (toolsFor === key) return;
+  $("w-tools").innerHTML = `<p class="muted">Chip is looking at what this function needs…</p>`;
+  const res = await api("GET", "api/tools").catch(() => ({ error: "The tutor couldn’t be reached." }));
+  if (res.error) { $("w-tools").innerHTML = `<p class="muted">${escapeHtml(res.error)}</p>`; return; }
+  toolsFor = key;
+  $("w-tools").innerHTML = res.tools.length
+    ? `<ul class="tools">${res.tools.map(t => `<li><code>${escapeHtml(t.name)}</code> <span class="muted small">${escapeHtml(t.from)}</span><br>${escapeHtml(t.what)}</li>`).join("")}</ul>`
+    : `<p class="muted">Nothing outside the project: the language itself is enough here.</p>`;
+}
+$("tools-details").addEventListener("toggle", () => { if ($("tools-details").open) loadTools(); });
+
 for (const id of ["files-details", "map-details"]) $(id).addEventListener("toggle", () => { if ($(id).open) loadOverview(); });
 
 const CAPTIONS = {
@@ -224,6 +239,7 @@ function showTask(s) {
     .map(r => `<details><summary><code>${escapeHtml(r.name)}</code> in ${escapeHtml(r.file)}</summary><pre>${escapeHtml(r.code)}</pre></details>`).join("")
     || `<p class="muted">Nothing else to read for this one.</p>`;
   document.title = `${t.name} | Carve-Out Tutor`;
+  if ($("tools-details").open) loadTools();
 }
 
 // Each check gets its result from the test run, by name, one after another.
