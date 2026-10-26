@@ -192,7 +192,9 @@ async function home() {  // a new learner's home: try the store first, then the 
   await see(t, "#home-say", "Now the fun part. Your first function is hash_password.");
   await t.click("#plan-toggle");
   await see(t, "#steps");
-  if ((await t.locator("#steps li").count()) !== 8) fail("the whole plan lists 8 steps");
+  const planRows = await t.evaluate(() => { const li = [...document.querySelectorAll("#steps li")]; const more = li.findIndex((l) => l.classList.contains("steps-more")); return more < 0 ? li.length : more; });
+  if (planRows !== 8) fail("the whole plan lists 8 steps");
+  await see(t, "#steps .steps-more", "Not in your plan");  // and every other function can be opened too
   await shot(t, "home-plan");
   await t.click("#plan-toggle");
 }
