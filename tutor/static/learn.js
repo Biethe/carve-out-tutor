@@ -191,9 +191,10 @@ const CAPTIONS = {
   flow: "One request, read top to bottom: the numbers give the order, from the click to what goes back to the browser. Your file is the shaded column, and the shaded band is the moment your code runs. A framed \"alt\" block shows two paths (if / otherwise); a \"loop\" block repeats, and says when it stops.",
 };
 $("map-view").onchange = () => drawDiagram();
-$("map-expand").onclick = () => { $("map-dialog").showModal(); drawDiagram($("diagram-big")); };
+$("map-expand").onclick = () => { $("diagram-big").classList.remove("actual"); $("map-dialog").showModal(); drawDiagram($("diagram-big")); };
 $("diagram").onclick = () => $("map-expand").click();
 $("map-close").onclick = () => $("map-dialog").close();
+$("diagram-big").onclick = () => $("diagram-big").classList.toggle("actual");  // fit the window, or full size to read
 
 // Mermaid draws in the page's own calm colors.
 async function drawDiagram(target = $("diagram")) {

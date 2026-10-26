@@ -545,8 +545,13 @@ h1, h2, h3 { font-family: var(--display); }
 .file-tree li.you { color: var(--accent-ink); font-weight: 500; }
 .map-bar { margin-top: 10px; }
 .diagram { max-height: 360px; margin-top: 8px; overflow: auto; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); cursor: zoom-in; }
-.map-dialog { width: min(1100px, calc(100% - 32px)); }
-.map-dialog .diagram { max-height: calc(100dvh - 140px); cursor: default; border: 0; }
+dialog.sheet.map-dialog { width: calc(100% - 32px); max-width: 1600px; height: calc(100dvh - 32px); padding: 20px 24px; display: flex; flex-direction: column; }
+dialog.sheet.map-dialog:not([open]) { display: none; }
+.map-dialog .diagram { flex: 1; max-height: none; min-height: 0; margin: 0; border: 0; cursor: zoom-in; }
+.map-dialog .diagram svg { display: block; margin: 0 auto; max-width: 100%; max-height: 100%; height: auto; }
+.map-dialog .diagram.actual { cursor: zoom-out; }
+.map-dialog .diagram.actual svg { max-width: none; max-height: none; }
+.map-dialog .map-hint { margin: 0 48px 8px 0; font-size: 13px; }
 .map-dialog .close { position: sticky; top: 0; float: right; }
 
 /* ---------- Tour, win sheet, flyer ---------- */
