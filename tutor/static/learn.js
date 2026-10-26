@@ -81,6 +81,7 @@ const chip = $("w-chip");
 // replyShowing: Chip's panel holds a hint or an answer, so the small talk while you type waits.
 let replyShowing = false;
 function buddy(content, { html = false, asked = "" } = {}) {
+  if (String(content).includes("Add your own key")) window.ownKey?.();
   replyShowing = html;
   $("w-asked").hidden = !asked;
   $("w-asked").textContent = asked ? "You asked: " + asked : "";

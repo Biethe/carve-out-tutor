@@ -106,6 +106,8 @@ async def next_step():
         if function(piece, name).get("auto"):
             try:
                 problem = await cards.prepare(piece, name)
+            except llm.DailyLimit:
+                return {**state(), "error": llm.OWN_KEY}
             except llm.NoKey:
                 return {**state(), "error": llm.NO_KEY}
             if problem == llm.BUSY:
@@ -405,8 +407,9 @@ async def speak(text: str = Body(embed=True)):
         return JSONResponse({"error": llm.NO_KEY}, status_code=400)
     except Exception as err:
         message = str(err)
-        if "rate_limit" in message:  # per minute: try again soon. Per day: done for today.
-            return JSONResponse({"error": "busy", "busy": True, "today": "per day" in message}, status_code=429)
+        if "rate_limit" in message or "per day" in message.lower():
+            today = "per day" in message.lower() or "tpd" in message.lower()
+            return JSONResponse({"error": llm.OWN_KEY if today else "busy", "busy": True, "today": today}, status_code=429)
         if "terms" in message:
             message = "For Chip's best voice, accept Groq's terms for Orpheus once: https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english"
         return JSONResponse({"error": message[:300]}, status_code=502)
@@ -556,6 +559,8 @@ async def open_function(key: str = Body(embed=True)):
     if function(piece, name).get("auto"):
         try:
             problem = await cards.prepare(piece, name)
+        except llm.DailyLimit:
+            return {"error": llm.OWN_KEY}
         except llm.NoKey:
             return {"error": llm.NO_KEY}
         if problem:

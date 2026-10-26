@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dialog.showModal();
   };
   openers.forEach((b) => (b.onclick = open));
+  window.ownKey = open;
 
   form.onsubmit = async e => {
     if (e.submitter?.value !== "save") return;

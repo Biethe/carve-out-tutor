@@ -57,9 +57,11 @@ const Voice = (() => {
           await play(url, id);
         }
       } catch (err) {
+        const own = String(err?.error || "").includes("Add your own key");
+        if (own) window.ownKey?.();
         if (err?.busy && !err.today) return;  // the per-minute limit: just this reply stays silent
         resting = true;  // for the rest of the visit: Chip's words stay on screen, in the same voice or none
-        notice(err?.today ? "Chip's voice is resting for today (the free voice allowance is used up). Replies stay on screen."
+        notice(own ? err.error : err?.today ? "Chip's voice is resting for today (the free voice allowance is used up). Add your own key in Settings."
                           : err?.error || "Chip's voice isn't available right now. Replies stay on screen.");
       }
     },

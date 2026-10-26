@@ -79,7 +79,10 @@
     };
     const ARROW = '<i class="ph-bold ph-arrow-right go" aria-hidden="true"></i>';
     const CHECK = '<i class="ph-bold ph-check" aria-hidden="true"></i>';
-    const chip = $("home-chip"), say = (text) => Chip.say($("home-say"), text, chip);
+    const chip = $("home-chip"), say = (text) => {
+      if (String(text).includes("Add your own key")) window.ownKey?.();
+      Chip.say($("home-say"), text, chip);
+    };
     let info, name, plan, state, opened = false, shownKey = null;
 
     // ---- The steps: one model for the card, the journey and the whole plan --------------------

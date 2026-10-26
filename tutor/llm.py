@@ -15,12 +15,22 @@ from tutor.progress import DATA, load_profile
 
 BUSY = "The tutor is busy, try again in a minute."
 NO_KEY = "Add your AI key with the Settings button at the top. Groq gives free keys at console.groq.com."
+OWN_KEY = "The shared Groq allowance for today is used up. Add your own key with the Settings button at the top. A free key is at console.groq.com."
 DEFAULTS = {"LLM_BASE_URL": "https://api.groq.com/openai/v1", "LLM_MODEL": "openai/gpt-oss-120b"}
 SETTINGS = DATA / "settings.json"
 
 
 class NoKey(Exception):
     pass
+
+
+class DailyLimit(Exception):
+    """The provider's daily free allowance is used up. The visitor should add their own key."""
+
+
+def _daily(err: BaseException) -> bool:
+    text = str(err).lower()
+    return "per day" in text or "tokens per day" in text or "tpd" in text
 
 
 # The published tutor's demo proxy (demo-proxy/worker.js): visitors without a key of their own, like judges, can still
@@ -133,12 +143,19 @@ async def _chat(system: str, user: str, json_mode: bool = False) -> str:
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     try:
         reply = await _post(url, headers, body)
-    except Exception as err:  # free plans limit tokens per minute: wait as long as asked (up to 20 s), once
+    except Exception as err:  # a daily cap is finished: ask for the visitor's own key. A per-minute cap: wait once.
+        if _daily(err):
+            raise DailyLimit() from None
         wait = re.search(r"try again in (?:(\d+)m)?([\d.]+)s", str(err))
         if not ("429" in str(err) or "rate_limit" in str(err) or "Too Many" in str(err)):
             raise
         await asyncio.sleep(min(20.0, (int(wait[1] or 0) * 60 + float(wait[2]) + 0.5) if wait else 10.0))
-        reply = await _post(url, headers, body)
+        try:
+            reply = await _post(url, headers, body)
+        except Exception as again:
+            if _daily(again):
+                raise DailyLimit() from None
+            raise
     text = reply["choices"][0]["message"]["content"] or ""
     # House style: no em or en dashes in anything the learner reads.
     return text.replace(" — ", ", ").replace("—", ", ").replace(" – ", " - ").replace("–", "-")
@@ -183,6 +200,8 @@ async def hint(piece: str, name: str, code: str, results: list[dict] | None = No
         return _strip_code(await _chat(HINT_RULES, "\n\n".join(parts))) or BUSY
     except NoKey:
         return NO_KEY
+    except DailyLimit:
+        return OWN_KEY
     except Exception:
         return BUSY
 
@@ -216,6 +235,8 @@ async def grade(piece: str, name: str, explanation: str, code: str, earlier: lis
         except (ValueError, KeyError, TypeError):
             continue
         except NoKey:
+            raise
+        except DailyLimit:
             raise
         except Exception:
             return None
@@ -254,6 +275,8 @@ async def clean(piece: str, name: str, code: str) -> dict | None:
             continue
         except NoKey:
             raise
+        except DailyLimit:
+            raise
         except Exception:
             return None
     return None
@@ -284,6 +307,8 @@ async def answer(piece: str, name: str, question: str, code: str) -> str:
         return reply.strip() or BUSY
     except NoKey:
         return NO_KEY
+    except DailyLimit:
+        return OWN_KEY
     except Exception:
         return BUSY
 
@@ -325,6 +350,8 @@ async def interview(history: list[dict], finish: bool) -> dict | None:
         except (ValueError, KeyError, TypeError, AttributeError):
             continue
         except NoKey:
+            raise
+        except DailyLimit:
             raise
         except Exception:
             return None
@@ -414,7 +441,11 @@ async def card(piece: str, name: str, context: dict, problem: str = "") -> dict 
             continue
         except NoKey:
             raise
+        except DailyLimit:
+            raise
         except Exception as err:
+            if _daily(err):
+                raise DailyLimit() from None
             if "429" in str(err) or "rate_limit" in str(err):
                 await asyncio.sleep(30)  # cards are written in the background: waiting out the minute is fine
                 continue
@@ -447,6 +478,8 @@ async def plan(profile: dict, functions: list[dict]) -> dict | None:
         except (ValueError, KeyError, TypeError):
             continue
         except NoKey:
+            raise
+        except DailyLimit:
             raise
         except Exception:
             return None
@@ -520,7 +553,11 @@ async def card_other(language: str, context: dict, problem: str = "") -> dict | 
             continue
         except NoKey:
             raise
+        except DailyLimit:
+            raise
         except Exception as err:
+            if _daily(err):
+                raise DailyLimit() from None
             if "429" in str(err) or "rate_limit" in str(err):
                 await asyncio.sleep(30)
                 continue
@@ -552,6 +589,8 @@ async def tools(piece: str, name: str, original: str) -> list[dict] | None:
         except (ValueError, KeyError, TypeError, AttributeError):
             continue
         except NoKey:
+            raise
+        except DailyLimit:
             raise
         except Exception:
             return None
