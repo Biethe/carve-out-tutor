@@ -334,7 +334,16 @@ async function win() {  // the right code: the function flies into the counter, 
   await has(t, "#w-crumb", "is_logged_in");
 }
 
-const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, returning, upload, partial, workspace, pass, passed, tour, win };
+async function store() {  // Open my app: Polyvault starts in its own tab
+  const t = await T();
+  await t.goto(new URL("project", t.url()).href);
+  const [tab] = await Promise.all([page.context().waitForEvent("page"), t.click("#run")]);
+  for (let i = 0; i < 100 && !(await tab.title()).includes("Polyvault"); i++) await page.waitForTimeout(300);
+  if (!(await tab.title()).includes("Polyvault")) fail("the store didn't open");
+  await tab.close();
+}
+
+const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, returning, upload, partial, workspace, pass, passed, tour, win, store };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });

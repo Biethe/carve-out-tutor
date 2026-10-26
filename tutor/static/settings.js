@@ -7,19 +7,7 @@ const PROVIDERS = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Any button with data-open-settings opens Settings. Pages still on the old look get the gear they had.
-  const openers = [...document.querySelectorAll("[data-open-settings]")];
-  if (!openers.length && document.querySelector(".theme-switch")) {
-    const gear = document.createElement("button");
-    gear.className = "gear";
-    gear.title = gear.ariaLabel = "Settings: your AI provider";
-    gear.innerHTML = `<i class="ph-bold ph-gear-six" aria-hidden="true"></i>`;
-    document.querySelector(".theme-switch").before(gear);
-    const me = Object.assign(document.createElement("a"), { className: "gear", href: "interview", title: "Your profile" });
-    me.innerHTML = `<i class="ph-bold ph-user-circle" aria-hidden="true"></i>`;
-    gear.before(me);
-    openers.push(gear);
-  }
+  const openers = document.querySelectorAll("[data-open-settings]");
 
   const dialog = document.createElement("dialog");
   dialog.className = "sheet settings-dialog";

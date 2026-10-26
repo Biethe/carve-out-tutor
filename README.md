@@ -25,7 +25,7 @@ uvicorn tutor.app:app --port 8000
 
 Open **http://localhost:8000**. The store runs on `localhost:8001` and is started by the tutor. Store login: `learner` / `carve123`.
 
-**Start over** (fresh demo): stop the server and delete the `data/` folder.
+**Start over** (fresh demo): stop the server and delete the `data/` folder. To see the story again, open http://localhost:8000/?intro.
 
 **Use Gemini instead of Groq:** put these in `.env`:
 ```
@@ -38,14 +38,14 @@ LLM_API_KEY=your_ai_studio_key
 
 ## Demo walkthrough
 
-1. **Catalog → Polyvault → Run project.** The finished store opens in a new tab. Log in, add assets to the cart, check out, and see the download links on your profile.
-2. **Start learning.** Round 1 carves out the login (`store/pieces/auth.py`), **one function at a time**. *Your task* shows the function and what it must do to pass. *Read first* shows where it's used, what breaks, and the store code to read.
-3. **Write, Hint, Submit.** The editor holds just that function. **Hint** gives one nudge, never code. The draggable **Tutor** button opens a window where you can also ask about a library, a method or a concept. After **Submit**, each criterion gets ✓ or ✗.
-4. **Pass.** Your function replaces the original right away and the ownership bar goes up. The tutor asks one narrow question about it. A weak answer gets a narrower follow-up.
-5. **Next function**, then **Run project** once the round is done: the store's login is now your code.
-6. **Round 2** carves out the cart (`store/pieces/cart.py`), function by function. At the end, the login and cart are both yours.
+1. **The story.** On the first visit Chip tells what Carve-Out does in seven short steps, while Python loads in the background. Skip it any time.
+2. **What do you want to build?** Building from your own idea is coming soon; for now open **Polyvault**, or bring your own project as a .zip.
+3. **Three questions.** Yes or no, in Chip's voice, so the plan starts at the right level. You can skip them.
+4. **Home** shows one next step: try the store first (login `learner` / `carve123`), then your first function. **See the whole plan** lists every step and lets you choose what you write.
+5. **The workspace.** A short tour the first time. The task card says what the function must do; write it in the editor, **Get a hint** for a nudge, ask Chip anything. **Check my code** ticks each check.
+6. **A pass.** Your function flies into the "yours" counter and runs inside the store from now on. Chip asks one question about it, then it's on to the next function.
 
-Close the tutor at any point and start it again. Your round, draft and progress are all still there.
+Close the tutor at any point and start it again. Your plan, drafts and progress are all still there.
 
 ## How it works
 
@@ -61,6 +61,7 @@ tutor/            the tutor app (FastAPI, :8000 locally; inside the browser on t
 store/            the practice project (FastAPI + Jinja2 + SQLite, :8001)
   pieces/         auth.py and cart.py: the AI's originals, never edited
 tests/            the tests each piece must pass
+  ui_walk.cjs     a walk through every screen in a real browser (Playwright), for checking the interface
 ```
 
 Each piece is its own file, rebuilt one function at a time. When a function passes, it's swapped into the AI's file and saved to `data/learner/`. **Run project** copies the store to `.run/store/` with your file in place, then restarts it. Functions you haven't written yet keep running the original, so the store never breaks.
