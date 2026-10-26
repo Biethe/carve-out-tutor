@@ -539,10 +539,27 @@ def sql_kind(root: Path, file: str, name: str) -> str:
 
 
 # Code: run a check program on a copy of the project.
+def _strip_self_imports(check: str) -> str:
+    """The check is pasted onto the file, so an import of that same file would crash."""
+    out, skipping = [], False
+    for line in check.splitlines():
+        if not skipping and re.match(r"\s*import\b", line):
+            if re.search(r"\bfrom\s+['\"]", line):
+                continue
+            skipping = True
+            continue
+        if skipping:
+            if re.search(r"\bfrom\s+['\"]", line):
+                skipping = False
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
 def program(language: str, file_code: str, check: str) -> tuple[str, dict]:
     """(the target file's new text, extra files) with the check program added the way each language needs it."""
     if language in ("javascript", "typescript"):
-        return f"{file_code}\n\n// ---- Carve-Out check ----\n{check}\n", {}
+        return f"{file_code}\n\n// ---- Carve-Out check ----\n{_strip_self_imports(check)}\n", {}
     if language in ("c", "cpp"):
         code = re.sub(r"\b(int|void)(\s+)main(\s*\()", r"\1\2carve_project_main\3", file_code)
         return f"{code}\n\n/* ---- Carve-Out check ---- */\n{check}\nint main(void) {{ return carve_check(); }}\n", {}

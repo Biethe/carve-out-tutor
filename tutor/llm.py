@@ -476,9 +476,11 @@ prints one line per check: a short label in plain words, a colon and a space, th
 - {contract}
 """
 CONTRACT = {
-    "javascript": "It is added to the end of the same file, so it can call every function in it, exported or not. Print "
+    "javascript": "It is added to the end of the same file, so the functions already exist. Call them by name. "
+                  "Do not import this file or any other file, and do not write import or export. Print "
                   "with console.log (JSON.stringify for arrays and objects). For a method, create the object first.",
-    "typescript": "It is added to the end of the same file, so it can call every function in it, exported or not. Print "
+    "typescript": "It is added to the end of the same file, so the functions already exist. Call them by name. "
+                  "Do not import this file or any other file, and do not write import or export. Print "
                   "with console.log (JSON.stringify for arrays and objects). For a method, create the object first.",
     "java": "Write a complete file: public class CarveCheck { public static void main(String[] args) { ... } }, printing "
             "with System.out.println. If the class you call is in a package, start with the same package line, so "
