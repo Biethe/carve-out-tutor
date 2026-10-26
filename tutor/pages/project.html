@@ -93,7 +93,7 @@
           text: info.builtin ? "Shop around Polyvault like a customer would. It’s the app you’re going to rebuild."
                              : "Click around your project like you would really use it. It’s the app you’re going to rebuild." }] : []),
         ...writing.map((f, i) => ({ key: f.key, fn: f, n: i + 1, of: writing.length, title: `Write ${f.name}`,
-          text: (f.description || "").split("\n")[0] || `A function in ${f.file}.`, done: f.status === "passed" })),
+          text: (f.description || "").split("\n")[0] || `A piece of ${f.file}.`, done: f.status === "passed" })),
       ];
     }
     // The step to show: a function you left half-written comes first, then the first step not done.
@@ -113,7 +113,7 @@
       }
       if (step.fn) {
         return `<div class="mini-code panel raised"><div class="mc-head"><span class="mono">${esc(step.fn.file)}</span><span class="mc-lines">your turn</span></div>
-          <pre><span class="kw">def</span> <span class="fn">${esc(step.fn.name)}</span>(…):\n    <span class="caret"></span></pre></div>`;
+          <pre>${/\.py$/.test(step.fn.file) ? `<span class="kw">def</span> <span class="fn">${esc(step.fn.name)}</span>(…):` : esc(step.fn.signature.length > 46 ? step.fn.signature.slice(0, 45) + "…" : step.fn.signature)}\n    <span class="caret"></span></pre></div>`;
       }
       return "";
     }

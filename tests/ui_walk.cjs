@@ -136,7 +136,7 @@ async function quiz() {  // three yes/no questions after picking Polyvault; the 
   await see(t, "#build-text", "Polyvault is ready");
   await see(t, "#q-react", "Polyvault is ready. Three quick questions first.");
   await see(t, "#q-count", "Question 1 of 3");
-  await see(t, "#q-text", "Have you written your own Python functions before?");
+  await see(t, "#q-text", "Have you written your own functions before, in any language?");
   // Chip speaks the first question right away, or, if the browser blocks sound, asks for a tap on the speaker.
   await t.waitForFunction(() => (window.played || []).some((src) => src.endsWith("/voice/python.wav"))
     || document.querySelector("#q-status").textContent.includes("Tap the speaker to hear Chip."), null, { timeout: 8000 });
@@ -157,7 +157,7 @@ async function quiz() {  // three yes/no questions after picking Polyvault; the 
 }
 async function skipquiz() {  // the phone walk skips the questions
   const t = await T();
-  await see(t, "#q-text", "Have you written your own Python functions before?");
+  await see(t, "#q-text", "Have you written your own functions before, in any language?");
   await shot(t, "quiz");
   await t.click("#q-skip");
   await t.waitForURL(/\/project/);
@@ -166,7 +166,7 @@ async function profile() {  // the profile the answers made (after quiz: yes, no
   const t = await T();
   await t.goto(new URL("interview", t.url()).href);
   await see(t, "#p-level", "You’re intermediate.");
-  await see(t, "#p-claims", "Writing Python functions");
+  await see(t, "#p-claims", "Writing functions");
   await see(t, "#p-claims", "Saving data in a database");
   await see(t, "#p-gaps", "Web apps with a login");
   await shot(t, "profile");

@@ -1,10 +1,10 @@
 """First-launch onboarding: three yes/no questions from a fixed tree, every line pre-recorded in Chip's voice.
 No AI and no key needed, so it's instant and sounds the same for everyone. (Improve my profile, later, uses the AI.)
-Q1 is about Python; Q2 about the web, harder after a yes and easier after a no; Q3 about data, the same way."""
+Q1 is about writing functions (in any language); Q2 about the web, harder after a yes and easier after a no; Q3 about data, the same way."""
 
 # id: (what Chip says, the skill a yes shows)
 QUESTIONS = {
-    "python": ("Have you written your own Python functions before?", "Writing Python functions"),
+    "python": ("Have you written your own functions before, in any language?", "Writing functions"),
     "web_hard": ("Have you built a web app with a login form?", "Web apps with a login"),
     "web_easy": ("Have you made a web page before?", "Making web pages"),
     "data_hard": ("Have you stored passwords safely, with hashing?", "Password hashing"),
@@ -58,7 +58,7 @@ def profile(answers: list[tuple[str, bool]]) -> dict:
 
 if __name__ == "__main__":
     p = profile([("python", True), ("web_hard", False), ("data_easy", True)])
-    assert p["level"] == "intermediate" and [c["skill"] for c in p["claims"]] == ["Writing Python functions", "Saving data in a database"]
+    assert p["level"] == "intermediate" and [c["skill"] for c in p["claims"]] == ["Writing functions", "Saving data in a database"]
     assert p["gaps"] == ["Web apps with a login"] and profile([("python", False), ("web_easy", False), ("data_easy", False)])["level"] == "beginner"
     assert profile([("python", True), ("web_hard", True), ("data_hard", True)])["level"] == "advanced"
     skipped = profile([])

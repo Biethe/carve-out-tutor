@@ -34,10 +34,11 @@
 
       <div class="known">
         <span class="muted">Or start with one that’s ready</span>
-        <div class="example panel">
-          <span class="ex-pics" aria-hidden="true"><img src="/store-assets/chest.webp" alt=""><img src="/store-assets/lantern.webp" alt=""><img src="/store-assets/boombox.webp" alt=""></span>
-          <span class="op-text"><b>Polyvault</b><span class="muted">An online store for 3D models, written in Python. 28 functions to rebuild.</span></span>
-          <a class="btn" id="open-store" href="/project?open=store">Open Polyvault <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i></a>
+        <div class="starter-grid">
+          <a class="starter panel" id="open-store" href="/project?open=store"><b>Polyvault</b><span>Python · an online store</span></a>
+          <button class="starter panel" data-example="the-super-tiny-compiler"><b>Tiny compiler</b><span>JavaScript · a compiler</span></button>
+          <button class="starter panel" data-example="todo-page"><b>Todo page</b><span>HTML, CSS, JavaScript</span></button>
+          <button class="starter panel" data-example="shop-database"><b>Shop database</b><span>SQL · tables and queries</span></button>
         </div>
       </div>
 
@@ -76,6 +77,26 @@
     }
 
     // ---- Your own project: upload a zip, then open or delete it ----------------------------------
+    // Ready-made projects in other languages: unpacked like an upload the first time, then just opened.
+    document.querySelectorAll("[data-example]").forEach((btn) => btn.addEventListener("click", async () => {
+      const name = btn.dataset.example;
+      const known = await fetch("api/projects").then((r) => r.json()).catch(() => ({ projects: [] }));
+      if (!known.projects.some((p) => p.name === name)) {
+        btn.disabled = true;
+        say("Getting it ready…");
+        Chip.mood(cChip, "busy");
+        const zip = await fetch("/static/examples/" + name + ".zip").then((r) => r.blob()).catch(() => null);
+        const form = new FormData();
+        if (zip) form.append("file", new File([zip], name + ".zip", { type: "application/zip" }));
+        const res = zip ? await fetch("api/projects", { method: "POST", body: form }).then((r) => r.json()).catch(() => ({ error: "The tutor couldn’t be reached." }))
+          : { error: "That project couldn’t be loaded. Check your connection." };
+        cChip.classList.remove("busy");
+        btn.disabled = false;
+        if (res.error || res.blocked) return say(res.error || "That one didn’t pass the safety check.");
+      }
+      location.href = "project?open=" + encodeURIComponent(name);
+    }));
+
     const KIND = { asgi: "Python web app", wsgi: "Flask web app", static: "Web page" };
     const FIT = { full: ["good", "Runs in your browser"], partial: ["warn", "Partly runs in your browser"], none: ["bad", "Needs your own computer"] };
     const grid = $("mine-grid");

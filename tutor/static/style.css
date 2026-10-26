@@ -284,6 +284,14 @@ h1, h2, h3 { font-family: var(--display); }
 .btn.danger { background: var(--bad); border-color: transparent; color: #FFFFFF; }
 .example { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 16px; padding: 14px 18px 14px 14px; border-radius: 22px; }
 .ex-pics { display: flex; gap: 6px; }
+.starter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.starter { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 18px; border: 0; font: inherit; color: var(--ink); text-align: left; text-decoration: none; cursor: pointer; transition: transform .2s var(--ease), box-shadow .2s; }
+.starter b { font-weight: 600; }
+.starter span { font-size: 13px; color: var(--muted); }
+.starter:hover { transform: translateY(-2px); }
+.starter:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.starter:disabled { opacity: .6; cursor: progress; }
+@media (max-width: 760px) { .starter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .ex-pics img { width: 48px; height: 48px; padding: 6px; object-fit: contain; border-radius: 12px; background: var(--studio); }
 #upload-result p { margin: 0; }
 #upload-result:empty { display: none; }
