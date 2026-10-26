@@ -95,14 +95,22 @@ async def _post_audio(url: str, headers: dict, body: dict) -> bytes:
     return await asyncio.to_thread(send)
 
 
-# Chip's one voice: Groq's Orpheus, free but only about 3,600 characters a day per key. Onboarding is pre-recorded in
-# it (tutor/record_intro.py); when live speech isn't available, Chip's words stay on screen instead of changing voice.
+# Chip's voice in the demo video: ElevenLabs "Charlie". Same settings as the narration.
+# Onboarding clips are recorded once in that voice (tutor/record_intro.py). Without that key, live speech
+# falls back to Groq's Orpheus so an older setup still talks.
+CHARLIE = "IKne3meq5aSn9XLyUdCD"
 SPEECH = {"api.groq.com": ("canopylabs/orpheus-v1-english", "hannah"), "api.openai.com": ("gpt-4o-mini-tts", "coral")}
 
 
 async def speech(text: str, voice: str | None = None, direction: str | None = "[cheerful]") -> bytes:
-    """WAV audio of the text in a natural voice. Raises NoKey, or RuntimeError if the provider has no voice for us.
-    `direction` is Orpheus' delivery note (not read out); None lets the voice speak plainly."""
+    """Audio of the text in Chip's voice. MP3 when ElevenLabs is configured, otherwise WAV.
+    Raises NoKey only for the fallback voice. `direction` is Orpheus' delivery note, not read out."""
+    eleven = _env("ELEVEN_LABS_API_KEY")
+    if eleven:
+        body = {"text": text, "model_id": "eleven_multilingual_v2", "voice_settings": {
+            "stability": 0.36, "similarity_boost": 0.72, "style": 0.62, "use_speaker_boost": True, "speed": 0.94}}
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{CHARLIE}?output_format=mp3_44100_128"
+        return await _post_audio(url, {"xi-api-key": eleven, "Content-Type": "application/json"}, body)
     base, api_key, _, demo = provider()
     model, default_voice = SPEECH["api.groq.com"] if demo else next((v for host, v in SPEECH.items() if host in base), (None, None))
     voice = voice or default_voice

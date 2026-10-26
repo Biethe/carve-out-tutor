@@ -356,7 +356,7 @@ async def interview(answer: str = Body("", embed=True)):
 def onboarding_tree():
     """The three yes/no questions as a tree, and which lines already have a recorded clip."""
     voice = Path(__file__).parent / "static" / "voice"
-    return {**onboarding.tree(), "recorded": [i for i in onboarding.LINES if (voice / f"{i}.wav").exists()]}
+    return {**onboarding.tree(), "recorded": [i for i in onboarding.LINES if (voice / f"{i}.mp3").exists()]}
 
 
 @app.post("/api/onboarding")
@@ -396,9 +396,11 @@ def edit_profile(claims: list[dict] = Body(), gaps: list[str] = Body(), wants: l
 
 @app.post("/api/speak")
 async def speak(text: str = Body(embed=True)):
-    """Chip's words in Groq's Orpheus voice (WAV). On an error the page shows the words instead, never another voice."""
+    """Chip's words in the demo's voice (MP3), or WAV if that key isn't set."""
     try:
-        return Response(await llm.speech(text[:480]), media_type="audio/wav")
+        audio = await llm.speech(text[:480])
+        kind = "audio/mpeg" if audio[:3] == b"ID3" or (audio[:1] == b"\xff" and (audio[1] & 0xE0) == 0xE0) else "audio/wav"
+        return Response(audio, media_type=kind)
     except llm.NoKey:
         return JSONResponse({"error": llm.NO_KEY}, status_code=400)
     except Exception as err:

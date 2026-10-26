@@ -107,7 +107,7 @@ const Story = (() => {
     function speakBeat() {
       clip?.pause();
       if (!sound) return;
-      clip = new Audio(`${voice}story${beat}.wav`);
+      clip = new Audio(`${voice}story${beat}.mp3`);
       clip.play().then(() => soundBtn.classList.remove("nudge"))
         .catch((err) => { if (err.name === "NotAllowedError") soundBtn.classList.add("nudge"); });
     }

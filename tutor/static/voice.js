@@ -1,6 +1,5 @@
-// Talking and listening. Chip has ONE voice: Groq's Orpheus. Onboarding is pre-recorded in it (tutor/static/voice/);
-// live replies use it through the learner's key. When it isn't available (today's free allowance is used up, or no
-// key), Chip stays quiet and the words stay on screen: never a different voice.
+// Talking and listening. Chip has the demo video's voice. Onboarding is pre-recorded (tutor/static/voice/);
+// live replies come from /api/speak. When that isn't available, Chip stays quiet and the words stay on screen.
 // Listening uses the browser's speech-to-text (Chrome, Edge and Safari; Chrome sends the audio to Google).
 const Voice = (() => {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;

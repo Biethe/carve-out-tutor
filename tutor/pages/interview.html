@@ -78,7 +78,7 @@
       if (!voiceOn() || !tree?.recorded.includes(id)) return Promise.resolve();
       return new Promise((done) => {
         clip?.pause();
-        clip = new Audio(`static/voice/${id}.wav`);
+        clip = new Audio(`static/voice/${id}.mp3`);
         chip.classList.add("talk");
         clip.onended = clip.onerror = () => { chip.classList.remove("talk"); done(); };
         clip.play().catch((err) => {
@@ -271,7 +271,7 @@
       tree = t;
       name = info.builtin ? "Polyvault" : info.name;
       $("build-text").textContent = `${name} is ready`;
-      tree.recorded.forEach((id) => Object.assign(new Audio(), { preload: "auto", src: `static/voice/${id}.wav` }));  // instant later
+      tree.recorded.forEach((id) => Object.assign(new Audio(), { preload: "auto", src: `static/voice/${id}.mp3` }));  // instant later
       if (p.done) return showProfile(p);
       startQuiz();
     });

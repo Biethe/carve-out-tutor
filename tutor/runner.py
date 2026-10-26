@@ -16,7 +16,7 @@ from tutor.pieces import PIECES
 from tutor.progress import DATA
 
 ROOT = Path(__file__).parent.parent
-STORE_PORT = 8001
+STORE_PORT = int(os.environ.get("STORE_PORT", 8001))  # another port lets a second tutor run next to yours
 STORE_URL = f"http://localhost:{STORE_PORT}"
 
 _store_proc: subprocess.Popen | None = None
