@@ -7,6 +7,6 @@ ROOT = Path(__file__).parent.parent
 SKIP = {"__pycache__", ".pytest_cache"}
 
 files = sorted(str(f.relative_to(ROOT)) for folder in ("store", "tests", "tutor") for f in (ROOT / folder).rglob("*")
-               if f.is_file() and not SKIP & set(f.parts) and f.suffix not in {".db", ".pyc"})
+               if f.is_file() and not SKIP & set(f.parts) and f.suffix not in {".db", ".pyc", ".cjs"})
 (ROOT / "web" / "files.json").write_text(json.dumps(files, indent=1) + "\n")
 print(len(files), "files")
