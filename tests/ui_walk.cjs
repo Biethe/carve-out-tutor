@@ -284,7 +284,57 @@ async function passed() {  // back on a function you passed: it's yours, the nex
   await t.locator("#clean:not([disabled])").waitFor();
 }
 
-const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, returning, upload, partial, workspace, pass, passed };
+const TOUR = [
+  "Start here. This is what your function has to do, and the checks it has to pass.",
+  "Then write your code in here. Just this one function.",
+  "When you think it works, press Check my code. I’ll run the tests for you.",
+  "Stuck? I’m right here. Ask me anything, or ask for a hint.",
+];
+async function tour() {  // the first visit to the workspace: a four-stop tour, once
+  const t = await T();
+  await t.click('[data-act="write"]');
+  await t.waitForURL(/\/learn/);
+  await see(t, "#coach-say", TOUR[0]);
+  await shot(t, "tour");
+  if (size === "phone") {
+    await page.keyboard.press("Escape");  // Esc ends it, like Skip the tour
+  } else {
+    for (let i = 0; i < 4; i++) {
+      await see(t, "#coach-count", `${i + 1} of 4`);
+      await see(t, "#coach-say", TOUR[i]);
+      await see(t, ["#w-task", "#w-editor", "#submit", "#w-buddy"][i] + ".spot");
+      await t.click("#coach-next");  // the last one says Got it
+    }
+  }
+  await t.locator("#coach").waitFor({ state: "hidden" });
+  await see(t, "#w-say", "Your turn. Take your time, I’m right here.");
+  await type(t, "def hash_password(password: str) -> str:\n    h");
+  await see(t, "#w-say", "Nice start. Take your time.");
+  await t.goto(t.url());
+  await page.waitForTimeout(1500);
+  if (await t.locator("#coach").isVisible()) fail("the tour shows only once");
+}
+async function win() {  // the right code: the function flies into the counter, then one question
+  const t = await T();
+  await type(t, RIGHT);
+  await t.click("#submit");
+  if (!process.env.REDUCED) await see(t, ".flyer");
+  await see(t, "#w-own", "1 of 28 yours");
+  await see(t, "#win-title", "hash_password is yours.");
+  await see(t, "#win-sub", "1 of 28 functions in Polyvault run your code now.");
+  await see(t, "#win-q", "Why does the store keep a hash of the password instead of the password itself?");
+  await shot(t, "win");
+  await t.fill("#win-answer", "So nobody can read the real password.");
+  await t.click("#win-send");
+  await see(t, "#win-reply", NO_AI);  // grading needs the AI
+  await t.locator("#win-send:not([disabled])").waitFor();
+  await t.click("#win-skip");
+  await see(t, "#win-next", "Next: is_logged_in");  // the starter plan's order: is_logged_in comes second
+  await t.click("#win-next");
+  await has(t, "#w-crumb", "is_logged_in");
+}
+
+const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, returning, upload, partial, workspace, pass, passed, tour, win };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });

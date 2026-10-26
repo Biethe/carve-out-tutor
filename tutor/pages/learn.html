@@ -74,6 +74,7 @@
       <div class="buddy-body">
         <p class="muted small" id="w-asked" hidden></p>
         <div class="say sm" id="w-say" aria-live="polite"></div>
+        <button class="btn sm" id="answer-it" hidden>Answer it</button>
         <form class="ask" id="ask-form">
           <label class="sr" for="chat-input">Ask Chip a question</label>
           <input id="chat-input" autocomplete="off" placeholder="Ask me anything">
@@ -84,6 +85,37 @@
       </div>
     </section>
   </main>
+
+  <!-- A short tour of the workspace, the first time only. -->
+  <div class="shield" id="shield" hidden></div>
+  <div class="coach-card" id="coach" role="dialog" aria-label="A quick tour" hidden>
+    <div class="head"><span class="chip sm" id="coach-chip" data-chip></span><span id="coach-count"></span></div>
+    <p class="say sm" id="coach-say"></p>
+    <div class="row"><button class="link" id="coach-skip">Skip the tour</button><button class="btn primary sm" id="coach-next">Next</button></div>
+  </div>
+
+  <!-- The win: the function is yours, then one question about it. -->
+  <dialog class="sheet win" id="win" aria-labelledby="win-title">
+    <div class="win-top"><span class="chip md happy" id="win-chip" data-chip></span><div><h2 id="win-title"></h2><p class="muted" id="win-sub"></p></div></div>
+    <p class="win-note" id="win-note" hidden></p>
+    <form class="qa" id="win-qa">
+      <label for="win-answer"><span class="muted" id="win-label">One question before you move on.</span><strong id="win-q"></strong></label>
+      <textarea id="win-answer" rows="3" placeholder="Answer in your own words"></textarea>
+      <div class="row">
+        <button class="btn primary" id="win-send" type="submit">Send</button>
+        <button class="icon-btn" id="win-mic" type="button" aria-pressed="false" aria-label="Answer out loud" title="Answer out loud"><i class="ph-bold ph-microphone" aria-hidden="true"></i></button>
+        <button class="btn ghost" id="win-skip" type="button">Skip</button>
+      </div>
+      <div class="win-reply" id="win-reply" aria-live="polite"></div>
+    </form>
+    <div class="qa" id="win-after" hidden>
+      <div class="row">
+        <button class="btn primary" id="win-next"></button>
+        <button class="btn primary" id="win-run" hidden>Open my app</button>
+        <button class="btn ghost" id="win-home">Back home</button>
+      </div>
+    </div>
+  </dialog>
 
   <dialog class="sheet map-dialog" id="map-dialog">
     <button class="icon-btn close" id="map-close" aria-label="Close"><i class="ph-bold ph-x" aria-hidden="true"></i></button>

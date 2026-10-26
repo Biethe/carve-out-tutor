@@ -281,9 +281,191 @@ function onPass(res) {
   buddy(`It works. ${fnName} now runs inside ${project}.`);
   $("save-state").textContent = "Saved. This version runs in your app now.";
   passedCount += 1;
-  setOwn(passedCount, totalCount, true);
   afterPass();
+  // The finished function flies up into the "yours" counter, then one question about it.
+  fly(fnName, () => {
+    setOwn(passedCount, totalCount, true);
+    setTimeout(() => openWin(res.shown_claim), RM ? 0 : 380);
+  });
 }
+
+function fly(name, done) {
+  const own = $("w-own");
+  if (RM || !own.getBoundingClientRect().width) return done();
+  const a = $("w-editor").getBoundingClientRect(), b = own.getBoundingClientRect();
+  const el = document.createElement("div");
+  el.className = "flyer";
+  el.innerHTML = `<span class="fc"><i class="ph-bold ph-check" aria-hidden="true"></i></span><span class="mono">${escapeHtml(name)}</span>`;
+  document.body.append(el);
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const x0 = a.left + a.width / 2 - w / 2, y0 = a.top + Math.min(a.height / 2, 260) - h / 2;
+  const x1 = b.left + b.width / 2 - w / 2, y1 = b.top + b.height / 2 - h / 2;
+  el.animate([
+    { transform: `translate(${x0}px, ${y0 + 24}px) scale(.8)`, opacity: 0 },
+    { transform: `translate(${x0}px, ${y0}px) scale(1.06)`, opacity: 1, offset: 0.25 },
+    { transform: `translate(${x0}px, ${y0 - 8}px) scale(1)`, opacity: 1, offset: 0.45 },
+    { transform: `translate(${x1}px, ${y1}px) scale(.35)`, opacity: 0.3 },
+  ], { duration: 1500, easing: "cubic-bezier(.45, 0, .25, 1)", fill: "forwards" }).onfinish = () => { el.remove(); done(); };
+}
+
+// ---- The win: the function is yours, then one question, graded by the AI as before ----------------
+const win = $("win");
+
+function nextName() {  // what api/next opens: the plan's first function to write that hasn't passed, in Chip's order
+  const f = plan.functions.filter(f => f.mark === "write" && f.rank !== null && !f.blocked && f.status !== "passed" && f.name !== fnName)
+    .sort((a, b) => a.rank - b.rank)[0];
+  return f && f.name;
+}
+
+function openWin(claim) {
+  $("win-title").textContent = `${fnName} is yours.`;
+  $("win-sub").textContent = `${passedCount} of ${totalCount} functions in ${project} run your code now.` + (allDone ? " That’s every function in your plan." : "");
+  $("win-note").hidden = !claim;
+  $("win-note").textContent = claim ? `Spot check passed: you’ve shown “${claim}”. It’s marked in your profile.` : "";
+  const next = !allDone && nextName();
+  $("win-next").hidden = !next;
+  $("win-next").innerHTML = `Next: ${escapeHtml(next || "")} <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i>`;
+  $("win-run").hidden = !(allDone && runs);
+  $("win-reply").innerHTML = "";
+  $("win-answer").value = "";
+  $("win-label").textContent = "One question before you move on.";
+  const asking = check?.question && !check.done;
+  $("win-q").textContent = check?.question || "";
+  $("win-qa").hidden = !asking;
+  $("win-after").hidden = asking;
+  $("answer-it").hidden = true;
+  win.showModal();
+  (asking ? $("win-answer") : $("win-next").hidden ? $("win-home") : $("win-next")).focus();
+}
+
+function afterQuestion() {
+  $("win-qa").hidden = true;
+  $("win-after").hidden = false;
+  ($("win-next").hidden ? $("win-home") : $("win-next")).focus();
+}
+
+$("win-qa").onsubmit = async (e) => {
+  e.preventDefault();
+  const text = $("win-answer").value.trim();
+  if (!text) return;
+  $("win-send").disabled = true;
+  $("win-reply").textContent = "Checking your answer…";
+  const res = await api("POST", "api/explain", { explanation: text }).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." }));
+  $("win-send").disabled = false;
+  if (res.error) { $("win-reply").textContent = res.error; return; }
+  let html = `<strong>${res.score}/10.</strong> `;
+  if (res.hint) html += formatReply(res.hint);
+  if (res.feedback) html += formatReply(res.feedback);
+  if (res.final_explanation) html += `<br><br>Here’s the full answer: ${formatReply(res.final_explanation)}`;
+  if (res.extra) html += `<br><br>Good to know: ${formatReply(res.extra)}`;
+  $("win-reply").innerHTML = html;
+  say($("win-reply"));
+  if (res.done) {
+    check.done = true;
+    $("win-after").hidden = false;
+    $("win-answer").disabled = $("win-send").disabled = $("win-skip").disabled = true;
+    ($("win-next").hidden ? $("win-home") : $("win-next")).focus();
+  } else {
+    $("win-answer").value = "";
+    $("win-label").textContent = "Try once more, in your own words.";
+  }
+};
+$("win-skip").onclick = afterQuestion;
+$("win-mic").hidden = !Voice.canListen;
+$("win-mic").onclick = async () => {
+  if (Voice.listening) return Voice.stopListening();
+  $("win-mic").setAttribute("aria-pressed", "true");
+  const said = await Voice.listen(text => ($("win-answer").value = text));
+  $("win-mic").setAttribute("aria-pressed", "false");
+  if (said) $("win-qa").requestSubmit();
+};
+$("win-next").onclick = () => { win.close(); $("next").click(); };
+$("win-run").onclick = () => runProject($("run-status"));
+$("win-home").onclick = () => (location.href = "project");
+// Closing the sheet (Esc) leaves an unanswered question waiting in Chip's panel.
+win.addEventListener("close", () => {
+  if (check?.question && !check.done) {
+    buddy(`${fnName} is yours. One question about it is waiting.`);
+    $("answer-it").hidden = false;
+  }
+});
+$("answer-it").onclick = () => openWin();
+
+// ---- A short tour of the workspace, the first time only ----------------------------------
+const TOUR = [
+  ["w-task", "Start here. This is what your function has to do, and the checks it has to pass."],
+  ["w-editor", "Then write your code in here. Just this one function."],
+  ["submit", "When you think it works, press Check my code. I’ll run the tests for you."],
+  ["w-buddy", "Stuck? I’m right here. Ask me anything, or ask for a hint."],
+];
+let stop = -1, spotted = null;
+
+function startTour() {
+  try { if (localStorage.getItem("seenTour") === "1") return; localStorage.setItem("seenTour", "1"); } catch {}
+  stop = -1;
+  $("shield").hidden = $("coach").hidden = false;
+  tourNext();
+}
+function placeCoach() {
+  if (!spotted) return;
+  const card = $("coach"), r = spotted.getBoundingClientRect(), cw = card.offsetWidth, ch = card.offsetHeight, m = 16;
+  let x, y;
+  if (r.right + 20 + cw < innerWidth - m) { x = r.right + 20; y = r.top + 12; }
+  else if (r.left - 20 - cw > m) { x = r.left - 20 - cw; y = r.top + 12; }
+  else if (r.bottom + 16 + ch < innerHeight - m) { x = r.left + (r.width - cw) / 2; y = r.bottom + 16; }
+  else if (r.top - 16 - ch > m) { x = r.left + (r.width - cw) / 2; y = r.top - 16 - ch; }
+  else { x = (innerWidth - cw) / 2; y = innerHeight - ch - 40; }
+  x = Math.max(m, Math.min(x, innerWidth - cw - m));
+  y = Math.max(m, Math.min(y, innerHeight - ch - m));
+  card.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+}
+function tourNext() {
+  if (spotted) spotted.classList.remove("spot");
+  stop += 1;
+  if (stop >= TOUR.length) return endTour();
+  const [id, text] = TOUR[stop];
+  spotted = $(id);
+  spotted.scrollIntoView({ block: "nearest" });
+  spotted.classList.add("spot");
+  $("coach-count").textContent = `${stop + 1} of ${TOUR.length}`;
+  $("coach-next").textContent = stop === TOUR.length - 1 ? "Got it" : "Next";
+  Chip.say($("coach-say"), text, $("coach-chip"));
+  placeCoach();
+  Chip.lookAt($("coach-chip"), spotted);
+  $("coach-next").focus({ preventScroll: true });
+}
+function endTour() {
+  if (spotted) spotted.classList.remove("spot");
+  spotted = null;
+  $("shield").hidden = $("coach").hidden = true;
+  buddy("Your turn. Take your time, I’m right here.");
+  editor.focus?.();
+}
+$("coach-next").onclick = tourNext;
+$("coach-skip").onclick = endTour;
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("coach").hidden) endTour(); });
+addEventListener("resize", placeCoach);
+
+// ---- Chip watches you type, and says a little once in a while --------------------------
+const said = new Set();
+let idle = 0, lookBack = 0;
+function sayOnce(key, text) { if (!said.has(key)) { said.add(key); buddy(text); } }
+function armIdle() {
+  clearTimeout(idle);
+  idle = setTimeout(() => {
+    if (!passedNow && /NotImplementedError/.test(editor.getValue())) sayOnce("stuck", "Stuck? Press Get a hint and I’ll nudge you.");
+  }, 25000);
+}
+editor.on("change", () => {
+  if (!loaded || passedNow || cleaning) return;
+  Chip.lookAt(chip, $("w-editor"));
+  clearTimeout(lookBack);
+  lookBack = setTimeout(() => Chip.lookAt(chip, null), 1600);
+  armIdle();
+  const code = editor.getValue();
+  if (!said.has("first")) return sayOnce("first", "Nice start. Take your time.");
+  if (/\breturn\b/.test(code) && !/NotImplementedError/.test(code)) sayOnce("close", "Looks close. Press Check my code when you’re ready.");
+});
 
 $("next").onclick = async () => {
   $("next").disabled = true;
@@ -401,9 +583,13 @@ $("run").onclick = () => runProject($("run-status"));
   showResults(s.last_results, s.status === "passed");
   if (s.status === "passed") {
     afterPass();
-    buddy(`${fnName} is yours.`);
+    const waiting = check?.question && !check.done;
+    buddy(`${fnName} is yours.` + (waiting ? " One question about it is waiting." : ""));
+    $("answer-it").hidden = !waiting;
     $("save-state").textContent = "This function is yours now.";
   } else {
     setTimeout(() => buddy(`Your turn. Write ${fnName} in the editor. I’ll be right here.`), RM ? 0 : 450);
+    armIdle();
+    setTimeout(startTour, RM ? 50 : 950);
   }
 })();
