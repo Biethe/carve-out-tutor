@@ -586,9 +586,55 @@ def _run(cmd: list[str], cwd: Path) -> tuple[bool, str, str]:
     return out.returncode == 0, out.stdout, out.stderr
 
 
+def _dom_prelude(root: Path) -> str:
+    """A tiny document, with one element per id in the project's HTML, so a page script can run under Node."""
+    ids: list[str] = []
+    for path in root.rglob("*.html"):
+        ids += re.findall(r"""id\s*=\s*["']([^"']+)["']""", path.read_text(errors="replace"))
+    seed = "".join(
+        f"document.body.append(Object.assign(document.createElement('div'),{{id:{json.dumps(i)}}}));\n"
+        for i in dict.fromkeys(ids)
+    )
+    return r"""
+const __byId = {};
+function __el(tag) {
+  const n = { tagName: String(tag).toUpperCase(), id: "", className: "", textContent: "", value: "", children: [], style: {}, onclick: null, onsubmit: null };
+  n.append = n.appendChild = (c) => { n.children.push(c); if (c && c.id) __byId[c.id] = c; return c; };
+  n.setAttribute = (k, v) => { if (k === "id") { n.id = v; __byId[v] = n; } if (k === "class") n.className = v; };
+  n.addEventListener = (ev, fn) => { n["on" + ev] = fn; };
+  n.querySelector = (s) => (s && s[0] === "#" ? (__byId[s.slice(1)] || null) : null);
+  let html = "";
+  Object.defineProperty(n, "innerHTML", { get() { return html; }, set(v) {
+    html = String(v); n.children.length = 0;
+    const re = /<(\w+)([^>]*)>([\s\S]*?)<\/\1>/g; let m;
+    while ((m = re.exec(html))) {
+      const c = __el(m[1]);
+      const id = /id\s*=\s*"([^"]+)"/.exec(m[2]); if (id) { c.id = id[1]; __byId[c.id] = c; }
+      const cls = /class\s*=\s*"([^"]+)"/.exec(m[2]); if (cls) c.className = cls[1];
+      if (m[3].includes("<")) c.innerHTML = m[3]; else c.textContent = m[3];
+      n.children.push(c);
+    }
+  } });
+  return n;
+}
+const document = { body: __el("body"), createElement: __el,
+  getElementById(id) { return __byId[id] || null; },
+  querySelector(s) { return s && s[0] === "#" ? (__byId[s.slice(1)] || null) : null; } };
+globalThis.document = document;
+""" + seed
+
+
+def _with_dom(root: Path, language: str, file_code: str, check: str) -> str:
+    if language not in ("javascript", "typescript"):
+        return file_code
+    if "document" not in file_code and "document" not in check and "window" not in file_code:
+        return file_code
+    return _dom_prelude(root) + file_code
+
+
 def run_local(root: Path, file: str, language: str, file_code: str, check: str) -> tuple[bool, str, str]:
     """Runs the check program on a copy of the project with `file` replaced. (ok, output, errors)."""
-    code, extra = program(language, file_code, check)
+    code, extra = program(language, _with_dom(root, language, file_code, check), check)
     with tempfile.TemporaryDirectory() as tmp:
         copy = Path(tmp, root.name)
         shutil.copytree(root, copy, ignore=shutil.ignore_patterns(".git", "node_modules", "target", "*.class", "__pycache__"))
@@ -623,7 +669,7 @@ def run_local(root: Path, file: str, language: str, file_code: str, check: str) 
 async def run_browser(root: Path, file: str, language: str, file_code: str, check: str) -> tuple[bool, str, str]:
     """JavaScript and TypeScript in the browser: the page runs them in a throwaway worker (web/python.js, runJs)."""
     from js import runJs
-    code, _ = program(language, file_code, check)
+    code, _ = program(language, _with_dom(root, language, file_code, check), check)
     files = {str(p.relative_to(root)): p.read_text(errors="replace") for p in root.rglob("*")
              if p.is_file() and p.suffix in (".js", ".mjs", ".ts", ".json") and "node_modules" not in p.parts}
     files[file] = code
