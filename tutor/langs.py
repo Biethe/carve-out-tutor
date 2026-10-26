@@ -38,12 +38,11 @@ def in_browser() -> bool:
 
 
 def why_not_here(file: str) -> str | None:
-    """In the browser, compiled languages can't run yet: the reason, or None if this file's language runs here."""
-    tool = TOOLS.get(lang(file))
-    if not tool or not in_browser():
-        return None
-    return (f"{NAMES[lang(file)]} needs {tool}, which this browser version doesn't have yet. Rebuild it in the local "
-            "tutor, on your own computer with the compiler installed.")
+    """Every language runs now: compiled ones on Wandbox when there's no compiler here (see run_online). Kept for callers."""
+    return None
+
+
+ONLINE = "Wandbox, a free online compiler"  # where Java, C, C++ and Rust checks run in the browser
 
 
 # ---- Reading the code: strings and comments blanked out, so brackets can be counted -----------------------------
@@ -615,12 +614,77 @@ async def run_browser(root: Path, file: str, language: str, file_code: str, chec
     return reply["ok"], reply.get("out", ""), reply.get("error", "")
 
 
+WANDBOX = {"c": "gcc-13.2.0-c", "cpp": "gcc-13.2.0", "java": "openjdk-jdk-22+36", "rust": "rust-1.82.0"}
+
+
+def wandbox_job(root: Path, file: str, language: str, file_code: str, check: str) -> dict:
+    """The request for Wandbox (https://wandbox.org): the target file with its check program as the main file, plus
+    what it needs from the project. Java is merged into one file, the check class first, since Java runs the first class."""
+    code, extra = program(language, file_code, check)
+    target = Path(file)
+    files = {str(p.relative_to(root)): p for p in root.rglob("*") if p.is_file() and p.stat().st_size < 200_000
+             and not {".git", "node_modules", "target", "build", "test", "tests"} & set(p.relative_to(root).parts)}
+    if language == "java":
+        packages = {m for p in files.values() if p.suffix == ".java" for m in re.findall(r"^\s*package\s+([\w.]+)\s*;", p.read_text(errors="replace"), re.M)}
+        texts = [extra["CarveCheck.java"]] + [code if rel == file else p.read_text(errors="replace") for rel, p in files.items() if p.suffix == ".java"]
+        imports, bodies = [], []
+        for text in texts:
+            text = re.sub(r"(?m)^\s*package\s+[\w.]+\s*;", "", text)
+            for imp in re.findall(r"(?m)^\s*import\s+(?:static\s+)?([\w.*]+)\s*;", text):
+                if not any(imp.startswith(pk + ".") for pk in packages) and f"import {imp};" not in imports:
+                    imports.append(f"import {imp};")
+            text = re.sub(r"(?m)^\s*import\s+(?:static\s+)?[\w.*]+\s*;", "", text)
+            bodies.append(re.sub(r"(?m)^public\s+((?:abstract\s+|final\s+|sealed\s+)*(?:class|interface|enum|record)\b)", r"\1", text))
+        return {"compiler": WANDBOX[language], "code": "\n".join(imports) + "\n" + "\n".join(bodies)}
+    if language == "rust":  # modules are found next to the main file
+        base = target.parent
+        codes = [{"file": str(Path(rel).relative_to(base)), "code": p.read_text(errors="replace")} for rel, p in files.items()
+                 if p.suffix == ".rs" and rel != file and Path(rel).is_relative_to(base)]
+        return {"compiler": WANDBOX[language], "code": code, "codes": codes, "compiler-option-raw": "--edition=2021\n-Awarnings"}
+    ext = (".c",) if language == "c" else (".cpp", ".cc", ".cxx")
+    others = [rel for rel, p in files.items() if p.suffix in ext and rel != file
+              and not re.search(r"\b(int|void)\s+main\s*\(", p.read_text(errors="replace"))]
+    codes = [{"file": rel, "code": p.read_text(errors="replace")} for rel, p in files.items()
+             if p.suffix in (".h", ".hpp", ".hh", ".inc") or rel in others]
+    options = others + ["-I.", f"-I{target.parent}" if str(target.parent) != "." else "-I.", "-w", "-lm"]
+    return {"compiler": WANDBOX[language], "code": code, "codes": codes, "compiler-option-raw": "\n".join(options)}
+
+
+async def run_online(root: Path, file: str, language: str, file_code: str, check: str) -> tuple[bool, str, str]:
+    """Java, C, C++ and Rust where there's no compiler (the browser): compiled and run on Wandbox. (ok, output, errors)."""
+    body = json.dumps(wandbox_job(root, file, language, file_code, check))
+    url = "https://wandbox.org/api/compile.json"
+    try:
+        if in_browser():
+            from pyodide.http import pyfetch
+            reply = await pyfetch(url, method="POST", headers={"Content-Type": "application/json"}, body=body)
+            if not reply.ok:
+                raise RuntimeError(str(reply.status))
+            data = await reply.json()
+        else:
+            import urllib.request
+
+            def post():
+                request = urllib.request.Request(url, body.encode(), {"Content-Type": "application/json", "User-Agent": "carve-out-tutor"})
+                with urllib.request.urlopen(request, timeout=60) as r:
+                    return json.load(r)
+            data = await asyncio.to_thread(post)
+    except Exception:
+        return False, "", f"The online compiler ({ONLINE}) couldn't be reached. Check your connection and try again."
+    if data.get("compiler_error") and str(data.get("status")) != "0" and not data.get("program_output"):
+        return False, "", data["compiler_error"]
+    return str(data.get("status")) == "0", data.get("program_output", ""), data.get("program_error", "") or data.get("compiler_error", "")
+
+
 async def run(root: Path, file: str, language: str, file_code: str, check: str) -> tuple[bool, str, str]:
     if in_browser():
-        if language not in ("javascript", "typescript"):
-            return False, "", why_not_here(file) or "This language can't run here."
-        return await run_browser(root, file, language, file_code, check)
-    return await asyncio.to_thread(run_local, root, file, language, file_code, check)
+        if language in ("javascript", "typescript"):
+            return await run_browser(root, file, language, file_code, check)
+        return await run_online(root, file, language, file_code, check)
+    ok, out, err = await asyncio.to_thread(run_local, root, file, language, file_code, check)
+    if language in WANDBOX and "isn't installed on this computer" in err:  # no compiler here: use the online one
+        return await run_online(root, file, language, file_code, check)
+    return ok, out, err
 
 
 def _short(text: str, lines: int = 8) -> str:

@@ -167,7 +167,7 @@ Source: `scope.md > The POC Boundary`.
 - **Languages:** Uploads can be Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML or CSS, mixed in one project. The upload card names the project's languages.
 - **Pieces:** A function or method (any language), a SQL table, view, index or query, a CSS rule, or an HTML section with an id. Pieces that are empty in the original are left out, since an empty start would already match them.
 - **Checking a piece:** The original is the reference, so the project keeps working exactly as before. For code, the learner's AI writes a short check program that calls the function and prints one line per check; it's kept only if it runs on the original and an empty start fails it. The learner's version passes when every line matches. SQL is run on SQLite and compared (columns, types, keys, rows, query results). CSS compares the declarations, HTML the elements, attributes and text. The lines become the "It passes when" goals.
-- **Where it runs:** Python, JavaScript, TypeScript, SQL, HTML and CSS in the browser. Java, C, C++ and Rust in the local tutor, with their compilers installed; in the browser their pieces are "Local only", with the reason.
+- **Where it runs:** Python, JavaScript, TypeScript, SQL, HTML and CSS in the browser itself. Java, C, C++ and Rust are compiled and run on Wandbox, a free online compiler (the learner's choice, 2026-10-26); the workspace says that this code is sent there. The local tutor uses the computer's own compilers and falls back to Wandbox when one is missing.
 - **The map:** For any language, a box per file and arrows for what travels between files: calls found by name, a page loading its scripts and styles, styles and scripts reaching the page's ids and classes, SQL reading tables.
 - **Open my app:** A web page project (HTML, CSS, JavaScript) runs in the page with the learner's passed pieces inside.
 
@@ -189,7 +189,7 @@ Source: `scope.md > The POC Boundary`.
 - **A bigger catalog:** About ten different kinds of web projects to choose from.
 - **Bring your own idea, for real:** A Devpost-style interview, then the AI builds the project and carves it.
 - **Many more rounds:** Until 40% or more of the project, and eventually the whole core, is the learner's.
-- **More:** Games, mobile apps in a phone-sized preview, compiled languages in the browser (an online compiler or WebAssembly toolchains), JavaScript that needs a page checked in one, and an in-browser terminal.
+- **More:** Games, mobile apps in a phone-sized preview, compiled languages with no online service (WebAssembly compilers in the page), JavaScript that needs a page checked in one, and an in-browser terminal.
 - **Accounts and saved progress** for learners anywhere in the world.
 
 ## Non-Goals

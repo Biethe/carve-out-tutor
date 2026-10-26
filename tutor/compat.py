@@ -107,9 +107,8 @@ async def check(name: str, root: Path) -> dict:
                 changed = True
     source = "\n".join(p.read_text(errors="replace") for p in pieces.python_files(root))
     machine = [what for what, pattern in MACHINE if re.search(pattern, source)]
-    # Compiled languages need their compiler, which the browser version doesn't have (tutor/langs.py).
+    # Compiled languages run on an online compiler in the browser (tutor/langs.py), so they're never blocked here.
     others = pieces.other_files(root)
-    blocked.update({str(p.relative_to(root)): [langs.TOOLS[langs.lang(p)]] for p in others if langs.lang(p) in langs.TOOLS})
     files = len(imports) + len(others)
     verdict = "none" if files and len(blocked) == files else "partial" if blocked or machine else "full"
     result = {"verdict": verdict, "libraries": [{"name": n, "status": s} for n, s in sorted(statuses.items())],
@@ -129,8 +128,6 @@ def blocked_file(file: str) -> list[str] | None:
     """In the browser, the libraries that stop this file of the open project from loading (None if it loads)."""
     if not in_browser() or pieces.STORE == pieces.BUILTIN:
         return None
-    if langs.lang(file) in langs.TOOLS:
-        return [langs.TOOLS[langs.lang(file)]]
     report = load(pieces.STORE.name) or {}
     return report.get("blocked", {}).get(file)
 

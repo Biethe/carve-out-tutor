@@ -229,7 +229,8 @@ function showTask(s) {
   $("w-desc").textContent = t.description;
   $("w-file").textContent = t.file;
   $("w-scope").textContent = t.lang === "python" ? "Only this function. Imports go right above it."
-    : `Only this piece, in ${t.lang_name}. The rest of the file stays as it is.`;
+    : `Only this piece, in ${t.lang_name}. The rest of the file stays as it is.`
+      + (["java", "c", "cpp", "rust"].includes(t.lang) ? " Checks run on Wandbox, a free online compiler, so this code is sent there." : "");
   $("w-checks").innerHTML = t.criteria
     .map(c => `<li data-test="${escapeHtml(c.test)}" data-state="idle"><span class="ck" aria-hidden="true"></span><span>${escapeHtml(c.text)}</span></li>`).join("");
   criteriaText = Object.fromEntries(t.criteria.map(c => [c.test, c.text]));

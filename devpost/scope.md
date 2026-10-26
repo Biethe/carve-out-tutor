@@ -58,14 +58,14 @@ A one-minute demo:
 - **"Bring your own idea":** Shown as a feature of the product but not working in the PoC and not explored in the demo.
 - **Standalone (added in the final review):** The whole product is a static web page on GitHub Pages. Python and tests run in the browser, the AI is called from the browser with the learner's own provider and key, and progress is saved in the browser. Nothing depends on the builder's computer.
 - **Bring your own project (added in the final review):** Upload a working Python project as a zip (for example from GitHub) and download it back with your code inside. A web app runs live in the page. A project that can't run in a browser (it needs a game engine or a local machine) is checked with tests only.
-- **Any language (added in the final review, 2026-10-26):** Projects in JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML and CSS, next to Python. A piece is a function, a SQL table, view or query, a CSS rule, or an HTML section with an id. It passes when it behaves exactly like the original. Python, JavaScript, TypeScript, SQL, HTML and CSS run in the browser; Java, C, C++ and Rust run in the local tutor with their compilers, until the learner decides how they should run in the browser.
+- **Any language (added in the final review, 2026-10-26):** Projects in JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML and CSS, next to Python. A piece is a function, a SQL table, view or query, a CSS rule, or an HTML section with an id. It passes when it behaves exactly like the original. Python, JavaScript, TypeScript, SQL, HTML and CSS run in the browser itself; Java, C, C++ and Rust are compiled and run on Wandbox, a free online compiler, which the learner chose (their code is sent there).
 - **Profile-based carving, up to 100% (added in the final review):** A short first-launch interview, spoken or typed, records what the learner says they can do. Every function can be carved. The learner's model finds the key spots, the profile decides what to leave to the original code, and a learner can choose to write everything. Claimed skills get spot-checked during the project, and the results are saved next to the claims.
 - **Voice:** Speak to the tutor any time, especially in the interview and explanations.
 
 ## Later
 - **Full interview:** A full Devpost-style interview (scope, PRD, spec) before the AI builds anything.
 - **Project catalog:** About ten different kinds of web pages or websites for the learner to choose from.
-- **Compiled languages in the browser** (Java, C, C++, Rust), through an online compiler or WebAssembly toolchains. Other languages were added in the final review; JavaScript that needs a page (the DOM) can't be checked yet.
+- **Compiled languages without an online service**, through WebAssembly compilers in the page, so no code leaves the browser. JavaScript that needs a page (the DOM) can't be checked yet.
 - **Bring your own idea, for real:** The AI generates a working project from the learner's idea, then carves it.
 - **More project types:** Games, mobile apps (shown in a phone-sized preview) and multi-page apps, plus more languages.
 - **In-browser terminal:** For running arbitrary commands.
