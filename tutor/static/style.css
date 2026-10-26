@@ -423,6 +423,9 @@ h1, h2, h3 { font-family: var(--display); }
 .plan-panel { width: 100%; display: flex; flex-direction: column; gap: 14px; }
 .step-open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .step-open:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.plan li.loading { background: var(--accent-soft); border-radius: 12px; }
+.plan li.loading .muted { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
+.plan.opening .step-open { cursor: progress; }
 .edit { padding: 16px 22px; border-radius: 22px; }
 .edit summary { font-weight: 600; cursor: pointer; }
 .edit > p { margin: 10px 0; }

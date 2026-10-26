@@ -255,11 +255,26 @@
     // Any step, any order: the plan is only a suggestion.
     $("steps").onclick = async (e) => {
       const b = e.target.closest("[data-open]");
-      if (!b) return;
-      b.disabled = true;
-      planStatus("Chip is getting that function ready…");
+      if (!b || $("steps").classList.contains("opening")) return;
+      // Writing a function's card can take a few seconds: show it on the row that was clicked, and by Chip.
+      const note = b.querySelector(".muted"), was = note.textContent, row = b.closest("li");
+      $("steps").classList.add("opening");
+      row.classList.add("loading");
+      note.innerHTML = `<span class="spin" aria-hidden="true"></span> Getting it ready. Chip is writing its checks…`;
+      say(`Getting ${b.querySelector("b").textContent.replace(/^Write /, "")} ready for you…`);
+      Chip.mood(chip, "busy");
       const s = await api("POST", "api/open", { key: b.dataset.open });
-      if (s.error) { b.disabled = false; planStatus(s.error); if (s.skipped) { plan = await api("GET", "api/plan"); render(); } return; }
+      chip.classList.remove("busy");
+      if (s.error) {
+        $("steps").classList.remove("opening");
+        row.classList.remove("loading");
+        note.textContent = was;
+        say(s.error);
+        planStatus(s.error);
+        if (s.skipped) { plan = await api("GET", "api/plan"); render(); }
+        return;
+      }
+      note.textContent = "Ready. Opening it…";
       location.href = "learn";
     };
 
