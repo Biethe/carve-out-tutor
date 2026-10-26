@@ -137,7 +137,7 @@
           $("next-actions").innerHTML = `<button class="btn primary lg" data-act="tried">I’ve tried it ${ARROW}</button>`;
           say("Take a few minutes in there. Come back when you’re done.");
         } else {
-          $("next-actions").innerHTML = `<button class="btn primary lg" data-act="open-try">Open ${app} ${ARROW}</button><button class="btn ghost lg" data-act="tried">Skip for now</button>`;
+          $("next-actions").innerHTML = `<button class="btn primary lg" data-act="open-try">Open ${app} ${ARROW}</button><button class="btn ghost lg" data-act="tried">Skip for now</button><button class="btn ghost lg" data-act="choose">Choose a function</button>`;
           say(`You’re all set. First, have a play with ${info.builtin ? "the store" : "your app"}.`);
         }
       } else if (now?.fn) {
@@ -145,7 +145,8 @@
         $("next-title").textContent = now.title;
         $("next-text").textContent = now.text;
         const going = now.fn.status === "in_progress";
-        $("next-actions").innerHTML = `<button class="btn primary lg" data-act="write">${going ? "Continue writing" : "Start writing"} ${ARROW}</button>`;
+        $("next-actions").innerHTML = `<button class="btn primary lg" data-act="write">${going ? "Continue writing" : "Start writing"} ${ARROW}</button>`
+          + `<button class="btn ghost lg" data-act="choose">Choose another function</button>`;
         const prev = list[i - 1];
         say(going ? `Welcome back. You were writing ${now.fn.name}.`
           : !writing.some((s) => s.done) ? `Now the fun part. Your first function is ${now.fn.name}.`
@@ -184,6 +185,14 @@
         const body = `<span><b>${esc(s.title)}</b><span class="muted">${esc(s.fn ? s.fn.file : s.text)}</span></span>`;
         return `<li class="${st}"><span class="pi">${st === "done" ? CHECK : ""}</span>${s.fn ? `<button class="step-open" data-open="${esc(s.key)}">${body}</button>` : body}</li>`;
       }).join("");
+      // Every other function too: any of them can be opened, whatever the plan says.
+      const inPlan = new Set(list.map((s) => s.key));
+      const others = plan.functions.filter((f) => !inPlan.has(f.key) && !f.blocked);
+      if (others.length) {
+        $("steps").innerHTML += `<li class="steps-more"><b>Not in your plan</b><span class="muted">Open any of these to write it, in any order.</span></li>`
+          + others.map((f) => `<li class="${f.status === "passed" ? "done" : "next"}"><span class="pi">${f.status === "passed" ? CHECK : ""}</span>`
+            + `<button class="step-open" data-open="${esc(f.key)}"><span><b>${esc(f.name)}</b><span class="muted">${esc(f.file)}${f.reason ? " · " + esc(f.reason) : ""}</span></span></button></li>`).join("");
+      }
 
       const passed = plan.functions.filter((f) => f.status === "passed").length, total = plan.functions.length;
       document.querySelector(".own-n").textContent = passed;
@@ -250,7 +259,7 @@
       b.disabled = true;
       planStatus("Chip is getting that function ready…");
       const s = await api("POST", "api/open", { key: b.dataset.open });
-      if (s.error) { b.disabled = false; return planStatus(s.error); }
+      if (s.error) { b.disabled = false; planStatus(s.error); if (s.skipped) { plan = await api("GET", "api/plan"); render(); } return; }
       location.href = "learn";
     };
 
@@ -262,6 +271,7 @@
       if (act === "open-try") { runProject($("next-status")); opened = true; render(); }
       if (act === "tried") { local("tried:" + info.name, "1"); opened = false; render(); }
       if (act === "run") runProject($("next-status"));
+      if (act === "choose") { togglePlan(true); $("steps").scrollIntoView({ behavior: "smooth", block: "start" }); say("Pick any function. My order is only a suggestion."); return; }
       if (act === "plan") { togglePlan(true); $("edit").open = true; $("edit").scrollIntoView({ behavior: "smooth", block: "start" }); }
       if (act === "write") {
         const label = b.firstChild.textContent;
@@ -270,6 +280,12 @@
         Chip.mood(chip, "busy");
         const s = await api("POST", "api/open", { key: current(steps()).key });  // exactly the function the card names
         chip.classList.remove("busy");
+        if (s.error && s.skipped) {  // that one keeps the original: show the next function, and say why
+          plan = await api("GET", "api/plan");
+          render();
+          $("next-status").textContent = `${s.error} Here’s the next one, or choose another function.`;
+          return;
+        }
         if (s.error) { $("next-status").textContent = s.error; b.disabled = false; b.firstChild.textContent = label; return; }
         location.href = "learn";
       }

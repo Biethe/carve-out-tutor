@@ -629,3 +629,4 @@ dialog.sheet[open] { animation: sheetIn .55s var(--spring) both; }
 
 .tools { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .tools code { font-weight: 600; }
+.plan .steps-more { display: flex; flex-direction: column; gap: 2px; padding-top: 14px; }
