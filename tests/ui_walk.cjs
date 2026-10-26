@@ -45,7 +45,42 @@ async function boot() {  // the published site, a later visit: Chip waits with y
   await T();
 }
 
-const STEPS = { boot };
+const BEATS = [
+  "Hi, I’m Chip. Let’s build something you actually care about.",
+  "It starts with your idea. Any idea.",
+  "I build the whole app for you, and it already works.",
+  "Inside, it’s made of small pieces of code called functions.",
+  "We take one piece out, and you write it back. I give hints, never answers.",
+  "Your piece goes back in, and the app keeps working on your code.",
+  "Piece by piece, the app you dreamed up becomes yours.",
+];
+async function story() {  // the published site, first visit: the story plays while Python loads
+  await see(page, "#story-say", BEATS[0]);
+  if (!(await page.locator("#story-back").isDisabled())) fail("Back should be off on the first beat");
+  await see(page, "#story-next", "Show me");
+  await shot(page, "story-1");
+  for (let i = 1; i < 7; i++) {
+    await page.click("#story-next");
+    await see(page, "#story-say", BEATS[i]);
+  }
+  await see(page, "#story-next", "What will you build?");
+  await page.click("#story-back");
+  await see(page, "#story-say", BEATS[5]);
+  await page.keyboard.press("ArrowRight");
+  await see(page, "#story-say", BEATS[6]);
+  await shot(page, "story-7");
+  // the status is hidden on phones (as in the prototype), so wait on its words, not on seeing it
+  await page.waitForFunction(() => document.querySelector("#py")?.textContent.includes("Python is ready"), null, { timeout: 180000 });
+  await page.click("#story-next");
+  await T();
+  if ((await page.evaluate(() => localStorage.getItem("seenStory"))) !== "1") fail("the story should be remembered");
+  await page.evaluate(() => localStorage.removeItem("seenStory"));  // Skip works too
+  await page.reload();
+  await page.click("#skip-intro");
+  await T();
+}
+
+const STEPS = { boot, story };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });

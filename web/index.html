@@ -14,6 +14,7 @@
 </head>
 <body>
   <!-- This page owns browser Python. The tutor runs inside it, in the frame, with no server anywhere. -->
+  <div id="intro" class="screen" hidden></div>
   <section id="boot" hidden>
     <header class="top gut"><span class="brand"><span class="chip xs" data-chip></span>Carve-Out</span></header>
     <main class="boot gut screen">
@@ -25,6 +26,7 @@
   </section>
   <iframe id="tutor" title="Carve-Out Tutor" allow="microphone; autoplay" hidden></iframe>
   <script src="../tutor/static/chip.js"></script>
+  <script src="../tutor/static/story.js"></script>
   <script src="python.js"></script>
   <script>
     const frame = document.getElementById("tutor"), boot = document.getElementById("boot");
@@ -48,8 +50,19 @@
       retry.onclick = () => location.reload();
     }
 
-    boot.hidden = false;
-    Python.start().then(open).catch(showFailure);
+    // First visit: the story plays while Python loads. Later visits: Chip waits with you. The tutor opens once both are done.
+    const intro = document.getElementById("intro");
+    let ready = false, told = Story.seen(), failed = null;
+    function next() {
+      if (!told) return;
+      intro.hidden = true;
+      if (ready) return open();
+      boot.hidden = false;
+      if (failed) showFailure(failed);
+    }
+    if (told) next(); else Story.play(intro, { python: true, onDone() { told = true; next(); } });
+    Python.start().then(() => { ready = true; Story.python("ready"); next(); })
+      .catch((err) => { failed = err; Story.python("failed"); next(); });
   </script>
 </body>
 </html>
