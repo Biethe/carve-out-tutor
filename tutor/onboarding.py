@@ -39,6 +39,8 @@ def profile(answers: list[tuple[str, bool]]) -> dict:
     level = "advanced" if len(yes) == 3 and hard_path else "intermediate" if len(yes) >= 2 else "beginner"
     summary = (f"Has done: {', '.join(yes).lower()}. " if yes else "New to coding. ") + \
               (f"New to: {', '.join(no).lower()}." if no else "")
+    if not answers:  # they skipped the questions
+        summary = "Skipped the first questions."
     return {"done": True, "pending": None, "level": level, "summary": summary.strip(),
             "interview": [{"q": QUESTIONS[q][0], "a": "Yes" if said else "No"} for q, said in answers],
             "claims": [{"skill": s, "said": "Yes", "status": "claimed"} for s in yes], "gaps": no, "wants": []}
@@ -49,5 +51,7 @@ if __name__ == "__main__":
     assert p["level"] == "intermediate" and [c["skill"] for c in p["claims"]] == ["Writing Python functions", "Saving data in a database"]
     assert p["gaps"] == ["Web apps with a login"] and profile([("python", False), ("web_easy", False), ("data_easy", False)])["level"] == "beginner"
     assert profile([("python", True), ("web_hard", True), ("data_hard", True)])["level"] == "advanced"
+    skipped = profile([])
+    assert skipped["done"] and skipped["level"] == "beginner" and skipped["summary"] == "Skipped the first questions." and not skipped["claims"]
     assert sum(len(t) for t in LINES.values()) < 600, "keep all the lines within one day's free voice allowance"
     print("onboarding ok,", sum(len(t) for t in LINES.values()), "characters to record")

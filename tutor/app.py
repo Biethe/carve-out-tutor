@@ -340,7 +340,7 @@ def onboarding_tree():
 @app.post("/api/onboarding")
 def finish_onboarding(answers: list[tuple[str, bool]] = Body(embed=True)):
     """Builds the profile straight from the answers: no AI, no key."""
-    if [q for q, _ in answers][:1] != ["python"] or not all(q in onboarding.QUESTIONS for q, _ in answers):
+    if (answers and answers[0][0] != "python") or not all(q in onboarding.QUESTIONS for q, _ in answers):  # [] = skipped
         return {"error": "Those answers don't match the questions."}
     profile = {**onboarding.profile(answers), "limit": len(answers)}
     progress.save_profile(profile)

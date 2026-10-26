@@ -3,266 +3,263 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Get to know you | Carve-Out Tutor</title>
-  <script src="/static/theme.js"></script>
-  <script src="/static/settings.js"></script>
+  <title>Getting to know you | Carve-Out Tutor</title>
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
-  <link rel="stylesheet" href="/static/old.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="top">
-    <a class="brand" href="/" aria-label="Carve-Out tutor"><span class="brand-word">Carve</span><span class="brand-piece"><i class="ph-bold ph-scissors" aria-hidden="true"></i>out</span><span class="brand-hand">tutor</span></a>
-    <span class="top-spacer"></span>
-    <div class="theme-switch" role="radiogroup" aria-label="Theme">
-      <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="night" title="Blueprint" aria-label="Blueprint theme"><i class="ph-bold ph-ruler" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
-    </div>
+  <header class="top gut">
+    <a class="brand" href="/"><span class="chip xs" data-chip></span>Carve-Out</a>
+    <div class="top-right"><button class="navb" data-open-settings>Settings</button></div>
   </header>
 
-  <main class="interview">
-    <!-- 1. Chip says hello: a few seconds, no text to read. -->
-    <section id="intro" hidden>
-      <div class="stage">
-        <span class="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
-        <span class="wave" id="intro-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-      </div>
-      <h1 class="meet-title">Hi, I'm <span class="carved">Chip</span>.</h1>
-      <p class="lead center">Three quick yes-or-no questions, then you start building.</p>
-      <div class="actions center">
-        <button class="btn" id="start"><i class="ph-bold ph-arrow-right" aria-hidden="true"></i> Start</button>
-        <button class="icon-btn" id="hear" title="Hear Chip" aria-label="Hear Chip again"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i></button>
-      </div>
-      <p class="muted small center" id="voice-note"></p>
-    </section>
-
-    <!-- 2. The questions: Chip asks out loud, you say or click yes or no. -->
-    <section id="chat" hidden>
-      <p class="step-count center" id="count"></p>
-      <div class="stage" id="stage">
-        <span class="avatar" aria-hidden="true"><i class="ph-bold ph-scissors"></i></span>
-        <span class="wave" id="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-        <span class="avatar you" aria-hidden="true"><i class="ph-bold ph-user"></i></span>
-      </div>
-      <p class="turn" id="turn" role="status"></p>
-      <div class="card ask" id="typed" hidden>
-        <p class="feedback" id="feedback"></p>
-        <p id="question"></p>
-      </div>
-      <div class="yesno">
-        <button class="btn" data-answer="Yes">Yes</button>
-        <button class="btn secondary" data-answer="No">No</button>
-      </div>
-      <div class="actions center">
-        <button class="link" id="to-read">Show the question</button>
-        <button class="link" id="to-talk" hidden>Talk instead</button>
-      </div>
-      <p class="status center" id="status" role="status"></p>
-    </section>
-
-    <!-- 3. The profile it made -->
-    <section id="profile" hidden>
-      <p class="hero-note"><i class="ph-bold ph-scissors" aria-hidden="true"></i>your profile</p>
-      <h1 id="p-level"></h1>
-      <p class="lead" id="p-summary"></p>
-      <h2>What you said you can do</h2>
-      <p class="muted small">These are claims for now. As you work, the tutor will sometimes ask you to rebuild one of them, and mark it shown. Remove anything that isn't right.</p>
-      <ul class="claims" id="p-claims"></ul>
-      <h2>New to you</h2>
-      <p class="muted small">Good candidates for the parts you rebuild first.</p>
-      <ul class="claims" id="p-gaps"></ul>
-      <h2>What you want to get better at</h2>
-      <ul class="claims" id="p-wants"></ul>
-      <div class="actions">
-        <a class="btn" href="/">Back to projects <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></a>
-        <button class="btn secondary" id="more"><i class="ph-bold ph-plus" aria-hidden="true"></i> Improve my profile</button>
-        <button class="link" id="redo">Start over</button>
-      </div>
-    </section>
+  <!-- Three questions, one at a time. Chip asks out loud and listens for yes or no; the words are always on screen. -->
+  <main class="quiz gut screen" id="quiz" hidden>
+    <span class="build-pill panel" id="build-pill" role="status"><svg class="ring" width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"></circle><circle class="val" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="0" transform="rotate(-90 9 9)"></circle></svg><span id="build-text"></span></span>
+    <div class="qtop"><span id="q-count"></span><span class="qdots" id="q-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <span class="chip lg" id="q-chip" data-chip></span>
+    <p class="q-react" id="q-react" aria-live="polite"></p>
+    <h1 class="q-text" id="q-text"></h1>
+    <p class="q-why" id="q-why">So I know where to start you.</p>
+    <div class="q-yn"><button class="btn primary xl" id="q-yes" data-answer="Yes">Yes</button><button class="btn xl" id="q-no" data-answer="No">No</button></div>
+    <button class="link" id="q-skip">Skip these questions</button>
+    <div class="row q-voice">
+      <button class="icon-btn" id="sound" aria-pressed="true" aria-label="Chip’s voice" title="Chip’s voice"><i class="ph-bold ph-speaker-high" aria-hidden="true"></i></button>
+      <p class="status" id="q-status" role="status"></p>
+    </div>
   </main>
 
+  <!-- The profile the answers made. -->
+  <main class="profile gut screen" id="profile" hidden>
+    <h1 id="p-level"></h1>
+    <p class="lead" id="p-summary"></p>
+    <h2>What you said you can do</h2>
+    <p class="muted small">These are claims for now. As you work, Chip will sometimes ask you to rebuild one of them, and mark it shown. Remove anything that isn’t right.</p>
+    <ul class="claims panel" id="p-claims"></ul>
+    <h2>New to you</h2>
+    <p class="muted small">Good candidates for the parts you rebuild first.</p>
+    <ul class="claims panel" id="p-gaps"></ul>
+    <h2>What you want to get better at</h2>
+    <ul class="claims panel" id="p-wants"></ul>
+    <div class="row p-actions">
+      <a class="btn primary" id="home" href="/project">Back home <i class="ph-bold ph-arrow-right go" aria-hidden="true"></i></a>
+      <button class="btn" id="more">Improve my profile</button>
+      <button class="link" id="redo">Start over</button>
+    </div>
+  </main>
+
+  <script src="/static/chip.js"></script>
+  <script src="/static/settings.js"></script>
   <script src="/static/voice.js"></script>
   <script>
-    const $ = id => document.getElementById(id);
+    const $ = (id) => document.getElementById(id);
     const api = (method, url, body) =>
-      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then(r => r.json());
-    const esc = t => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
-    const show = id => ["intro", "chat", "profile"].forEach(s => ($(s).hidden = s !== id));
-    let profile;
+      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then((r) => r.json());
+    const esc = (t) => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
+    const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const show = (id) => ["quiz", "profile"].forEach((s) => ($(s).hidden = s !== id));
+    const chip = $("q-chip");
+    let profile, name = "Your project";
 
-    $("voice-note").textContent = Voice.canListen ? "Answer out loud or with the buttons." : "Answer with the buttons.";
-
-    // The wave shows whose turn it is: "chip" (Chip talking), "you" (listening to you), "thinking", or still.
-    function turn(who, label = "") {
-      for (const w of [$("wave"), $("intro-wave")]) w.dataset.who = who;
-      $("turn").textContent = label;
-    }
-
-    // ---- Talking or reading -----------------------------------------------------
+    // ---- Voice ------------------------------------------------------------------
     // Two kinds of questions: onboarding's three, from a fixed tree with every line recorded in Chip's voice
     // (no AI, no key), and "Improve my profile", where the AI picks the questions.
-    let talking = true, mode = "onboarding", tree = null, asking = null, answers = [], last = null, clip = null;
-    const yes = said => /\b(yes|yeah|yep|yup|sure|of course|i have|i did|correct|definitely)\b/i.test(said);
-    const no = said => /\b(no|nope|nah|not yet|never|haven't|have not|didn't)\b/i.test(said);
-
-    function useTalking(on) {
-      talking = on;
-      $("typed").hidden = talking;
-      $("to-read").hidden = !talking;
-      $("to-talk").hidden = talking;
-      if (!talking) { Voice.stopListening(); Voice.stopSpeaking(); clip?.pause(); turn(""); }
-      else if (mode === "onboarding" && asking) say(asking);
-      else if (last) converse();
-    }
-    $("to-read").onclick = () => useTalking(false);
-    $("to-talk").onclick = () => useTalking(true);
-    const answerButtons = on => document.querySelectorAll("[data-answer]").forEach(b => (b.disabled = !on));
+    // Browsers block sound until the first click on a page, so Chip only talks after the learner's first answer.
+    let sound = true, unlocked = false, mode = "onboarding", tree = null, asking = null, answers = [], last = null, clip = null;
+    const voiceOn = () => sound && unlocked;
+    const yes = (said) => /\b(yes|yeah|yep|yup|sure|of course|i have|i did|correct|definitely)\b/i.test(said);
+    const no = (said) => /\b(no|nope|nah|not yet|never|haven't|have not|didn't)\b/i.test(said);
+    const status = (text) => ($("q-status").textContent = text);
+    const answerButtons = (on) => document.querySelectorAll("[data-answer]").forEach((b) => (b.disabled = !on));
 
     // A recorded line in Chip's voice. A line with no clip yet stays silent: the words are on screen, never another voice.
     function playLine(id) {
-      if (!tree?.recorded.includes(id)) return Promise.resolve();
-      return new Promise(done => {
+      if (!voiceOn() || !tree?.recorded.includes(id)) return Promise.resolve();
+      return new Promise((done) => {
         clip?.pause();
         clip = new Audio(`static/voice/${id}.wav`);
-        clip.onended = clip.onerror = done;
-        clip.play().catch(done);
+        chip.classList.add("talk");
+        clip.onended = clip.onerror = () => { chip.classList.remove("talk"); done(); };
+        clip.play().catch(() => { chip.classList.remove("talk"); done(); });
       });
     }
 
-    // ---- Onboarding: three yes/no questions --------------------------------------------
+    function setSound(on) {
+      sound = on;
+      $("sound").setAttribute("aria-pressed", on);
+      $("sound").firstElementChild.className = "ph-bold " + (on ? "ph-speaker-high" : "ph-speaker-slash");
+      if (!on) { Voice.stopListening(); Voice.stopSpeaking(); clip?.pause(); chip.classList.remove("talk"); status(""); return; }
+      unlocked = true;
+      if (mode === "onboarding" && asking) playLine(asking).then(() => asking && listenFor(asking, true));
+      else if (last) converse();
+    }
+    $("sound").onclick = () => setSound(!sound);
+
+    // ---- Onboarding: three yes/no questions -------------------------------------------
+    function showQuestion(text, animate) {
+      const q = $("q-text");
+      if (!animate || RM) { q.textContent = text; return; }
+      q.classList.add("out");
+      setTimeout(() => {
+        q.classList.remove("out");
+        q.classList.add("pre");
+        q.textContent = text;
+        void q.offsetWidth;
+        q.classList.remove("pre");
+      }, 260);
+    }
+    function dots(n) { document.querySelectorAll("#q-dots i").forEach((d, i) => { d.classList.toggle("done", i < n); d.classList.toggle("on", i === n); }); }
+
     async function ask(qid, reaction = "") {
       asking = qid;
-      $("count").textContent = `Question ${answers.length + 1} of 3`;
-      $("feedback").textContent = reaction && tree.lines[reaction];
-      $("question").textContent = tree.questions[qid];
-      if (!talking) return;
-      turn("chip", "Chip");
+      $("q-count").textContent = `Question ${answers.length + 1} of 3`;
+      dots(answers.length);
+      if (reaction) Chip.say($("q-react"), { yes: "Nice.", no: "No problem at all." }[reaction], chip);
+      showQuestion(tree.questions[qid], Boolean(reaction));
+      if (!voiceOn()) return;
       if (reaction) await playLine(reaction);
       await playLine(qid);
-      if (asking !== qid || !talking) return;
-      listenFor(qid, true);
+      if (asking === qid && voiceOn()) listenFor(qid, true);
     }
 
     async function listenFor(qid, retry) {
-      if (!Voice.canListen) return turn("", "Yes or no?");
-      turn("you", "Yes or no?");
+      if (!Voice.canListen) return;
+      status("Listening. Say yes or no.");
       const said = await Voice.listen();
-      if (asking !== qid || !talking) return;
+      if (asking !== qid || !voiceOn()) return;
+      status("");
       if (yes(said) || no(said)) return answer(yes(said));
-      if (!retry) return turn("", "Click Yes or No");
-      turn("chip", "Chip");
-      await playLine("again");  // "Sorry, was that a yes, or a no?"
+      if (!retry) return status("Click Yes or No.");
+      status("Sorry, was that a yes or a no?");
+      await playLine("again");
       listenFor(qid, false);
     }
 
     async function answer(said) {
+      unlocked = true;
       if (mode !== "onboarding") return aiNext(said ? "Yes" : "No");
       Voice.stopListening();
+      status("");
       answers.push([asking, said]);
+      Chip.mood(chip, "happy", 1100);
       const following = tree.next[asking]?.[said ? 0 : 1];
       if (following) return ask(following, said ? "yes" : "no");
-      // Done: the profile comes straight from the answers. Chip's last line, then the projects.
+      // Done: the profile comes straight from the answers. Chip's last line, then home.
       asking = null;
       answerButtons(false);
-      document.querySelector(".yesno").hidden = true;
-      $("feedback").textContent = "";
-      $("question").textContent = tree.lines.closing;
+      dots(3);
+      document.querySelectorAll("#q-dots i").forEach((d) => d.classList.remove("on"));
+      Chip.mood(chip, "jump", 750);
+      Chip.say($("q-react"), "That’s all I need.", chip);
       await api("POST", "api/onboarding", { answers });
-      if (talking) { turn("chip", "Chip"); await playLine("closing"); }
-      else await new Promise(r => setTimeout(r, 900));
-      location.href = "/";
+      await Promise.all([playLine("closing"), new Promise((r) => setTimeout(r, RM ? 300 : 1500))]);
+      location.href = "project";
     }
-    document.querySelectorAll("[data-answer]").forEach(b => (b.onclick = () => answer(b.dataset.answer === "Yes")));
+    document.querySelectorAll("[data-answer]").forEach((b) => {
+      b.onclick = () => answer(b.dataset.answer === "Yes");
+      for (const [ev, target] of [["pointerenter", b], ["focus", b], ["pointerleave", null], ["blur", null]]) b.addEventListener(ev, () => Chip.lookAt(chip, target));
+    });
+    $("q-skip").onclick = async () => {
+      Voice.stopListening();
+      await api("POST", "api/onboarding", { answers: [] });
+      location.href = "project";
+    };
 
     // ---- Improve my profile: the AI asks a few more ------------------------------------------
     async function aiNext(reply = "") {
       Voice.stopListening();
       answerButtons(false);
-      turn("thinking", "Chip is thinking…");
+      chip.classList.add("think");
+      status("Chip is thinking…");
       const res = await api("POST", "api/interview", { answer: reply });
+      chip.classList.remove("think");
       answerButtons(true);
-      turn("");
+      status("");
       if (res.error) {
-        $("status").innerHTML = res.no_key
-          ? `Improving your profile uses the AI: add your key with the <strong>gear</strong> at the top, then <button class="link" id="retry">try again</button>.`
-          : esc(res.error) + ` <button class="link" id="retry">Try again</button>`;
-        $("retry").onclick = () => { $("status").textContent = ""; aiNext(reply); };
+        $("q-status").innerHTML = (res.no_key ? "Improving your profile uses the AI. Add your key in Settings, then try again." : esc(res.error))
+          + ` <button class="link" id="retry">Try again</button>`;
+        $("retry").onclick = () => { status(""); aiNext(reply); };
         return;
       }
       if (res.done) {
-        document.querySelector(".yesno").hidden = true;
-        $("question").textContent = res.closing || "Thanks, that helps.";
-        $("feedback").textContent = "";
-        if (talking) await Voice.speak(res.closing, () => turn("chip"));
+        document.querySelector(".q-yn").hidden = true;
+        showQuestion(res.closing || "Thanks, that helps.", true);
+        Chip.say($("q-react"), "", chip);
+        if (voiceOn()) await Voice.speak(res.closing, () => chip.classList.add("talk"));
+        chip.classList.remove("talk");
         return showProfile(res.profile);
       }
       last = res;
-      $("count").textContent = `Question ${res.number} of ${res.of}`;
-      $("feedback").textContent = res.feedback || "";
-      $("question").textContent = res.question;
-      if (talking) converse();
+      $("q-count").textContent = `Question ${res.number} of ${res.of}`;
+      Chip.say($("q-react"), res.feedback || "", chip);
+      showQuestion(res.question, true);
+      if (voiceOn()) converse();
     }
 
     async function converse() {
-      turn("thinking");
-      await Voice.speak([last.feedback, last.question].filter(Boolean).join(" "), () => turn("chip", "Chip"));
-      if (!talking || !Voice.canListen) return turn("", "Yes or no?");
-      turn("you", "Yes or no?");
+      chip.classList.add("think");
+      await Voice.speak([last.feedback, last.question].filter(Boolean).join(" "), () => { chip.classList.remove("think"); chip.classList.add("talk"); });
+      chip.classList.remove("think", "talk");
+      if (!voiceOn() || !Voice.canListen) return;
+      status("Listening. Say yes or no.");
       const said = await Voice.listen();
-      if (talking && said) aiNext(said);
-      else turn("", "Click Yes or No");
+      status("");
+      if (voiceOn() && said) aiNext(said);
+      else status("Click Yes or No.");
     }
-
-    // ---- Chip says hello (recorded: instant, no AI call) --------------------------------------
-    async function hello() {
-      turn("chip");
-      await playLine("intro");  // the browser may block sound until a click: the speaker button plays it
-      turn("");
-    }
-    $("hear").onclick = hello;
-    $("start").onclick = () => { clip?.pause(); mode = "onboarding"; answers = []; show("chat"); useTalking(true); ask(tree.first); };
 
     // ---- The profile ------------------------------------------------------------
     function showProfile(p) {
       profile = p;
       show("profile");
-      $("p-level").innerHTML = `You're <span class="carved">${esc(p.level)}</span>.`;
+      $("p-level").textContent = `You’re ${p.level || "just starting"}.`;
       $("p-summary").textContent = p.summary;
-      $("p-claims").innerHTML = p.claims.map((c, i) => `<li><span><strong>${esc(c.skill)}</strong>
-        <span class="muted">“${esc(c.said)}”</span></span>
-        <span class="chip">${c.status === "shown" ? "✓ shown" : "claimed"}</span>
-        <button class="icon-btn" data-claim="${i}" aria-label="Remove this claim"><i class="ph-bold ph-x" aria-hidden="true"></i></button></li>`).join("")
+      const remove = (kind, i) => `<button class="icon-btn" data-${kind}="${i}" aria-label="Remove"><i class="ph-bold ph-x" aria-hidden="true"></i></button>`;
+      $("p-claims").innerHTML = p.claims.map((c, i) => `<li><span><strong>${esc(c.skill)}</strong> <span class="muted">“${esc(c.said)}”</span></span>
+        <span class="tag ${c.status === "shown" ? "good" : ""}">${c.status === "shown" ? "Shown" : "Claimed"}</span>${remove("claim", i)}</li>`).join("")
         || `<li class="muted">Nothing yet.</li>`;
-      const list = (items, kind) => items.map((w, i) => `<li><span>${esc(w)}</span>
-        <button class="icon-btn" data-${kind}="${i}" aria-label="Remove"><i class="ph-bold ph-x" aria-hidden="true"></i></button></li>`).join("")
-        || `<li class="muted">Nothing yet.</li>`;
+      const list = (items, kind) => items.map((w, i) => `<li><span>${esc(w)}</span>${remove(kind, i)}</li>`).join("") || `<li class="muted">Nothing yet.</li>`;
       $("p-gaps").innerHTML = list(p.gaps || [], "gap");
-      $("p-wants").innerHTML = list(p.wants, "want");
+      $("p-wants").innerHTML = list(p.wants || [], "want");
     }
-
-    $("profile").onclick = async e => {
+    $("profile").onclick = async (e) => {
       const b = e.target.closest("[data-claim], [data-gap], [data-want]");
       if (!b) return;
       const [kind, list] = b.dataset.claim ? ["claim", "claims"] : b.dataset.gap ? ["gap", "gaps"] : ["want", "wants"];
       profile[list] = profile[list] || [];
       profile[list].splice(+b.dataset[kind], 1);
-      showProfile(await api("PUT", "api/profile", { claims: profile.claims, gaps: profile.gaps || [], wants: profile.wants }));
+      showProfile(await api("PUT", "api/profile", { claims: profile.claims, gaps: profile.gaps || [], wants: profile.wants || [] }));
     };
-    $("redo").onclick = async () => { await api("POST", "api/interview/restart"); show("intro"); hello(); };
+    function startQuiz() {
+      mode = "onboarding";
+      answers = [];
+      ["build-pill", "q-dots", "q-why"].forEach((id) => ($(id).hidden = false));
+      document.querySelector(".q-yn").hidden = false;
+      answerButtons(true);
+      show("quiz");
+      setTimeout(() => Chip.say($("q-react"), `${name} is ready. Three quick questions first.`, chip), RM ? 0 : 450);
+      ask(tree.first);
+    }
+    $("redo").onclick = async () => { await api("POST", "api/interview/restart"); startQuiz(); };
     // A few more questions on top of the first ones: Chip sees all the earlier answers.
     $("more").onclick = async () => {
       await api("POST", "api/interview/more");
       mode = "ai";
-      document.querySelector(".yesno").hidden = false;
-      show("chat"); useTalking(true); aiNext();
+      unlocked = true;
+      ["build-pill", "q-dots", "q-why"].forEach((id) => ($(id).hidden = true));
+      document.querySelector(".q-yn").hidden = false;
+      $("q-react").textContent = "";
+      show("quiz");
+      aiNext();
     };
 
-    Promise.all([api("GET", "api/onboarding"), api("GET", "api/profile")]).then(([t, p]) => {
+    Promise.all([api("GET", "api/onboarding"), api("GET", "api/profile"), api("GET", "api/project")]).then(([t, p, info]) => {
       tree = t;
-      tree.recorded.forEach(id => Object.assign(new Audio(), { preload: "auto", src: `static/voice/${id}.wav` }));  // instant later
+      name = info.builtin ? "Polyvault" : info.name;
+      $("build-text").textContent = `${name} is ready`;
+      tree.recorded.forEach((id) => Object.assign(new Audio(), { preload: "auto", src: `static/voice/${id}.wav` }));  // instant later
       if (p.done) return showProfile(p);
-      show("intro");
-      hello();  // plays straight away if the browser allows sound; otherwise the speaker button does
+      startQuiz();
     });
   </script>
 </body>

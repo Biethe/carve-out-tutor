@@ -121,7 +121,45 @@ async function choose() {  // the idea box reacts, Polyvault opens, a zip upload
   await t.waitForURL(/\/interview/);  // a new learner answers three questions first
 }
 
-const STEPS = { boot, story, start, choose };
+async function quiz() {  // three yes/no questions after picking Polyvault; the walk answers yes, no, yes
+  const t = await T();
+  await see(t, "#build-text", "Polyvault is ready");
+  await see(t, "#q-react", "Polyvault is ready. Three quick questions first.");
+  await see(t, "#q-count", "Question 1 of 3");
+  await see(t, "#q-text", "Have you written your own Python functions before?");
+  await shot(t, "quiz");
+  await t.click("#sound");  // voice off, so the walk never waits on a microphone
+  await t.click("#q-yes");
+  await see(t, "#q-react", "Nice.");
+  await see(t, "#q-text", "Have you built a web app with a login form?");
+  await t.click("#q-no");
+  await see(t, "#q-react", "No problem at all.");
+  await see(t, "#q-text", "Have you saved data in a database before?");
+  await t.focus("#q-yes");  // the last answer from the keyboard
+  await page.keyboard.press("Enter");
+  await see(t, "#q-react", "That’s all I need.");
+  await t.waitForURL(/\/project/);
+}
+async function skipquiz() {  // the phone walk skips the questions
+  const t = await T();
+  await see(t, "#q-text", "Have you written your own Python functions before?");
+  await shot(t, "quiz");
+  await t.click("#q-skip");
+  await t.waitForURL(/\/project/);
+}
+async function profile() {  // the profile the answers made (after quiz: yes, no, yes)
+  const t = await T();
+  await t.goto(new URL("interview", t.url()).href);
+  await see(t, "#p-level", "You’re intermediate.");
+  await see(t, "#p-claims", "Writing Python functions");
+  await see(t, "#p-claims", "Saving data in a database");
+  await see(t, "#p-gaps", "Web apps with a login");
+  await shot(t, "profile");
+  await t.click("#home");
+  await t.waitForURL(/\/project/);
+}
+
+const STEPS = { boot, story, start, choose, quiz, skipquiz, profile };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });

@@ -295,6 +295,43 @@ h1, h2, h3 { font-family: var(--display); }
   .mine-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ---------- Questions ---------- */
+.quiz { max-width: 760px; margin: 0 auto; padding-block: clamp(8px, 3vh, 36px) 56px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.build-pill { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 10px; border-radius: 20px; font-size: 14px; font-weight: 500; }
+.qtop { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+.qdots { display: flex; gap: 6px; }
+.qdots i { width: 30px; height: 5px; border-radius: 3px; background: rgba(34, 48, 58, .13); transition: background .4s; }
+.qdots i.done { background: var(--accent); }
+.qdots i.on { background: var(--ink); }
+.q-react { min-height: 32px; margin: 0; font: 600 19px var(--display); color: var(--accent-ink); }
+.q-text { max-width: 22ch; margin: 0; font: 600 clamp(26px, 4.2vw, 42px)/1.2 var(--display); letter-spacing: -0.02em; text-wrap: balance; transition: opacity .25s, transform .4s var(--ease); }
+.q-text.out { opacity: 0; transform: translateX(-28px); }
+.q-text.pre { opacity: 0; transform: translateX(28px); transition: none; }
+.q-why { margin: 0; color: var(--muted); }
+.q-yn { display: flex; gap: 14px; margin-top: 10px; }
+.q-voice { justify-content: center; min-height: 40px; }
+.icon-btn { width: 40px; height: 40px; display: inline-grid; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); cursor: pointer; font-size: 17px; }
+.icon-btn:hover { color: var(--ink); }
+.icon-btn[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-line); }
+.voice-notice { position: fixed; left: 50%; bottom: 24px; z-index: 80; max-width: min(520px, calc(100% - 32px)); padding: 12px 16px; border-radius: 14px; background: var(--ink); color: #FFFFFF; font-size: 15px; transform: translateX(-50%); }
+.voice-notice a { color: #FFFFFF; }
+@media (max-width: 760px) {
+  .q-yn .btn.xl { min-width: 120px; }
+}
+
+/* ---------- Profile ---------- */
+.profile { max-width: 760px; margin: 0 auto; padding-block: clamp(8px, 3vh, 36px) 56px; }
+.profile h1 { margin: 8px 0 4px; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em; }
+.profile h2 { margin: 30px 0 4px; font-size: 19px; }
+.profile .lead { margin: 0; font-size: 17px; color: var(--muted); }
+.profile .muted.small { margin: 0 0 10px; }
+.claims { list-style: none; margin: 0; padding: 4px 18px; border-radius: 20px; }
+.claims li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.claims li:last-child { border-bottom: 0; }
+.claims li > span:first-child { flex: 1; min-width: 0; }
+.claims .icon-btn { width: 36px; height: 36px; border-color: transparent; background: none; }
+.p-actions { margin-top: 30px; }
+
 /* ---------- Dialogs: Settings, the map, the win sheet ---------- */
 dialog.sheet { width: min(600px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 28px; border: 0; border-radius: 28px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-xl); }
 dialog.sheet::backdrop { background: rgba(243, 244, 242, .72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
