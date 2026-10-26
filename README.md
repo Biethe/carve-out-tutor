@@ -2,7 +2,7 @@
 
 Understand how a big project works by rebuilding it yourself, one function at a time, while it keeps working.
 
-You know how to write a script or a function, but a real system with hundreds of files is another thing: how the files glue together, how data flows, how it stays secure. Bring the source code of a project you want to understand (a zip from GitHub, for example), or pick a ready one. Carve-Out finds its pieces, and Chip, the tutor, takes one out at a time at your level. You write it back with hints, never the answer. Your piece passes when it behaves exactly like the original, so the project never breaks, and every piece you pass stays yours: a bar shows how much of the project is now your code.
+You know how to write a script or a function, but a real system with hundreds of files is another thing: how the files glue together, how data flows, how it stays secure. Bring the source code of a project you want to understand (paste its GitHub link, or drop a zip), or pick a ready one. Carve-Out finds its pieces, and Chip, the tutor, takes one out at a time at your level. You write it back with hints, never the answer. Your piece passes when it behaves exactly like the original, so the project never breaks, and every piece you pass stays yours: a bar shows how much of the project is now your code.
 
 **Languages:** Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML and CSS. A piece is a function, a SQL table, view or query, a CSS rule, or an HTML section with an id.
 

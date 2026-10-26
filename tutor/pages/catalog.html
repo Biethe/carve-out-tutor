@@ -25,10 +25,15 @@
       <div class="drop panel raised" id="drop">
         <div class="own-project">
           <span class="op-icon"><i class="ph-bold ph-upload-simple" aria-hidden="true"></i></span>
-          <span class="op-text"><b>Bring a project you want to understand</b><span class="muted">A .zip of its source code, from GitHub or your own computer: Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML or CSS.</span></span>
+          <span class="op-text"><b>Bring a project you want to understand</b><span class="muted">Its source code in Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML or CSS.</span></span>
         </div>
         <label class="drop-zone" id="drop-zone" for="zip-in"><input type="file" id="zip-in" class="sr" accept=".zip,application/zip"><b>Drop a .zip here</b><span class="muted">or click to choose one</span></label>
-        <p class="muted small">Only upload projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
+        <form class="gh-row" id="gh-form">
+          <label class="sr" for="gh-url">A GitHub link</label>
+          <input id="gh-url" autocomplete="off" spellcheck="false" placeholder="Or paste a GitHub link">
+          <button class="btn" id="gh-go">Get it</button>
+        </form>
+        <p class="muted small">Only bring projects you trust. Chip checks for harmful code first, but no check catches everything.</p>
         <div id="upload-result" role="status"></div>
       </div>
 
@@ -142,7 +147,10 @@
       Chip.mood(cChip, "busy");
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("api/projects", { method: "POST", body: form }).then((r) => r.json()).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." }));
+      added(await fetch("api/projects", { method: "POST", body: form }).then((r) => r.json()).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." })));
+    }
+    async function added(res) {  // after an upload or a GitHub link: the check's verdict, then the project's card
+      const out = $("upload-result");
       cChip.classList.remove("busy");
       if (res.error) { out.innerHTML = `<p class="bad">${esc(res.error)}</p>`; return; }
       out.innerHTML = res.blocked
@@ -150,6 +158,18 @@
         : `<p class="good"><strong>${esc(res.name)}</strong> is ready. ${esc(Compat.verdict(res.compat))}</p>`;
       showUploads(await fetch("api/projects").then((r) => r.json()).catch(() => ({ projects: [] })));
     }
+    $("gh-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = $("gh-url").value.trim();
+      if (!url) return;
+      const repo = (url.match(/github\.com[/:]([\w.-]+\/[\w.-]+)/) || [])[1] || url;
+      $("upload-result").innerHTML = `<p class="muted">Fetching ${esc(repo)} from GitHub and checking it…</p>`;
+      Chip.mood(cChip, "busy");
+      $("gh-go").disabled = true;
+      await added(await fetch("api/projects/github", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) })
+        .then((r) => r.json()).catch(() => ({ error: "The tutor couldn’t be reached. Try again in a moment." })));
+      $("gh-go").disabled = false;
+    });
     $("zip-in").onchange = (e) => { upload(e.target.files[0]); e.target.value = ""; };
     const zone = $("drop-zone");
     zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("over"); });

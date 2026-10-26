@@ -476,7 +476,20 @@ def list_projects():
 @app.post("/api/projects")
 async def upload_project(file: UploadFile = File(...)):
     """Unpack a zip, then check it for harmful code before anything else can happen with it."""
-    name, problem = projects.unpack(file.filename or "project.zip", await file.read())
+    return await _add_project(file.filename or "project.zip", await file.read())
+
+
+@app.post("/api/projects/github")
+async def github_project(url: str = Body(embed=True)):
+    """A public GitHub project from its link: fetched file by file, then treated exactly like an uploaded zip."""
+    data, filename = await projects.from_github(url)
+    if data is None:
+        return {"error": filename}
+    return await _add_project(filename, data)
+
+
+async def _add_project(filename: str, data: bytes) -> dict:
+    name, problem = projects.unpack(filename, data)
     if problem:
         return {"error": problem}
     result = await safety.check(name, projects.UPLOADS / name)

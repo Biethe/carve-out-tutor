@@ -54,6 +54,63 @@ def unpack(filename: str, data: bytes) -> tuple[str | None, str | None]:
     return name, None
 
 
+GITHUB = re.compile(r"github\.com[/:]([\w.-]+)/([\w.-]+?)(?:\.git)?(?:/tree/([^?#]+?))?/?(?:[?#].*)?$")
+FETCH_FILES = 600  # files fetched one by one from GitHub: enough for a big project, quick enough to wait for
+
+
+async def _get(url: str) -> bytes:
+    """GET a URL. In the browser this is the page's fetch: GitHub's API and raw files allow it (its zips don't)."""
+    import sys
+    if sys.platform == "emscripten":
+        from pyodide.http import pyfetch
+        reply = await pyfetch(url)
+        if not reply.ok:
+            raise RuntimeError(str(reply.status))
+        return await reply.bytes()
+    import asyncio
+    import urllib.error
+    import urllib.request
+
+    def get():
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "carve-out-tutor"}), timeout=30) as r:
+                return r.read()
+        except urllib.error.HTTPError as err:
+            raise RuntimeError(str(err.code)) from None
+    return await asyncio.to_thread(get)
+
+
+async def from_github(url: str) -> tuple[bytes | None, str]:
+    """A public GitHub repository as zip bytes, fetched file by file, so it goes through the same checks as an
+    upload. Returns (zip, its file name) or (None, why not)."""
+    import asyncio
+    found = GITHUB.search(url.strip())
+    if not found:
+        return None, "That doesn't look like a GitHub project link. It should look like github.com/owner/project."
+    owner, repo, ref = found[1], found[2], found[3] or "HEAD"
+    try:
+        tree = json.loads(await _get(f"https://api.github.com/repos/{owner}/{repo}/git/trees/{ref}?recursive=1"))
+    except Exception as err:
+        return None, ("GitHub says that project doesn't exist, or it's private." if "404" in str(err) or "422" in str(err)
+                      else "GitHub is limiting requests from this network right now (60 an hour). Try again later, or download the zip and drop it here."
+                      if "403" in str(err) or "429" in str(err) else "GitHub couldn't be reached. Check your connection.")
+    blobs = [t for t in tree.get("tree", []) if t["type"] == "blob" and not JUNK & set(Path(t["path"]).parts)
+             and t.get("size", 0) < 1_000_000]
+    if tree.get("truncated") or len(blobs) > FETCH_FILES or sum(t.get("size", 0) for t in blobs) > MAX_BYTES:
+        return None, (f"That project is too big to fetch here (over {FETCH_FILES} files). Download its zip from GitHub "
+                      "(Code, then Download ZIP) and drop it here instead.")
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        for start in range(0, len(blobs), 24):  # a few at a time: quick, and kind to GitHub
+            batch = blobs[start:start + 24]
+            datas = await asyncio.gather(*(_get(f"https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{t['path']}") for t in batch),
+                                         return_exceptions=True)
+            for t, data in zip(batch, datas):
+                if isinstance(data, bytes):
+                    z.writestr(f"{repo}/{t['path']}", data)
+    return out.getvalue(), f"{repo}.zip"
+
+
 def kind(root: Path) -> dict:
     """How the project runs: {"kind": "asgi"/"wsgi", "module", "var"}, {"kind": "static", "folder"}, or {"kind": "tests"}."""
     for path in pieces.python_files(root):
