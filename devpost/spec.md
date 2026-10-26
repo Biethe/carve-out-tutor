@@ -89,6 +89,15 @@ This replaces **Stack** and **Where It Runs** above for the hosted product. The 
 - **Storage:** IndexedDB for the profile, settings, uploaded projects, drafts and progress. **JSZip** from cdnjs reads uploaded zips and builds downloads.
 - **Code from uploads:** It runs inside the browser's sandbox, not on anyone's computer, and the page has no secrets but the learner's own key. Uploaded web apps run on the tutor's own address, so a malicious upload could read that key from the page. The settings page says to upload only projects you trust.
 
+## Other Languages (added in the final review, 2026-10-26)
+
+- **`tutor/langs.py`** finds pieces without a parser per language: strings and comments are blanked out (same length), then brackets are counted. A `{` whose text before it ends in a name and a parameter list (with what each language allows after it: a TypeScript return type, Java `throws`, C++ `const` or an initializer list, Rust `fn`) starts a function; functions inside functions aren't pieces. CSS rules (also inside `@media`), HTML elements with an id, and SQL statements split on `;` work the same way. A piece starts on its name's line, so return types, annotations and `#include`s above it stay outside.
+- **Checks:** for JavaScript, TypeScript, Java, C, C++ and Rust, the learner's AI writes a check program (`llm.card_other`) that prints `label: value` lines. It's added to the end of the same file (C and C++ get a `carve_check()` and the file's `main` renamed; Rust's `main` is renamed; Java gets a separate `CarveCheck` class in the same package). Each check compares the learner's lines with the original's; the original's output is computed once per check program. SQL runs every `.sql` file (schema first, then data, then the rest) on an in-memory SQLite database; CSS and HTML are compared directly. No new dependency in Python.
+- **Running:** in the browser, JavaScript and TypeScript run in a throwaway module worker (`web/python.js`, `runJs`): the project's files become blob modules with their imports rewritten, bare imports come from jsDelivr's `+esm`, TypeScript is translated by the TypeScript compiler (5.6.3, loaded only when needed), and a 15 s limit ends the worker. Locally: Node (TypeScript through Node's type stripping, or `tsx` from npx), `gcc`/`g++`, `javac`/`java`, `rustc`. Java, C, C++ and Rust are "Local only" in the browser, through the same mechanism as Python libraries that can't run there.
+- **The map** (`overview.other_system`) is drawn from names, not imports: calls between files, pages loading scripts and styles, ids and classes shared by HTML, CSS and JavaScript, SQL reading tables.
+- **Ready projects** are zips in `tutor/static/examples/`, uploaded through the normal upload path the first time they're opened. The Tiny compiler is jamiebuilds/the-super-tiny-compiler (CC BY 4.0, license kept in the zip).
+- **Keys** like `piece.function` are split with `pieces.split_key`, because file keys (`src.cart.js`) and CSS selectors contain dots.
+
 ## Look and Feel
 
 - **Polyvault (the practice store), redesigned in the final review:** a studio showcase for real 3D. CC0 renders from Poly Haven, Instrument Serif, Geist and Geist Mono, warm stone neutrals with grain, one ember accent, and every model on a spotlit backdrop. Its own identity, separate from the tutor's notebook look.
@@ -290,6 +299,7 @@ Everything else is a Python package installed locally (see **Stack**).
 **One useful unknown:** When asked which part of the carve/test/swap approach felt least certain, you said it all worked for you. No genuine uncertainty was identified, so none is recorded here.
 
 **Still open**
+- **Compiled languages in the browser (2026-10-26):** Java, C, C++ and Rust only run in the local tutor. Running them on the published site needs either an online compile service, which would receive the learner's uploaded code, or WebAssembly compilers loaded into the page. That's the learner's decision.
 - **Round pieces:** Authentication, then cart behavior, carried over from `prd.md > Open Questions`. You can still swap them. The design works for any piece that lives in its own file.
 - **Groq free-tier limits and model ID:** check in build step 1.
 - **Asset pictures:** generated, labeled placeholders by default. Swap in CC0 images if you want a more Sketchfab-like feel.

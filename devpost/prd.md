@@ -161,6 +161,16 @@ Source: `scope.md > The POC Boundary`.
 - **Spot checks:** Now and then the tutor carves a function the learner said they already know. The result is saved next to that claim (shown, or not yet shown).
 - **Saved in the browser:** Profile, projects, drafts and progress survive closing the tab. Clearing browser data loses them, which the page says next to the Download button.
 
+## Any Language, Checked Against the Original (added in the final review, 2026-10-26)
+
+- **The front door tells the real idea:** The first-visit story is about understanding a big project you have the source of: "You have its source code. Hundreds of files. Where do you even start?" Chip's voice says each line. The next screen asks "Which project do you want to understand?", with uploading first, then four ready projects (Polyvault in Python, the Tiny compiler in JavaScript, a Todo page in HTML, CSS and JavaScript, a Shop database in SQL), and "Only have an idea?" as a coming-soon line.
+- **Languages:** Uploads can be Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML or CSS, mixed in one project. The upload card names the project's languages.
+- **Pieces:** A function or method (any language), a SQL table, view, index or query, a CSS rule, or an HTML section with an id. Pieces that are empty in the original are left out, since an empty start would already match them.
+- **Checking a piece:** The original is the reference, so the project keeps working exactly as before. For code, the learner's AI writes a short check program that calls the function and prints one line per check; it's kept only if it runs on the original and an empty start fails it. The learner's version passes when every line matches. SQL is run on SQLite and compared (columns, types, keys, rows, query results). CSS compares the declarations, HTML the elements, attributes and text. The lines become the "It passes when" goals.
+- **Where it runs:** Python, JavaScript, TypeScript, SQL, HTML and CSS in the browser. Java, C, C++ and Rust in the local tutor, with their compilers installed; in the browser their pieces are "Local only", with the reason.
+- **The map:** For any language, a box per file and arrows for what travels between files: calls found by name, a page loading its scripts and styles, styles and scripts reaching the page's ids and classes, SQL reading tables.
+- **Open my app:** A web page project (HTML, CSS, JavaScript) runs in the page with the learner's passed pieces inside.
+
 ## What We're Building
 - **Tutor screens:** The home/catalog page (one project plus a coming-soon card), the project page, and the learning workspace.
 - **The store:** The 3D asset store with log-in, browsing, cart, fake checkout, on-page download links and a profile, opened in a separate tab by **Run project**.
@@ -179,7 +189,7 @@ Source: `scope.md > The POC Boundary`.
 - **A bigger catalog:** About ten different kinds of web projects to choose from.
 - **Bring your own idea, for real:** A Devpost-style interview, then the AI builds the project and carves it.
 - **Many more rounds:** Until 40% or more of the project, and eventually the whole core, is the learner's.
-- **More:** Games, mobile apps in a phone-sized preview, other languages and an in-browser terminal.
+- **More:** Games, mobile apps in a phone-sized preview, compiled languages in the browser (an online compiler or WebAssembly toolchains), JavaScript that needs a page checked in one, and an in-browser terminal.
 - **Accounts and saved progress** for learners anywhere in the world.
 
 ## Non-Goals

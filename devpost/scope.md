@@ -5,7 +5,7 @@ status: approved
 
 # Carve-Out Tutor (working title — name TBD)
 
-A browser-based AI tutor that hands you a working Python web project, cuts out one small piece, and coaches you, with hints but never the answer, until your own code replaces it and the page still works.
+A browser-based AI tutor for understanding big systems. You bring the source code of a project you want to understand (or pick a ready one), in Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML or CSS. The tutor cuts out one small piece at your level and coaches you, with hints but never the answer, until your own code replaces it and the project still works exactly as before.
 
 ## The Unique Kernel
 **You learn by rebuilding real pieces of a project that already works, and it keeps working the whole time.** The tutor carves out one small part, gives you only the context you need for it (inputs, outputs, where it's called, what breaks if it's wrong), and coaches you with hints. When your version passes the tests, it replaces the AI's code, and the tutor checks that you *understood* it, not just that the tests pass. Each round, a bigger share of the project is yours.
@@ -13,7 +13,7 @@ A browser-based AI tutor that hands you a working Python web project, cuts out o
 It's like learning to cook as a kid: mom does the meal, you peel the tomatoes and measure the flour, and you still get to taste the finished meal within the hour.
 
 ## Who It's For
-Junior developers and beginners who know the basics of programming and want to build things. With coding agents, they could just prompt for a finished app and never learn how it works. Today they either let the AI do everything and learn nothing, or grind through tutorials that are cut off from anything they actually want to make.
+People who can already write a script or a function, in any language, but don't yet understand how big systems fit together: how the files glue together, how data flows through them, how to keep them secure and robust. They have the source of a project they'd like to understand (or can download one from GitHub), but hundreds of files and thousands of lines are too much to read on their own. Learning platforms teach single scripts; nothing makes them rebuild a real system. With coding agents they could change a system without ever learning it. Carve-Out has them rebuild it piece by piece, at their level, until the system is theirs and they can add to it, or tell an agent exactly where to look. (Revised on 2026-10-26, when the learner shared the original pitch. The first version said "junior developers and beginners who want to build things".)
 
 ## The Core Loop
 1. The tutor shows the working web page, then carves out one piece of its code.
@@ -58,13 +58,14 @@ A one-minute demo:
 - **"Bring your own idea":** Shown as a feature of the product but not working in the PoC and not explored in the demo.
 - **Standalone (added in the final review):** The whole product is a static web page on GitHub Pages. Python and tests run in the browser, the AI is called from the browser with the learner's own provider and key, and progress is saved in the browser. Nothing depends on the builder's computer.
 - **Bring your own project (added in the final review):** Upload a working Python project as a zip (for example from GitHub) and download it back with your code inside. A web app runs live in the page. A project that can't run in a browser (it needs a game engine or a local machine) is checked with tests only.
+- **Any language (added in the final review, 2026-10-26):** Projects in JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML and CSS, next to Python. A piece is a function, a SQL table, view or query, a CSS rule, or an HTML section with an id. It passes when it behaves exactly like the original. Python, JavaScript, TypeScript, SQL, HTML and CSS run in the browser; Java, C, C++ and Rust run in the local tutor with their compilers, until the learner decides how they should run in the browser.
 - **Profile-based carving, up to 100% (added in the final review):** A short first-launch interview, spoken or typed, records what the learner says they can do. Every function can be carved. The learner's model finds the key spots, the profile decides what to leave to the original code, and a learner can choose to write everything. Claimed skills get spot-checked during the project, and the results are saved next to the claims.
 - **Voice:** Speak to the tutor any time, especially in the interview and explanations.
 
 ## Later
 - **Full interview:** A full Devpost-style interview (scope, PRD, spec) before the AI builds anything.
 - **Project catalog:** About ten different kinds of web pages or websites for the learner to choose from.
-- **Languages other than Python** for uploaded projects, and tests for JavaScript games.
+- **Compiled languages in the browser** (Java, C, C++, Rust), through an online compiler or WebAssembly toolchains. Other languages were added in the final review; JavaScript that needs a page (the DOM) can't be checked yet.
 - **Bring your own idea, for real:** The AI generates a working project from the learner's idea, then carves it.
 - **More project types:** Games, mobile apps (shown in a phone-sized preview) and multi-page apps, plus more languages.
 - **In-browser terminal:** For running arbitrary commands.

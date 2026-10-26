@@ -1,14 +1,22 @@
 # Carve-Out Tutor
 
-Learn to code by rebuilding real pieces of a project that already works.
+Understand how a big project works by rebuilding it yourself, one function at a time, while it keeps working.
 
-The tutor gives you a finished Python web app (Polyvault, a small 3D asset store), cuts out one piece, and coaches you with hints, never the answer, until your code passes the tests and replaces the original. The store keeps working the whole time, and an ownership bar shows how much of it is now your code.
+You know how to write a script or a function, but a real system with hundreds of files is another thing: how the files glue together, how data flows, how it stays secure. Bring the source code of a project you want to understand (a zip from GitHub, for example), or pick a ready one. Carve-Out finds its pieces, and Chip, the tutor, takes one out at a time at your level. You write it back with hints, never the answer. Your piece passes when it behaves exactly like the original, so the project never breaks, and every piece you pass stays yours: a bar shows how much of the project is now your code.
 
-Built for the Devpost *Build With AI: Basics* hackathon as a proof of concept: one project, two rounds (authentication, then the cart).
+**Languages:** Python, JavaScript, TypeScript, Java, C, C++, Rust, SQL, HTML and CSS. A piece is a function, a SQL table, view or query, a CSS rule, or an HTML section with an id.
+
+**Ready projects:** Polyvault (a Python web store), the Tiny compiler ([jamiebuilds/the-super-tiny-compiler](https://github.com/jamiebuilds/the-super-tiny-compiler), CC BY 4.0), a Todo page (HTML, CSS, JavaScript) and a Shop database (SQL).
+
+Built for the Devpost *Build With AI: Basics* hackathon as a proof of concept.
 
 ## Use it in your browser
 
 Open the published site (GitHub Pages) in any modern browser. Nothing to install: Python, the tests and the store all run inside the page with [Pyodide](https://pyodide.org/), and your progress is saved in that browser. No key is needed to try it: visitors without one use a shared demo through a small proxy (`demo-proxy/`, a Cloudflare Worker that keeps the key secret and only serves this site). For unlimited use, click the gear to add your own AI key: [Groq](https://console.groq.com/keys), [OpenRouter](https://openrouter.ai/settings/keys) and [Google Gemini](https://aistudio.google.com/apikey) all have free tiers. The key stays in your browser and goes only to that provider.
+
+**What runs where:** Python, JavaScript, TypeScript, SQL, HTML and CSS run in the browser. Java, C, C++ and Rust need their compilers, so they run in the local tutor below (with `gcc`/`g++`, a JDK, `rustc`, and Node for JavaScript and TypeScript); on the site their pieces are marked "Local only".
+
+**How a piece is checked:** Python pieces use pytest tests. For other code, the AI writes a short check program that calls the function and prints one line per check. It's kept only if it runs on the original and an empty version fails it, and your version passes when every line matches the original's. SQL runs on SQLite and is compared table by table and row by row; CSS and HTML are compared declaration by declaration and element by element.
 
 To try the browser version locally: `python web/files.py && python -m http.server 8020`, then open http://localhost:8020/web/.
 
@@ -55,9 +63,11 @@ web/              the standalone site: the main page, browser Python, the servic
 tutor/            the tutor app (FastAPI, :8000 locally; inside the browser on the site)
   app.py          pages + JSON API
   pieces.py       the carvable pieces, function by function: stubs, criteria, questions; assemble()
+  langs.py        the other languages: finds their pieces, swaps yours in, checks it against the original
   runner.py       runs pytest on your code (separate process, 15s limit); assembles and restarts the store
   llm.py          hints, grading and answers via an OpenAI-compatible API (Groq by default)
   progress.py     data/progress.json + the ownership %
+  static/examples/ the ready projects in other languages, as zips
 store/            the practice project (FastAPI + Jinja2 + SQLite, :8001)
   pieces/         auth.py and cart.py: the AI's originals, never edited
 tests/            the tests each piece must pass
@@ -68,4 +78,4 @@ Each piece is its own file, rebuilt one function at a time. When a function pass
 
 In the browser, the same tutor app runs inside Pyodide. A service worker passes the page's requests under `web/tutor/` and `web/run/` to it, tests run in a second Python worker that's replaced if code runs past 15 seconds, and progress lives in IndexedDB.
 
-**Note:** with the local server, your code runs directly on your machine, not in a sandbox. On the site it runs inside the browser's sandbox.
+**Note:** with the local server, your code (and an uploaded project's C, Java or Rust) runs directly on your machine, not in a sandbox. On the site it runs inside the browser's sandbox; JavaScript checks run in a separate worker that only collects what the code prints.
