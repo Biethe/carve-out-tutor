@@ -3,190 +3,248 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Polyvault | Carve-Out Tutor</title>
-  <script src="/static/theme.js"></script>
-  <script src="/static/settings.js"></script>
+  <title>Home | Carve-Out Tutor</title>
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
-  <link rel="stylesheet" href="/static/old.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="top">
-    <a class="brand" href="/" aria-label="Carve-Out tutor"><span class="brand-word">Carve</span><span class="brand-piece"><i class="ph-bold ph-scissors" aria-hidden="true"></i>out</span><span class="brand-hand">tutor</span></a>
-    <span class="top-spacer"></span>
-    <div class="theme-switch" role="radiogroup" aria-label="Theme">
-      <button role="radio" data-theme-choice="paper" title="Paper" aria-label="Paper theme"><i class="ph-bold ph-sun" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="night" title="Blueprint" aria-label="Blueprint theme"><i class="ph-bold ph-ruler" aria-hidden="true"></i></button>
-      <button role="radio" data-theme-choice="chalk" title="Chalkboard" aria-label="Chalkboard theme"><i class="ph-bold ph-chalkboard-simple" aria-hidden="true"></i></button>
+  <header class="top gut">
+    <a class="brand" href="/"><span class="chip xs" data-chip></span>Carve-Out</a>
+    <span class="crumb">/ <b id="h-project"></b></span>
+    <div class="top-right">
+      <span class="own panel" id="own"><svg class="ring" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"></circle><circle class="val" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="44" transform="rotate(-90 9 9)"></circle></svg><span><span class="own-n">0</span> of <span class="own-t">0</span> yours</span></span>
+      <a class="btn sm" href="./?new" aria-label="New project"><i class="ph-bold ph-plus" aria-hidden="true"></i><span class="wide-only">New project</span></a>
+      <a class="navb" href="/interview">Profile</a>
+      <button class="navb" data-open-settings>Settings</button>
     </div>
   </header>
 
-  <main class="project">
-    <div>
-      <a class="back" href="/"><i class="ph-bold ph-arrow-left" aria-hidden="true"></i> All projects</a>
-      <h1 class="rise-in" id="p-name">Polyvault</h1>
-      <p class="tagline rise-in" style="--i:1" id="p-tagline">a 3D asset store, already working</p>
-      <ul class="small warnings" id="p-warnings" hidden></ul>
-      <div class="compat" id="p-compat" hidden></div>
-      <p class="lead rise-in" style="--i:2" id="p-lead">A small but <em>complete</em> online store written in Python. Browse real 3D models and 360° environments, fill a cart, check out with a pretend payment, and download what you bought.</p>
-
-      <h2>Your plan</h2>
-      <p class="muted small" id="plan-summary">Every function of the project can be yours. Choose what you write.</p>
-      <div class="actions plan-actions">
-        <button class="btn small" id="suggest"><i class="ph-bold ph-sparkle" aria-hidden="true"></i> Let Chip suggest from my profile</button>
-        <button class="btn small secondary" id="all"><i class="ph-bold ph-checks" aria-hidden="true"></i> Write everything</button>
+  <main class="home gut screen" id="main">
+    <div class="greet"><span class="chip md" id="home-chip" data-chip></span><p class="say md" id="home-say" aria-live="polite"></p></div>
+    <div class="panel notice" id="notice" hidden></div>
+    <article class="next panel raised" id="next" hidden>
+      <div class="next-visual" id="next-visual"></div>
+      <div class="next-body">
+        <span class="next-step" id="next-step"></span>
+        <h1 class="next-title" id="next-title"></h1>
+        <p class="next-text" id="next-text"></p>
+        <p class="next-note" id="next-note" hidden></p>
+        <div class="next-actions" id="next-actions"></div>
+        <p class="status" id="next-status" role="status"></p>
       </div>
-      <p class="status" id="plan-status" role="status"></p>
-      <h3 class="roadmap-title">Roadmap <span class="muted small">Chip's suggested order: the simplest functions first, then the ones built on them. Click any one to start there.</span></h3>
-      <ol class="roadmap" id="roadmap"></ol>
-      <div class="plan" id="plan"></div>
-
-      <div class="built" id="p-built"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">Jinja2 templates</span><span class="chip">SQLite</span></div>
-
-      <div class="actions">
-        <button class="btn secondary" id="run"><i class="ph-bold ph-play" aria-hidden="true"></i> Run project</button>
-        <button class="btn" id="learn">Start learning <i class="ph-bold ph-arrow-right" aria-hidden="true"></i></button>
-        <button class="btn secondary" id="download"><i class="ph-bold ph-download-simple" aria-hidden="true"></i> Download with my code</button>
+    </article>
+    <div class="journey" id="journey" aria-hidden="true"></div>
+    <div class="plan-wrap">
+      <p class="muted" id="plan-note" hidden></p>
+      <button class="link" id="plan-toggle" aria-expanded="false" aria-controls="plan">See the whole plan</button>
+      <div class="plan-panel" id="plan" hidden>
+        <ol class="plan panel" id="steps"></ol>
+        <details class="panel edit" id="edit">
+          <summary>Change what you write</summary>
+          <p class="muted" id="plan-summary"></p>
+          <div class="row">
+            <button class="btn sm" id="suggest"><i class="ph-bold ph-sparkle" aria-hidden="true"></i>Let Chip suggest from my profile</button>
+            <button class="btn sm" id="all"><i class="ph-bold ph-checks" aria-hidden="true"></i>Write everything</button>
+          </div>
+          <p class="status" id="plan-status" role="status"></p>
+          <div id="switches"></div>
+        </details>
       </div>
-      <p class="status" id="run-status" role="status">Try the finished project first. It opens in a new tab.</p>
-      <div class="delete-project" id="delete-area" hidden>
-        <button class="link danger" id="delete-ask"><i class="ph-bold ph-trash" aria-hidden="true"></i> Delete this project</button>
-        <div class="confirm" id="delete-confirm" hidden>
-          <p>Delete <strong id="delete-name"></strong>? Its files and your progress on it go too.</p>
-          <button class="btn small danger" id="delete-yes">Delete</button>
-          <button class="link" id="delete-no">Cancel</button>
-        </div>
+      <div class="foot-links">
+        <button class="link" id="run" hidden>Open my app</button>
+        <button class="link" id="download">Download with my code</button>
+        <span id="delete-area" hidden>
+          <button class="link" id="delete-ask">Delete this project</button>
+          <span class="confirm" id="delete-confirm" hidden>
+            <span>Delete <strong id="delete-name"></strong>? Its files and your progress on it go too.</span>
+            <span class="row"><button class="btn sm danger" id="delete-yes">Delete</button><button class="link" id="delete-no">Cancel</button></span>
+          </span>
+        </span>
       </div>
+      <p class="status" id="run-status" role="status"></p>
     </div>
-
-    <aside class="project-side">
-      <div class="gallery" aria-hidden="true">
-        <img class="model" src="/store-assets/chest.webp" alt="">
-        <img src="/store-assets/forest.webp" alt="">
-        <img class="model" src="/store-assets/camera.webp" alt="">
-        <img src="/store-assets/meadow.webp" alt="">
-      </div>
-      <div class="sticky-note">
-        <b>Demo login</b>
-        user <code>learner</code><br>
-        password <code>carve123</code><br>
-        or sign up and make your own!
-      </div>
-      <p class="progress-note" id="progress" hidden></p>
-    </aside>
   </main>
 
+  <script src="/static/chip.js"></script>
+  <script src="/static/settings.js"></script>
   <script src="/static/run.js"></script>
   <script src="/static/compat.js"></script>
   <script>
-    // ?open=<name> switches the project being learned (Polyvault is "store"), then the page describes it.
-    const opening = new URLSearchParams(location.search).get("open");
-    const ready = (opening ? fetch(`api/projects/${encodeURIComponent(opening)}/open`, { method: "POST" }) : fetch("api/project"))
-      .then(r => r.json()).then(info => {
-        if (info.error) { document.querySelector("main").innerHTML = `<p class="lead">${info.error} <a href="/">Back to projects</a></p>`; return; }
-        if (opening) history.replaceState(null, "", "project");
-        if (info.builtin) return;
-        // Uploaded projects can be deleted from here too (asked first).
-        document.getElementById("delete-area").hidden = false;
-        document.getElementById("delete-name").textContent = info.name;
-        document.getElementById("delete-ask").onclick = () => (document.getElementById("delete-confirm").hidden = false);
-        document.getElementById("delete-no").onclick = () => (document.getElementById("delete-confirm").hidden = true);
-        document.getElementById("delete-yes").onclick = async () => {
-          await fetch(`api/projects/${encodeURIComponent(info.name)}`, { method: "DELETE" });
-          location.href = "./#mine";  // relative: the tutor lives under a path on the published site
-        };
-        const kinds = { asgi: "a Python web app, running in your browser", wsgi: "a Flask web app, running in your browser",
-                        static: "a web page, running in your browser", tests: "Python code, checked with tests" };
-        document.getElementById("p-name").textContent = info.name;
-        const partly = info.compat && Object.keys(info.compat.blocked).length;  // some files can't load in the browser
-        document.getElementById("p-tagline").textContent = partly ? kinds[info.kind].replace("running in your browser", "parts of it run in your browser")
-                                                                  : kinds[info.kind];
-        document.getElementById("p-lead").textContent = info.intro || `Your own project: ${info.functions} functions in ${info.files} files, all of them yours to rebuild.`;
-        document.querySelector(".project-side").hidden = true;
-        document.getElementById("p-built").hidden = true;
-        if (info.kind === "tests") document.getElementById("run").hidden = true;
-        // Can it run in the browser? Which libraries are fine, which aren't, and how to rebuild everything locally.
-        if (info.compat && (info.compat.verdict !== "full" || info.compat.libraries.length)) {
-          const box = document.getElementById("p-compat");
-          box.innerHTML = `<p><strong>${info.compat.verdict === "full" ? "✅" : info.compat.verdict === "none" ? "❌" : "⚠️"}</strong> ${Compat.verdict(info.compat)}</p>`
-            + Compat.libraries(info.compat)
-            + (info.compat.verdict !== "full" ? `<p class="small muted">To rebuild every part: run the tutor on your own computer
-               (<a href="https://github.com/Biethe/carve-out-tutor#run-it-locally-with-a-server" target="_blank" rel="noopener">how</a>),
-               then in this project's folder: <code>pip install -r requirements.txt</code>.</p>` : "");
-          box.className = "compat " + info.compat.verdict;
-          box.hidden = false;
-        }
-        const warn = info.safety?.warnings || [];
-        if (warn.length) {
-          const ul = document.getElementById("p-warnings");
-          ul.innerHTML = "<li><strong>From the safety check:</strong></li>" + warn.map(w => `<li>${w.replace(/</g, "&lt;")}</li>`).join("");
-          ul.hidden = false;
-        }
-        document.title = `${info.name} | Carve-Out Tutor`;
-      });
-    // A learner without a profile answers the three questions first.
-    ready.then(() => fetch("api/profile")).then((r) => r.json()).then((p) => { if (!p.done) location.replace("interview"); });
-    // The zip is fetched, then saved as a file: a plain download link is cancelled inside the tutor's frame.
-    document.getElementById("download").onclick = async () => {
-      const res = await fetch("api/download");
-      const name = (res.headers.get("content-disposition") || "").match(/filename="(.+)"/)?.[1] || "project.zip";
-      const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: name });
-      document.body.append(link);
-      link.click();
-      link.remove();
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
+    const api = (method, url, body) =>
+      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then((r) => r.json());
+    const local = (key, value) => {
+      try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch { return null; }
     };
-    document.getElementById("run").onclick = () => runProject(document.getElementById("run-status"));
-    ready.then(() => fetch("api/state")).then(r => r.json()).then(s => {
-      if (s.current) document.getElementById("learn").firstChild.textContent = s.all_done ? "See your work " : "Continue learning ";
-      if (s.ownership > 0) {
-        const el = document.getElementById("progress");
-        el.innerHTML = `You've written <strong>${s.ownership}%</strong> of it so far.`;
-        el.hidden = false;
+    const ARROW = '<i class="ph-bold ph-arrow-right go" aria-hidden="true"></i>';
+    const CHECK = '<i class="ph-bold ph-check" aria-hidden="true"></i>';
+    const chip = $("home-chip"), say = (text) => Chip.say($("home-say"), text, chip);
+    let info, name, plan, state, opened = false, shownKey = null;
+
+    // ---- The steps: one model for the card, the journey and the whole plan --------------------
+    // Answer the questions (always done here), try the app if it runs, then the plan's functions in Chip's order.
+    function steps() {
+      const tried = local("tried:" + info.name) === "1" || plan.functions.some((f) => f.status !== "not_started");
+      const writing = plan.functions.filter((f) => f.mark === "write" && f.rank !== null && !f.blocked).sort((a, b) => a.rank - b.rank);
+      return [
+        { key: "quiz", title: "Answer 3 quick questions", text: "So Chip knows where to start.", done: true },
+        ...(state.runs ? [{ key: "try", title: info.builtin ? "Try the store" : "Try your app", done: tried,
+          text: info.builtin ? "Shop around Polyvault like a customer would. It’s the app you’re going to rebuild."
+                             : "Click around your project like you would really use it. It’s the app you’re going to rebuild." }] : []),
+        ...writing.map((f, i) => ({ key: f.key, fn: f, n: i + 1, of: writing.length, title: `Write ${f.name}`,
+          text: (f.description || "").split("\n")[0] || `A function in ${f.file}.`, done: f.status === "passed" })),
+      ];
+    }
+    // The step to show: a function you left half-written comes first, then the first step not done.
+    const current = (list) => list.find((s) => s.fn && `${s.fn.piece}.${s.fn.name}` === `${state.current}.${state.task?.name}` && s.fn.status === "in_progress")
+      || list.find((s) => !s.done);
+
+    function visual(step) {
+      if (step?.key === "try" || !step) {
+        if (info.builtin) {
+          return `<div class="mini panel raised"><div class="mh"><b>Polyvault</b><span class="mb dark">Log in</span></div>
+            <div class="ms-grid"><span><img src="/store-assets/chest.webp" alt=""></span><span><img src="/store-assets/lantern.webp" alt=""></span><span><img src="/store-assets/boombox.webp" alt=""></span></div>
+            ${step ? "" : '<span class="my">your code</span>'}</div>`;
+        }
+        return `<div class="mini panel raised"><div class="mh"><b>${esc(name)}</b><span class="mb">running</span></div>
+          <div class="ml">${[1, 2, 3].map(() => '<div class="mr"><span class="mt"></span><span class="mn"></span></div>').join("")}</div>
+          ${step ? "" : '<span class="my">your code</span>'}</div>`;
       }
-    });
-    document.getElementById("learn").onclick = async () => {
-      const btn = document.getElementById("learn");
-      btn.disabled = true;
-      btn.firstChild.textContent = "Chip is getting your first function ready… ";
-      const s = await fetch("api/next", { method: "POST" }).then(r => r.json());
-      if (s.error) { btn.disabled = false; btn.firstChild.textContent = "Start learning "; planStatus(s.error); return; }
-      location.href = "learn";
-    };
-
-    // ---- Your plan: every function, "I'll write it" or "keep the original" ---------------------------
-    const $ = id => document.getElementById(id);
-    const esc = t => Object.assign(document.createElement("div"), { textContent: t }).innerHTML;
-    const planStatus = text => ($("plan-status").textContent = text || "");
-    let plan;
-
-    function showPlan(data) {
-      plan = data;
-      const files = [...new Set(data.functions.map(f => f.file))];
-      const writing = data.functions.filter(f => f.mark === "write"), done = writing.filter(f => f.status === "passed");
-      $("plan-summary").innerHTML = `You'll write <strong>${writing.length}</strong> of ${data.functions.length} functions`
-        + (done.length ? `, <strong>${done.length}</strong> done` : "") + `. Write them all to make it 100% yours.`;
-      $("plan").innerHTML = files.map(file => {
-        const fns = data.functions.filter(f => f.file === file);
-        const mine = fns.filter(f => f.mark === "write").length;
-        return `<details class="plan-file" ${mine ? "open" : ""}><summary><code>${esc(file)}</code>
-          <span class="muted small">${mine} of ${fns.length} to write</span></summary><ul>${
-          fns.map(f => `<li class="${f.mark}${f.status === "passed" ? " passed" : ""}">
-            <button class="switch${f.blocked ? " local" : ""}" data-key="${f.key}" aria-pressed="${f.mark === "write"}" ${f.status === "passed" || f.blocked ? "disabled" : ""}
-              title="${f.status === "passed" ? "Already yours" : f.mark === "write" ? "You'll write it. Click to keep the original" : "Keeps the original. Click to write it"}">
-              ${f.status === "passed" ? "✓" : f.blocked ? "Local only" : f.mark === "write" ? "I'll write it" : "Keep"}</button>
-            <span><code>${esc(f.name)}</code>${f.spot ? ` <span class="chip spot">★ spot check: ${esc(f.spot)}</span>` : ""}
-              ${f.blocked ? `<span class="why">${esc(f.blocked)}</span>` : f.reason ? `<span class="why">${esc(f.reason)}</span>` : ""}</span></li>`).join("")}</ul></details>`;
-      }).join("");
-      $("suggest").hidden = !data.profile;
-      const steps = writing.filter(f => f.rank !== null).sort((a, b) => a.rank - b.rank);
-      const next = steps.find(f => f.status !== "passed");
-      $("roadmap").innerHTML = steps.map((f, i) => `<li><button class="step${f.status === "passed" ? " done" : ""}${f === next ? " next" : ""}"
-        data-open="${f.key}" title="Open ${esc(f.file)} · ${esc(f.name)}"><span class="n">${f.status === "passed" ? "✓" : i + 1}</span>
-        <code>${esc(f.name)}</code><span class="muted small">${esc(f.file)}</span></button></li>`).join("")
-        || `<li class="muted small">Nothing to write yet: switch some functions to "I'll write it" below.</li>`;
+      if (step.fn) {
+        return `<div class="mini-code panel raised"><div class="mc-head"><span class="mono">${esc(step.fn.file)}</span><span class="mc-lines">your turn</span></div>
+          <pre><span class="kw">def</span> <span class="fn">${esc(step.fn.name)}</span>(…):\n    <span class="caret"></span></pre></div>`;
+      }
+      return "";
     }
 
-    // Any step, any order: the roadmap is only a suggestion.
-    $("roadmap").onclick = async e => {
+    function render() {
+      const list = steps(), now = current(list);
+      const writing = list.filter((s) => s.fn);
+      const i = now ? list.indexOf(now) : list.length - 1;
+      const card = $("next");
+      card.hidden = false;
+      $("next-status").textContent = "";
+      $("next-note").hidden = true;
+      if (now?.key === "try") {
+        $("next-step").textContent = "Before you start";
+        $("next-title").textContent = now.title;
+        $("next-text").textContent = now.text;
+        const app = info.builtin ? "the store" : "my app";
+        if (opened) {
+          $("next-note").innerHTML = info.builtin ? "Polyvault opens in a new tab. Log in as <b>learner</b>, password <b>carve123</b>." : "Your project opens in a new tab.";
+          $("next-note").hidden = false;
+          $("next-actions").innerHTML = `<button class="btn primary lg" data-act="tried">I’ve tried it ${ARROW}</button>`;
+          say("Take a few minutes in there. Come back when you’re done.");
+        } else {
+          $("next-actions").innerHTML = `<button class="btn primary lg" data-act="open-try">Open ${app} ${ARROW}</button><button class="btn ghost lg" data-act="tried">Skip for now</button>`;
+          say(`You’re all set. First, have a play with ${info.builtin ? "the store" : "your app"}.`);
+        }
+      } else if (now?.fn) {
+        $("next-step").textContent = `Function ${now.n} of ${now.of}`;
+        $("next-title").textContent = now.title;
+        $("next-text").textContent = now.text;
+        const going = now.fn.status === "in_progress";
+        $("next-actions").innerHTML = `<button class="btn primary lg" data-act="write">${going ? "Continue writing" : "Start writing"} ${ARROW}</button>`;
+        const prev = list[i - 1];
+        say(going ? `Welcome back. You were writing ${now.fn.name}.`
+          : !writing.some((s) => s.done) ? `Now the fun part. Your first function is ${now.fn.name}.`
+          : prev?.fn && prev.done ? `${prev.fn.name} is yours. Next up is ${now.fn.name}.`
+          : `Next up is ${now.fn.name}.`);
+      } else if (writing.length) {
+        $("next-step").textContent = "Your plan is done";
+        $("next-title").textContent = "Every function in your plan is yours.";
+        $("next-text").textContent = "Open your app to see it run on your code, or add more functions to your plan.";
+        $("next-actions").innerHTML = (state.runs ? `<button class="btn primary lg" data-act="run">Open my app ${ARROW}</button>` : "")
+          + `<button class="btn lg" data-act="plan">Add more functions</button>`;
+        say("That’s your whole plan, written by you.");
+      } else {
+        $("next-step").textContent = "Nothing to write yet";
+        $("next-title").textContent = "Pick what you want to write";
+        $("next-text").textContent = "Choose a few functions in the plan below. Chip suggests the simplest ones first.";
+        $("next-actions").innerHTML = `<button class="btn primary lg" data-act="plan">Choose functions ${ARROW}</button>`;
+        say("Your plan is empty right now.");
+      }
+      $("next-visual").innerHTML = visual(now);
+      const key = now?.key || "done";
+      if (key !== shownKey) { card.classList.remove("in"); void card.offsetWidth; card.classList.add("in"); shownKey = key; }
+
+      // The journey: a window of at most 9 steps around "You are here", so a long plan still fits on a phone.
+      const from = Math.max(0, Math.min(i - 2, list.length - 9)), shown = list.slice(from, from + 9);
+      const left = list.length - from - shown.length;
+      $("journey").innerHTML = (from ? `<span class="jmore">+${from}</span>` : "") + shown.map((s, n) => {
+        const st = s.done ? "done" : s === now ? "now" : "next";
+        return `<span class="jn ${st}">${st === "done" ? CHECK : ""}<span class="tip">${esc(s.title)}</span>${st === "now" ? '<span class="jl">You are here</span>' : ""}</span>`
+          + (n < shown.length - 1 ? `<span class="jline${s.done ? " done" : ""}"></span>` : "");
+      }).join("") + (left ? `<span class="jmore">+${left}</span>` : "");
+
+      // The whole plan: every step; a function opens straight in the workspace.
+      $("steps").innerHTML = list.map((s) => {
+        const st = s.done ? "done" : s === now ? "now" : "next";
+        const body = `<span><b>${esc(s.title)}</b><span class="muted">${esc(s.fn ? s.fn.file : s.text)}</span></span>`;
+        return `<li class="${st}"><span class="pi">${st === "done" ? CHECK : ""}</span>${s.fn ? `<button class="step-open" data-open="${esc(s.key)}">${body}</button>` : body}</li>`;
+      }).join("");
+
+      const passed = plan.functions.filter((f) => f.status === "passed").length, total = plan.functions.length;
+      document.querySelector(".own-n").textContent = passed;
+      document.querySelector(".own-t").textContent = total;
+      document.querySelector("#own .val").style.strokeDashoffset = String(44 - 44 * (total ? passed / total : 0));
+      $("own").title = `You wrote ${plan.ownership}% of the code, by lines.`;
+      showSwitches();
+    }
+
+    // ---- What you write: every function, "I'll write it" or "keep the original" --------------------
+    function showSwitches() {
+      const files = [...new Set(plan.functions.map((f) => f.file))];
+      const writing = plan.functions.filter((f) => f.mark === "write"), done = writing.filter((f) => f.status === "passed");
+      $("plan-summary").innerHTML = `You’ll write <strong>${writing.length}</strong> of ${plan.functions.length} functions`
+        + (done.length ? `, <strong>${done.length}</strong> done` : "") + ". Write them all to make it completely yours.";
+      $("suggest").hidden = !plan.profile;
+      $("switches").innerHTML = files.map((file) => {
+        const fns = plan.functions.filter((f) => f.file === file), mine = fns.filter((f) => f.mark === "write").length;
+        return `<details class="plan-file" ${mine ? "open" : ""}><summary><code>${esc(file)}</code> <span class="muted small">${mine} of ${fns.length} to write</span></summary><ul>${
+          fns.map((f) => `<li>
+            <button class="pill panel switch${f.mark === "write" ? " on" : ""}" data-key="${esc(f.key)}" aria-pressed="${f.mark === "write"}" ${f.status === "passed" || f.blocked ? "disabled" : ""}
+              title="${f.status === "passed" ? "Already yours" : f.mark === "write" ? "You’ll write it. Click to keep the original" : "Keeps the original. Click to write it"}">${
+              f.status === "passed" ? "✓" : f.blocked ? "Local only" : f.mark === "write" ? "I’ll write it" : "Keep"}</button>
+            <span><code>${esc(f.name)}</code>${f.spot ? ` <span class="tag">Spot check: ${esc(f.spot)}</span>` : ""}
+              ${f.blocked || f.reason ? `<span class="muted small why">${esc(f.blocked || f.reason)}</span>` : ""}</span></li>`).join("")}</ul></details>`;
+      }).join("");
+    }
+    const planStatus = (text) => ($("plan-status").textContent = text || "");
+    $("switches").onclick = async (e) => {
+      const b = e.target.closest(".switch");
+      if (!b || b.disabled) return;
+      plan = await api("PUT", "api/plan", { marks: { [b.dataset.key]: b.getAttribute("aria-pressed") === "true" ? "keep" : "write" } });
+      render();
+    };
+    $("all").onclick = async () => {
+      plan = await api("PUT", "api/plan", { marks: Object.fromEntries(plan.functions.map((f) => [f.key, "write"])) });
+      render();
+    };
+    async function suggest() {
+      // While Chip is suggesting, the plan can't change: its answer would overwrite the change.
+      const busy = (on) => [$("suggest"), $("all"), ...document.querySelectorAll(".switch, .step-open")].forEach((el) => (el.disabled = on));
+      busy(true);
+      planStatus("Chip is reading your profile and the code…");
+      const res = await api("POST", "api/plan/suggest");
+      busy(false);
+      if (res.error) { planStatus(res.error); return false; }
+      planStatus("Here’s Chip’s plan for you. Change anything you like.");
+      plan = res;
+      return true;
+    }
+    $("suggest").onclick = async () => { if (await suggest()) { $("plan-note").hidden = true; render(); } };
+
+    function togglePlan(open = $("plan").hidden) {
+      $("plan").hidden = !open;
+      $("plan-toggle").setAttribute("aria-expanded", String(open));
+      $("plan-toggle").textContent = open ? "Hide the plan" : "See the whole plan";
+    }
+    $("plan-toggle").onclick = () => togglePlan();
+
+    // Any step, any order: the plan is only a suggestion.
+    $("steps").onclick = async (e) => {
       const b = e.target.closest("[data-open]");
       if (!b) return;
       b.disabled = true;
@@ -196,30 +254,81 @@
       location.href = "learn";
     };
 
-    const api = (method, url, body) =>
-      fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body && JSON.stringify(body) }).then(r => r.json());
-    $("plan").onclick = async e => {
-      const b = e.target.closest(".switch");
-      if (!b || b.disabled) return;
-      showPlan(await api("PUT", "api/plan", { marks: { [b.dataset.key]: b.getAttribute("aria-pressed") === "true" ? "keep" : "write" } }));
+    // ---- The card's buttons ------------------------------------------------------
+    $("next-actions").onclick = async (e) => {
+      const b = e.target.closest("[data-act]");
+      if (!b) return;
+      const act = b.dataset.act;
+      if (act === "open-try") { runProject($("next-status")); opened = true; render(); }
+      if (act === "tried") { local("tried:" + info.name, "1"); opened = false; render(); }
+      if (act === "run") runProject($("next-status"));
+      if (act === "plan") { togglePlan(true); $("edit").open = true; $("edit").scrollIntoView({ behavior: "smooth", block: "start" }); }
+      if (act === "write") {
+        b.disabled = true;
+        b.firstChild.textContent = "Getting it ready… ";
+        Chip.mood(chip, "busy");
+        const s = await api("POST", "api/next");
+        chip.classList.remove("busy");
+        if (s.error) { $("next-status").textContent = s.error; b.disabled = false; b.firstChild.textContent = "Start writing "; return; }
+        location.href = "learn";
+      }
     };
-    $("all").onclick = async () =>
-      showPlan(await api("PUT", "api/plan", { marks: Object.fromEntries(plan.functions.map(f => [f.key, "write"])) }));
-    $("suggest").onclick = async () => {
-      // While Chip is suggesting, the plan can't change: its answer would overwrite the change.
-      const busy = on => [$("suggest"), $("all"), ...document.querySelectorAll("#plan .switch, #roadmap .step")].forEach(el => (el.disabled = on));
-      busy(true);
-      planStatus("Chip is reading your profile and the code…");
-      const res = await api("POST", "api/plan/suggest");
-      busy(false);
-      if (res.error) return planStatus(res.error);
-      planStatus("Here's Chip's plan for you. Change anything you like.");
-      showPlan(res);
+    $("run").onclick = () => runProject($("run-status"));
+    // The zip is fetched, then saved as a file: a plain download link is cancelled inside the tutor's frame.
+    $("download").onclick = async () => {
+      const res = await fetch("api/download");
+      const file = (res.headers.get("content-disposition") || "").match(/filename="(.+)"/)?.[1] || "project.zip";
+      const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(await res.blob()), download: file });
+      document.body.append(link);
+      link.click();
+      link.remove();
     };
-    ready.then(() => api("GET", "api/plan")).then(data => {
-      showPlan(data);
-      if (data.profile && !data.suggested) $("suggest").click();  // first visit after the interview: Chip suggests one
-    });
+
+    // ---- Uploaded projects: where it can run, what the safety check said, and delete --------------
+    function showUpload() {
+      $("delete-area").hidden = false;
+      $("delete-name").textContent = info.name;
+      $("delete-ask").onclick = () => ($("delete-confirm").hidden = false);
+      $("delete-no").onclick = () => ($("delete-confirm").hidden = true);
+      $("delete-yes").onclick = async () => {
+        await fetch(`api/projects/${encodeURIComponent(info.name)}`, { method: "DELETE" });
+        location.href = "./?new";
+      };
+      let html = "";
+      if (info.compat && (info.compat.verdict !== "full" || info.compat.libraries.length)) {
+        html += `<p>${esc(Compat.verdict(info.compat))}</p>` + Compat.libraries(info.compat);
+        if (info.compat.verdict !== "full") html += `<p class="muted small">To rebuild every part, run the tutor on your own computer
+          (<a href="https://github.com/Biethe/carve-out-tutor#run-it-locally-with-a-server" target="_blank" rel="noopener">how</a>),
+          then in this project’s folder: <code>pip install -r requirements.txt</code>.</p>`;
+      }
+      const warn = info.safety?.warnings || [];
+      if (warn.length) html += `<p><strong>From the safety check:</strong></p><ul class="small">${warn.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>`;
+      $("notice").innerHTML = html;
+      $("notice").hidden = !html;
+    }
+
+    // ---- Load: open the project if asked, make sure there's a profile, then the next step ----------
+    (async () => {
+      const opening = new URLSearchParams(location.search).get("open");
+      info = await (opening ? api("POST", `api/projects/${encodeURIComponent(opening)}/open`) : api("GET", "api/project"));
+      if (info.error) { $("main").innerHTML = `<p class="say md">${esc(info.error)}</p><p><a href="./?new">Back to the start</a></p>`; return; }
+      if (opening) history.replaceState(null, "", "project");
+      if (!(await api("GET", "api/profile")).done) return location.replace("interview");
+      name = info.builtin ? "Polyvault" : info.name;
+      $("h-project").textContent = name;
+      document.title = `${name} | Carve-Out Tutor`;
+      [plan, state] = await Promise.all([api("GET", "api/plan"), api("GET", "api/state")]);
+      $("run").hidden = !state.runs;
+      if (!info.builtin) showUpload();
+      if (plan.profile && !plan.suggested) {
+        say("I’m reading your profile and the code to pick your first functions…");
+        Chip.mood(chip, "busy");
+        const ok = await suggest();
+        chip.classList.remove("busy");
+        if (!ok) { $("plan-note").textContent = "I couldn’t make you a plan just now. You can ask me again in the whole plan."; $("plan-note").hidden = false; }
+      }
+      render();
+    })();
   </script>
 </body>
 </html>

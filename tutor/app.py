@@ -396,9 +396,9 @@ def _plan(prog: dict) -> dict:
 
 
 def _functions() -> list[dict]:
-    """Every function, with why it can't be rebuilt here if a library it needs can't run in the browser."""
+    """Every function and what it does, with why it can't be rebuilt here if a library it needs can't run in the browser."""
     return [{"key": f"{piece}.{f['name']}", "piece": piece, "name": f["name"], "file": p["file"], "signature": f["signature"],
-             "blocked": compat.why_blocked(p["file"])} for piece, p in PIECES.items() for f in p["functions"]]
+             "description": f["description"], "blocked": compat.why_blocked(p["file"])} for piece, p in PIECES.items() for f in p["functions"]]
 
 
 @app.get("/api/plan")

@@ -27,6 +27,13 @@ async function see(where, selector, text, timeout = 15000) {
   }
   return el;
 }
+// Like see(), for text that's in the page but hidden at this size (the crumb on phones).
+async function has(where, selector, text, timeout = 15000) {
+  for (const end = Date.now() + timeout; !((await where.locator(selector).first().textContent().catch(() => "")) || "").includes(text);) {
+    if (Date.now() > end) fail(`${selector} should contain "${text}"`);
+    await page.waitForTimeout(200);
+  }
+}
 async function shot(where, name) {
   await page.waitForTimeout(800);  // let the entrance motion settle
   if (await where.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) fail(`${name}: the page scrolls sideways`);
@@ -159,7 +166,81 @@ async function profile() {  // the profile the answers made (after quiz: yes, no
   await t.waitForURL(/\/project/);
 }
 
-const STEPS = { boot, story, start, choose, quiz, skipquiz, profile };
+async function home() {  // a new learner's home: try the store first, then the first function
+  const t = await T();
+  await has(t, "#h-project", "Polyvault");
+  await see(t, "#own", "0 of 28 yours");
+  await see(t, "#plan-note", "I couldn’t make you a plan just now.");  // the walk has no AI key
+  await see(t, "#next-step", "Before you start");
+  await see(t, "#next-title", "Try the store");
+  await see(t, "#home-say", "You’re all set. First, have a play with the store.");
+  if ((await t.locator("#journey .jn").count()) !== 8) fail("the journey: questions, try, six starter functions");
+  if ((await t.locator("#journey .jn.now").count()) !== 1) fail("one You are here");
+  await shot(t, "home-try");
+  await t.click('[data-act="tried"]');
+  await see(t, "#next-title", "Write hash_password");
+  await see(t, "#next-step", "Function 1 of 6");
+  await see(t, "#next-text", "Turn the plain password into its SHA-256 hash");
+  await see(t, "#home-say", "Now the fun part. Your first function is hash_password.");
+  await t.click("#plan-toggle");
+  await see(t, "#steps");
+  if ((await t.locator("#steps li").count()) !== 8) fail("the whole plan lists 8 steps");
+  await shot(t, "home-plan");
+  await t.click("#plan-toggle");
+}
+async function returning() {  // coming back: the start page sends you home, New project still reaches it
+  const t = await T();
+  await t.goto(new URL("./", t.url()).href);
+  await t.waitForURL(/\/project/);
+  await see(t, "#next-title", "Write hash_password");
+  await t.click('a[aria-label="New project"]');
+  await see(t, "#c-say", "What do you want to build next?");
+  await t.click("#open-store");
+  await t.waitForURL(/\/project/);
+}
+async function upload() {  // your own project with nothing to run, whose function needs the AI to get ready
+  const t = await T();
+  await t.goto(new URL("./?new", t.url()).href);
+  await t.click("#own-open");
+  await t.setInputFiles("#zip-in", makeZip("mini", { "shapes.py": AREA }));
+  await t.click('.p-mine[data-name="mini"] a.btn');
+  await t.waitForURL(/\/project/);
+  await has(t, "#h-project", "mini");
+  await see(t, "#own", "0 of 1 yours");
+  await see(t, "#next-title", "Write area");
+  if ((await t.locator("#journey .jn").count()) !== 2) fail("no Try step for a project with nothing to run");
+  if (await t.locator("#run").isVisible()) fail("nothing to open for a project with nothing to run");
+  await t.click('[data-act="write"]');
+  await see(t, "#next-status", "Settings");
+  if (await t.locator('[data-act="write"]').isDisabled()) fail("Start writing should work again after the error");
+  await shot(t, "home-upload");
+  await t.click("#delete-ask");
+  await t.click("#delete-yes");
+  await t.waitForURL(/\?new/);
+  await t.click("#open-store");
+  await t.waitForURL(/\/project/);
+}
+async function partial() {  // your own project where one file needs a library browsers can't run
+  const t = await T();
+  await t.goto(new URL("./?new", t.url()).href);
+  await t.click("#own-open");
+  const db = "import psycopg2\n\n\ndef connect():\n    return psycopg2.connect('')\n";
+  await t.setInputFiles("#zip-in", makeZip("duo", { "shapes.py": AREA, "db.py": db }));
+  await see(t, "#upload-result", "Partly runs here", 60000);  // the check asks PyPI about psycopg2
+  await see(t, '.p-mine[data-name="duo"]', "Partly runs in your browser");
+  await t.click('.p-mine[data-name="duo"] a.btn');
+  await t.waitForURL(/\/project/);
+  await see(t, "#notice", "psycopg2");
+  await see(t, "#own", "0 of 2 yours");
+  // Only the browser leaves connect out (its file can't load there); on your own computer it can be rebuilt too.
+  if (SITE) await see(t, "#next-title", "Write area");
+  await shot(t, "home-partial");
+  await t.goto(new URL("./?new", t.url()).href);  // back to Polyvault for the steps after this one
+  await t.click("#open-store");
+  await t.waitForURL(/\/project/);
+}
+
+const STEPS = { boot, story, start, choose, quiz, skipquiz, profile, home, returning, upload, partial };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });
